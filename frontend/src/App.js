@@ -16,6 +16,7 @@ import Attendance from './pages/Attendance';
 import Performance from './pages/Performance';
 import Settings from './pages/Settings';
 import RolesPermissions from './pages/RolesPermissions';
+import Workflows from './pages/Workflows';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="performance" element={<Performance />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
+        <Route path="settings/workflows" element={<Workflows />} />
       </Route>
     </Routes>
   );
