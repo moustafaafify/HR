@@ -497,10 +497,18 @@ async def get_employee(emp_id: str, current_user: User = Depends(get_current_use
 
 @api_router.put("/employees/{emp_id}", response_model=Employee)
 async def update_employee(emp_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # Clean up empty strings for numeric fields
+    for field in ['holiday_allowance', 'sick_leave_allowance', 'salary']:
+        if field in data and data[field] == '':
+            data[field] = None
     await db.employees.update_one({"id": emp_id}, {"$set": data})
     emp = await db.employees.find_one({"id": emp_id}, {"_id": 0})
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
+    # Clean up empty strings in retrieved document
+    for field in ['holiday_allowance', 'sick_leave_allowance', 'salary']:
+        if field in emp and emp[field] == '':
+            emp[field] = None
     return Employee(**emp)
 
 @api_router.delete("/employees/{emp_id}")
