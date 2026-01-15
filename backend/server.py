@@ -408,6 +408,13 @@ class DocumentApproval(BaseModel):
     comments: Optional[List[Dict[str, Any]]] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Optional[str] = None
+    # New fields for admin-assigned documents
+    is_assigned: bool = False  # True if admin assigned this to employee for acknowledgment
+    assigned_by: Optional[str] = None
+    assigned_at: Optional[str] = None
+    acknowledgment_required: bool = False
+    acknowledged: bool = False
+    acknowledged_at: Optional[str] = None
 
 class OnboardingTask(BaseModel):
     model_config = ConfigDict(extra="ignore")
