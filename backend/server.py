@@ -5419,25 +5419,6 @@ async def return_asset(asset_id: str, data: Dict[str, Any], current_user: User =
     
     return {"message": "Asset returned successfully"}
 
-@api_router.get("/assets/my")
-async def get_my_assets(current_user: User = Depends(get_current_user)):
-    """Get assets assigned to current user"""
-    # Find employee record
-    employee = await db.employees.find_one({"user_id": current_user.id})
-    if not employee:
-        employee = await db.employees.find_one({"work_email": current_user.email})
-    if not employee:
-        employee = await db.employees.find_one({"personal_email": current_user.email})
-    
-    if not employee:
-        return []
-    
-    assets = await db.assets.find({
-        "assigned_to_id": employee["id"]
-    }, {"_id": 0}).to_list(100)
-    
-    return assets
-
 @api_router.get("/asset-assignments")
 async def get_asset_assignments(
     asset_id: Optional[str] = None,
