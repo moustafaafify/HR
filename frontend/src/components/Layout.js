@@ -117,13 +117,67 @@ const Layout = () => {
             );
           })}
 
-          {/* Employees Section */}
+          {/* People Section */}
           {sidebarOpen && (
             <div className="pt-4 pb-2 px-4">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">People</p>
             </div>
           )}
-          {employeeItems.map((item) => {
+          
+          {/* Employees with collapsible sub-menu */}
+          <div>
+            <div
+              onClick={() => {
+                if (location.pathname !== '/employees') {
+                  window.location.href = '/employees';
+                } else {
+                  setEmployeesExpanded(!employeesExpanded);
+                }
+              }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                location.pathname === '/employees' || location.pathname === '/departments' || location.pathname === '/divisions'
+                  ? 'bg-indigo-950 text-white shadow-lg'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
+              }`}
+              data-testid="nav-employees"
+            >
+              <Users size={20} />
+              {sidebarOpen && (
+                <>
+                  <span className="font-medium flex-1">{t('employees')}</span>
+                  {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </>
+              )}
+            </div>
+            
+            {/* Employee sub-items */}
+            {employeesExpanded && sidebarOpen && (
+              <div className="ms-4 border-s-2 border-slate-200 mt-1">
+                {employeeSubItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      data-testid={`nav-${item.path.slice(1)}`}
+                      className={`flex items-center gap-3 ps-6 pe-4 py-2 rounded-lg transition-all duration-200 ${
+                        isActive
+                          ? 'bg-indigo-100 text-indigo-950 font-medium'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Other People items */}
+          {peopleItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
