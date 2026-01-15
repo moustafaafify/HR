@@ -50,6 +50,7 @@ function AppRoutes() {
         <Route path="leaves" element={<Leaves />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="performance" element={<Performance />} />
+        <Route path="recruitment" element={<Recruitment />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
