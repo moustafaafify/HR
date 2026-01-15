@@ -45,11 +45,11 @@ const Layout = () => {
     { path: '/divisions', icon: Layers, label: t('divisions') },
   ] : [];
 
-  // Everyone can see leaves/attendance, but performance only for managers+
+  // Everyone can see leaves/attendance/performance (employees see their own reviews)
   const peopleItems = [
     { path: '/leaves', icon: Calendar, label: t('leaves') },
     { path: '/attendance', icon: Clock, label: t('attendance') },
-    ...(isManager ? [{ path: '/performance', icon: BarChart3, label: t('performance') }] : []),
+    { path: '/performance', icon: BarChart3, label: t('performance') },
   ];
 
   const menuItems = [
