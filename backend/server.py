@@ -1143,6 +1143,119 @@ async def update_attendance(attendance_id: str, data: Dict[str, Any], current_us
         raise HTTPException(status_code=404, detail="Attendance record not found")
     return Attendance(**record)
 
+@api_router.delete("/attendance/{attendance_id}")
+async def delete_attendance(attendance_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.attendance.delete_one({"id": attendance_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"message": "Attendance record deleted"}
+
+@api_router.get("/attendance/export")
+async def export_attendance(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export attendance records as JSON (frontend will convert to CSV)"""
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if start_date and end_date:
+        query["date"] = {"$gte": start_date, "$lte": end_date}
+    elif start_date:
+        query["date"] = {"$gte": start_date}
+    elif end_date:
+        query["date"] = {"$lte": end_date}
+    
+    records = await db.attendance.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
+    
+    # Get employee names for the export
+    employee_ids = list(set(r.get("employee_id") for r in records))
+    employees = await db.employees.find({"id": {"$in": employee_ids}}, {"_id": 0, "id": 1, "full_name": 1}).to_list(1000)
+    emp_map = {e["id"]: e["full_name"] for e in employees}
+    
+    # Enrich records with employee names
+    for record in records:
+        record["employee_name"] = emp_map.get(record.get("employee_id"), "Unknown")
+    
+    return {"records": records, "total": len(records)}
+
+# ============= TIME CORRECTION ROUTES =============
+
+@api_router.post("/time-corrections")
+async def create_time_correction(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    correction = TimeCorrectionRequest(**data)
+    await db.time_corrections.insert_one(correction.model_dump())
+    return correction.model_dump()
+
+@api_router.get("/time-corrections")
+async def get_time_corrections(
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    corrections = await db.time_corrections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return corrections
+
+@api_router.get("/time-corrections/{correction_id}")
+async def get_time_correction(correction_id: str, current_user: User = Depends(get_current_user)):
+    correction = await db.time_corrections.find_one({"id": correction_id}, {"_id": 0})
+    if not correction:
+        raise HTTPException(status_code=404, detail="Time correction not found")
+    return correction
+
+@api_router.put("/time-corrections/{correction_id}/approve")
+async def approve_time_correction(correction_id: str, current_user: User = Depends(get_current_user)):
+    """Approve time correction and update the attendance record"""
+    correction = await db.time_corrections.find_one({"id": correction_id}, {"_id": 0})
+    if not correction:
+        raise HTTPException(status_code=404, detail="Time correction not found")
+    
+    # Update the attendance record with the corrected times
+    update_data = {}
+    if correction.get("requested_clock_in"):
+        update_data["clock_in"] = correction["requested_clock_in"]
+    if correction.get("requested_clock_out"):
+        update_data["clock_out"] = correction["requested_clock_out"]
+    
+    if update_data:
+        await db.attendance.update_one(
+            {"id": correction["attendance_id"]},
+            {"$set": update_data}
+        )
+    
+    # Update the correction status
+    await db.time_corrections.update_one(
+        {"id": correction_id},
+        {"$set": {
+            "status": "approved",
+            "reviewed_by": current_user.id,
+            "reviewed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Time correction approved and attendance updated"}
+
+@api_router.put("/time-corrections/{correction_id}/reject")
+async def reject_time_correction(correction_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject time correction request"""
+    await db.time_corrections.update_one(
+        {"id": correction_id},
+        {"$set": {
+            "status": "rejected",
+            "reviewed_by": current_user.id,
+            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            "rejection_reason": data.get("rejection_reason", "")
+        }}
+    )
+    return {"message": "Time correction rejected"}
+
 # ============= SCHEDULE ROUTES =============
 
 @api_router.post("/schedules", response_model=Schedule)
