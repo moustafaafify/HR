@@ -160,6 +160,10 @@ class Employee(BaseModel):
     documents: Optional[str] = None
     company_assets: Optional[str] = None
     
+    # Portal Access & Security
+    portal_access_enabled: bool = True
+    password_reset_required: bool = False
+    
     # Status
     status: str = "active"
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
