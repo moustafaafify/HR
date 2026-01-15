@@ -172,7 +172,9 @@ const Documents = () => {
     category_id: '',
     default_priority: 'normal',
     document_url: '',
-    instructions: ''
+    instructions: '',
+    assign_to_employees: false,
+    employee_ids: []
   });
   
   // Type form
