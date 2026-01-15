@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Building2, GitBranch, Users, Calendar } from 'lucide-react';
+import { Building2, GitBranch, FolderTree, Layers, Users, Calendar } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
