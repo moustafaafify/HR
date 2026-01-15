@@ -1291,8 +1291,21 @@ async def export_attendance(
 @api_router.post("/time-corrections")
 async def create_time_correction(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     correction = TimeCorrectionRequest(**data)
-    await db.time_corrections.insert_one(correction.model_dump())
-    return correction.model_dump()
+    correction_dict = correction.model_dump()
+    
+    # Check if there's an active workflow for time_correction module
+    workflow_instance = await trigger_workflow_for_module(
+        module="time_correction",
+        reference_id=correction.id,
+        requester_id=correction.employee_id
+    )
+    
+    # If workflow exists, set status to pending_approval
+    if workflow_instance:
+        correction_dict["status"] = "pending_approval"
+    
+    await db.time_corrections.insert_one(correction_dict)
+    return correction_dict
 
 @api_router.get("/time-corrections")
 async def get_time_corrections(
