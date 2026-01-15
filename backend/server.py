@@ -765,13 +765,52 @@ async def toggle_portal_access(emp_id: str, data: Dict[str, Any], current_user: 
     
     return Employee(**emp)
 
+# ============= WORKFLOW HELPER FUNCTIONS =============
+
+async def trigger_workflow_for_module(module: str, reference_id: str, requester_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Find an active workflow for the given module and create a workflow instance.
+    Returns the created workflow instance or None if no active workflow exists.
+    """
+    # Find an active workflow for this module
+    workflow = await db.workflows.find_one({"module": module, "is_active": True}, {"_id": 0})
+    
+    if not workflow or not workflow.get("steps"):
+        return None
+    
+    # Create a workflow instance
+    instance = WorkflowInstance(
+        workflow_id=workflow["id"],
+        module=module,
+        reference_id=reference_id,
+        requester_id=requester_id,
+        current_step=0,
+        status="pending" if len(workflow.get("steps", [])) > 0 else "approved"
+    )
+    
+    await db.workflow_instances.insert_one(instance.model_dump())
+    return instance.model_dump()
+
 # ============= LEAVE ROUTES =============
 
 @api_router.post("/leaves", response_model=Leave)
 async def create_leave(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     leave = Leave(**data)
-    await db.leaves.insert_one(leave.model_dump())
-    return leave
+    leave_dict = leave.model_dump()
+    
+    # Check if there's an active workflow for leave module
+    workflow_instance = await trigger_workflow_for_module(
+        module="leave",
+        reference_id=leave.id,
+        requester_id=leave.employee_id
+    )
+    
+    # If workflow exists, set status to pending_approval
+    if workflow_instance:
+        leave_dict["status"] = "pending_approval"
+    
+    await db.leaves.insert_one(leave_dict)
+    return Leave(**leave_dict)
 
 @api_router.get("/leaves", response_model=List[Leave])
 async def get_leaves(employee_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
