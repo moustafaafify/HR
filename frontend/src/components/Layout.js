@@ -97,33 +97,37 @@ const Layout = () => {
             );
           })}
 
-          {/* Organization Section */}
-          {sidebarOpen && (
-            <div className="pt-4 pb-2 px-4">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</p>
-            </div>
+          {/* Organization Section - Only for admins */}
+          {organizationItems.length > 0 && (
+            <>
+              {sidebarOpen && (
+                <div className="pt-4 pb-2 px-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</p>
+                </div>
+              )}
+              {organizationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    data-testid={`nav-${item.path.slice(1)}`}
+                    className={`flex items-center gap-3 py-3 rounded-lg transition-all duration-200 ${
+                      item.nested ? 'ps-8 pe-4' : 'px-4'
+                    } ${
+                      isActive
+                        ? 'bg-indigo-950 text-white shadow-lg'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </>
           )}
-          {organizationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                data-testid={`nav-${item.path.slice(1)}`}
-                className={`flex items-center gap-3 py-3 rounded-lg transition-all duration-200 ${
-                  item.nested ? 'ps-8 pe-4' : 'px-4'
-                } ${
-                  isActive
-                    ? 'bg-indigo-950 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-                }`}
-              >
-                <Icon size={20} />
-                {sidebarOpen && <span className="font-medium">{item.label}</span>}
-              </Link>
-            );
-          })}
 
           {/* People Section */}
           {sidebarOpen && (
