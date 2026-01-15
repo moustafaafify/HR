@@ -313,6 +313,75 @@ class TrainingRequest(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+# Training Course Management Models
+class TrainingType(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    is_active: bool = True
+    order: int = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TrainingCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+    is_active: bool = True
+    order: int = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TrainingCourse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    type_id: Optional[str] = None
+    category_id: Optional[str] = None
+    content_type: str = "video"  # video, document, link, mixed
+    video_url: Optional[str] = None
+    document_url: Optional[str] = None
+    external_link: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    difficulty_level: str = "beginner"  # beginner, intermediate, advanced
+    objectives: Optional[List[str]] = Field(default_factory=list)
+    prerequisites: Optional[List[str]] = Field(default_factory=list)
+    tags: Optional[List[str]] = Field(default_factory=list)
+    is_mandatory: bool = False
+    is_published: bool = False
+    department_ids: Optional[List[str]] = Field(default_factory=list)  # Restrict to specific departments
+    created_by: Optional[str] = None
+    view_count: int = 0
+    completion_count: int = 0
+    avg_rating: float = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TrainingAssignment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    course_id: str
+    employee_id: str
+    assigned_by: Optional[str] = None
+    due_date: Optional[str] = None
+    status: str = "assigned"  # assigned, in_progress, completed, overdue
+    progress: int = 0  # 0-100
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    time_spent_minutes: int = 0
+    last_accessed_at: Optional[str] = None
+    feedback: Optional[str] = None
+    rating: Optional[int] = None
+    certificate_url: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class DocumentApproval(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
