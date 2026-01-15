@@ -5098,6 +5098,514 @@ async def get_payroll_stats(current_user: User = Depends(get_current_user)):
         "total_paid_ytd": total_paid_ytd
     }
 
+# ============= ASSET MANAGEMENT MODELS =============
+
+class AssetCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None  # lucide icon name
+    color: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Asset(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    asset_tag: str  # Unique identifier like "LAPTOP-001"
+    category_id: str
+    category_name: Optional[str] = None
+    description: Optional[str] = None
+    serial_number: Optional[str] = None
+    model: Optional[str] = None
+    manufacturer: Optional[str] = None
+    purchase_date: Optional[str] = None
+    purchase_price: Optional[float] = None
+    currency: str = "USD"
+    warranty_expiry: Optional[str] = None
+    location: Optional[str] = None
+    condition: str = "good"  # excellent, good, fair, poor
+    status: str = "available"  # available, assigned, under_maintenance, retired, lost
+    notes: Optional[str] = None
+    # Current assignment info (denormalized for quick access)
+    assigned_to_id: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    assigned_date: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class AssetAssignment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    asset_id: str
+    asset_name: Optional[str] = None
+    asset_tag: Optional[str] = None
+    employee_id: str
+    employee_name: Optional[str] = None
+    assigned_by: Optional[str] = None
+    assigned_date: str = Field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    expected_return_date: Optional[str] = None
+    actual_return_date: Optional[str] = None
+    return_condition: Optional[str] = None
+    return_notes: Optional[str] = None
+    status: str = "active"  # active, returned, lost
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class AssetRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    employee_name: Optional[str] = None
+    request_type: str = "new"  # new, replacement, return, repair
+    category_id: Optional[str] = None
+    category_name: Optional[str] = None
+    asset_id: Optional[str] = None  # For return/repair requests
+    asset_name: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    priority: str = "normal"  # low, normal, high, urgent
+    status: str = "pending"  # pending, approved, rejected, fulfilled, cancelled
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    fulfilled_asset_id: Optional[str] = None
+    fulfilled_at: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= ASSET MANAGEMENT ROUTES =============
+
+# Asset Categories
+@api_router.get("/asset-categories")
+async def get_asset_categories(current_user: User = Depends(get_current_user)):
+    categories = await db.asset_categories.find({}, {"_id": 0}).to_list(100)
+    return categories
+
+@api_router.post("/asset-categories")
+async def create_asset_category(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can create asset categories")
+    category = AssetCategory(**data)
+    await db.asset_categories.insert_one(category.model_dump())
+    return category.model_dump()
+
+@api_router.put("/asset-categories/{category_id}")
+async def update_asset_category(category_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update asset categories")
+    await db.asset_categories.update_one({"id": category_id}, {"$set": data})
+    category = await db.asset_categories.find_one({"id": category_id}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return category
+
+@api_router.delete("/asset-categories/{category_id}")
+async def delete_asset_category(category_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete asset categories")
+    # Check if category has assets
+    asset_count = await db.assets.count_documents({"category_id": category_id})
+    if asset_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete category with {asset_count} assets")
+    result = await db.asset_categories.delete_one({"id": category_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"message": "Category deleted"}
+
+# Assets
+@api_router.get("/assets")
+async def get_assets(
+    category_id: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if category_id:
+        query["category_id"] = category_id
+    if status:
+        query["status"] = status
+    assets = await db.assets.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return assets
+
+@api_router.get("/assets/stats")
+async def get_asset_stats(current_user: User = Depends(get_current_user)):
+    total = await db.assets.count_documents({})
+    available = await db.assets.count_documents({"status": "available"})
+    assigned = await db.assets.count_documents({"status": "assigned"})
+    maintenance = await db.assets.count_documents({"status": "under_maintenance"})
+    retired = await db.assets.count_documents({"status": "retired"})
+    pending_requests = await db.asset_requests.count_documents({"status": "pending"})
+    
+    # Get total value
+    assets = await db.assets.find({}, {"_id": 0, "purchase_price": 1}).to_list(1000)
+    total_value = sum(a.get("purchase_price", 0) or 0 for a in assets)
+    
+    return {
+        "total_assets": total,
+        "available": available,
+        "assigned": assigned,
+        "under_maintenance": maintenance,
+        "retired": retired,
+        "pending_requests": pending_requests,
+        "total_value": total_value
+    }
+
+@api_router.get("/assets/{asset_id}")
+async def get_asset(asset_id: str, current_user: User = Depends(get_current_user)):
+    asset = await db.assets.find_one({"id": asset_id}, {"_id": 0})
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset
+
+@api_router.post("/assets")
+async def create_asset(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can create assets")
+    
+    # Get category name
+    if data.get("category_id"):
+        category = await db.asset_categories.find_one({"id": data["category_id"]}, {"_id": 0})
+        if category:
+            data["category_name"] = category.get("name")
+    
+    asset = Asset(**data)
+    await db.assets.insert_one(asset.model_dump())
+    return asset.model_dump()
+
+@api_router.put("/assets/{asset_id}")
+async def update_asset(asset_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update assets")
+    
+    # Get category name if category changed
+    if data.get("category_id"):
+        category = await db.asset_categories.find_one({"id": data["category_id"]}, {"_id": 0})
+        if category:
+            data["category_name"] = category.get("name")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.assets.update_one({"id": asset_id}, {"$set": data})
+    asset = await db.assets.find_one({"id": asset_id}, {"_id": 0})
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset
+
+@api_router.delete("/assets/{asset_id}")
+async def delete_asset(asset_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete assets")
+    
+    # Check if asset is assigned
+    asset = await db.assets.find_one({"id": asset_id}, {"_id": 0})
+    if asset and asset.get("status") == "assigned":
+        raise HTTPException(status_code=400, detail="Cannot delete assigned asset. Return it first.")
+    
+    result = await db.assets.delete_one({"id": asset_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return {"message": "Asset deleted"}
+
+# Asset Assignment
+@api_router.post("/assets/{asset_id}/assign")
+async def assign_asset(asset_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can assign assets")
+    
+    asset = await db.assets.find_one({"id": asset_id}, {"_id": 0})
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    if asset.get("status") == "assigned":
+        raise HTTPException(status_code=400, detail="Asset is already assigned")
+    
+    if asset.get("status") in ["retired", "lost"]:
+        raise HTTPException(status_code=400, detail=f"Cannot assign {asset.get('status')} asset")
+    
+    employee_id = data.get("employee_id")
+    if not employee_id:
+        raise HTTPException(status_code=400, detail="Employee ID required")
+    
+    # Get employee details
+    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    employee_name = employee.get("full_name", "Unknown")
+    
+    # Create assignment record
+    assignment = AssetAssignment(
+        asset_id=asset_id,
+        asset_name=asset.get("name"),
+        asset_tag=asset.get("asset_tag"),
+        employee_id=employee_id,
+        employee_name=employee_name,
+        assigned_by=current_user.id,
+        assigned_date=data.get("assigned_date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+        expected_return_date=data.get("expected_return_date"),
+        notes=data.get("notes")
+    )
+    await db.asset_assignments.insert_one(assignment.model_dump())
+    
+    # Update asset status
+    await db.assets.update_one({"id": asset_id}, {"$set": {
+        "status": "assigned",
+        "assigned_to_id": employee_id,
+        "assigned_to_name": employee_name,
+        "assigned_date": assignment.assigned_date,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return {"message": "Asset assigned successfully", "assignment": assignment.model_dump()}
+
+@api_router.post("/assets/{asset_id}/return")
+async def return_asset(asset_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    asset = await db.assets.find_one({"id": asset_id}, {"_id": 0})
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    if asset.get("status") != "assigned":
+        raise HTTPException(status_code=400, detail="Asset is not assigned")
+    
+    # Find active assignment
+    assignment = await db.asset_assignments.find_one({
+        "asset_id": asset_id,
+        "status": "active"
+    }, {"_id": 0})
+    
+    if assignment:
+        # Update assignment record
+        await db.asset_assignments.update_one({"id": assignment["id"]}, {"$set": {
+            "status": "returned",
+            "actual_return_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "return_condition": data.get("condition", "good"),
+            "return_notes": data.get("notes"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }})
+    
+    # Update asset
+    new_status = data.get("new_status", "available")
+    await db.assets.update_one({"id": asset_id}, {"$set": {
+        "status": new_status,
+        "condition": data.get("condition", asset.get("condition")),
+        "assigned_to_id": None,
+        "assigned_to_name": None,
+        "assigned_date": None,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return {"message": "Asset returned successfully"}
+
+@api_router.get("/assets/my")
+async def get_my_assets(current_user: User = Depends(get_current_user)):
+    """Get assets assigned to current user"""
+    # Find employee record
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    if not employee:
+        employee = await db.employees.find_one({"personal_email": current_user.email})
+    
+    if not employee:
+        return []
+    
+    assets = await db.assets.find({
+        "assigned_to_id": employee["id"]
+    }, {"_id": 0}).to_list(100)
+    
+    return assets
+
+@api_router.get("/asset-assignments")
+async def get_asset_assignments(
+    asset_id: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if asset_id:
+        query["asset_id"] = asset_id
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    
+    assignments = await db.asset_assignments.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return assignments
+
+# Asset Requests
+@api_router.get("/asset-requests")
+async def get_asset_requests(
+    status: Optional[str] = None,
+    request_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if request_type:
+        query["request_type"] = request_type
+    
+    # Non-admins can only see their own requests
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee:
+            employee = await db.employees.find_one({"work_email": current_user.email})
+        if employee:
+            query["employee_id"] = employee["id"]
+        else:
+            return []
+    
+    requests = await db.asset_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return requests
+
+@api_router.get("/asset-requests/my")
+async def get_my_asset_requests(current_user: User = Depends(get_current_user)):
+    """Get current user's asset requests"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    if not employee:
+        employee = await db.employees.find_one({"personal_email": current_user.email})
+    
+    if not employee:
+        return []
+    
+    requests = await db.asset_requests.find(
+        {"employee_id": employee["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return requests
+
+@api_router.post("/asset-requests")
+async def create_asset_request(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # Get employee info
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    if not employee:
+        employee = await db.employees.find_one({"personal_email": current_user.email})
+    
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee record not found")
+    
+    data["employee_id"] = employee["id"]
+    data["employee_name"] = employee.get("full_name", "Unknown")
+    
+    # Get category name if provided
+    if data.get("category_id"):
+        category = await db.asset_categories.find_one({"id": data["category_id"]}, {"_id": 0})
+        if category:
+            data["category_name"] = category.get("name")
+    
+    # Get asset name if provided
+    if data.get("asset_id"):
+        asset = await db.assets.find_one({"id": data["asset_id"]}, {"_id": 0})
+        if asset:
+            data["asset_name"] = asset.get("name")
+    
+    request = AssetRequest(**data)
+    await db.asset_requests.insert_one(request.model_dump())
+    return request.model_dump()
+
+@api_router.put("/asset-requests/{request_id}")
+async def update_asset_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.asset_requests.update_one({"id": request_id}, {"$set": data})
+    request = await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return request
+
+@api_router.post("/asset-requests/{request_id}/approve")
+async def approve_asset_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can approve requests")
+    
+    request = await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    await db.asset_requests.update_one({"id": request_id}, {"$set": {
+        "status": "approved",
+        "reviewed_by": current_user.id,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+        "notes": data.get("notes"),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.post("/asset-requests/{request_id}/reject")
+async def reject_asset_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can reject requests")
+    
+    await db.asset_requests.update_one({"id": request_id}, {"$set": {
+        "status": "rejected",
+        "reviewed_by": current_user.id,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+        "rejection_reason": data.get("reason", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.post("/asset-requests/{request_id}/fulfill")
+async def fulfill_asset_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can fulfill requests")
+    
+    request = await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if request.get("status") != "approved":
+        raise HTTPException(status_code=400, detail="Request must be approved first")
+    
+    asset_id = data.get("asset_id")
+    if not asset_id:
+        raise HTTPException(status_code=400, detail="Asset ID required to fulfill request")
+    
+    # Assign the asset to the employee
+    asset = await db.assets.find_one({"id": asset_id}, {"_id": 0})
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    if asset.get("status") != "available":
+        raise HTTPException(status_code=400, detail="Asset is not available")
+    
+    # Assign the asset
+    await assign_asset(asset_id, {"employee_id": request["employee_id"]}, current_user)
+    
+    # Update request status
+    await db.asset_requests.update_one({"id": request_id}, {"$set": {
+        "status": "fulfilled",
+        "fulfilled_asset_id": asset_id,
+        "fulfilled_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.delete("/asset-requests/{request_id}")
+async def delete_asset_request(request_id: str, current_user: User = Depends(get_current_user)):
+    request = await db.asset_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    # Only allow deletion of pending requests or by admin
+    if request.get("status") != "pending" and current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Can only delete pending requests")
+    
+    await db.asset_requests.delete_one({"id": request_id})
+    return {"message": "Request deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
