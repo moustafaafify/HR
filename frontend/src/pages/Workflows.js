@@ -73,13 +73,6 @@ const Workflows = () => {
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
 
-  useEffect(() => {
-    fetchWorkflows();
-    fetchInstances();
-    fetchEmployees();
-    fetchRoles();
-  }, []);
-
   const fetchWorkflows = async () => {
     try {
       const response = await axios.get(`${API}/workflows`);
@@ -115,6 +108,14 @@ const Workflows = () => {
       console.error('Failed to fetch roles:', error);
     }
   };
+
+  useEffect(() => {
+    fetchWorkflows();
+    fetchInstances();
+    fetchEmployees();
+    fetchRoles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchInstanceDetails = async (instanceId) => {
     try {
