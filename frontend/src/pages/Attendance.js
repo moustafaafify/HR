@@ -520,46 +520,46 @@ const Attendance = () => {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div data-testid="attendance-page" className="space-y-6">
+    <div data-testid="attendance-page" className="space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {t('attendance')}
           </h1>
-          <p className="text-slate-500 mt-1">Track and manage work hours</p>
+          <p className="text-slate-500 mt-1 text-sm lg:text-base">Track and manage work hours</p>
         </div>
         
         {/* Clock In/Out Buttons */}
         {currentEmployee && activeTab === 'attendance' && (
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <Button 
               onClick={handleClockIn}
               disabled={todayRecord?.clock_in}
               data-testid="clock-in-button"
-              size="lg"
-              className={`rounded-2xl shadow-lg px-6 transition-all duration-300 ${
+              className={`rounded-xl lg:rounded-2xl shadow-lg px-3 sm:px-6 py-2 sm:py-3 transition-all duration-300 text-sm sm:text-base ${
                 todayRecord?.clock_in 
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                   : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white hover:shadow-xl hover:scale-105'
               }`}
             >
-              <LogIn size={22} className="me-2" />
-              Clock In
+              <LogIn size={18} className="me-1 sm:me-2" />
+              <span className="hidden sm:inline">Clock In</span>
+              <span className="sm:hidden">In</span>
             </Button>
             <Button 
               onClick={handleClockOut}
               disabled={!todayRecord?.clock_in || todayRecord?.clock_out}
               data-testid="clock-out-button"
-              size="lg"
-              className={`rounded-2xl shadow-lg px-6 transition-all duration-300 ${
+              className={`rounded-xl lg:rounded-2xl shadow-lg px-3 sm:px-6 py-2 sm:py-3 transition-all duration-300 text-sm sm:text-base ${
                 !todayRecord?.clock_in || todayRecord?.clock_out
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                   : 'bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white hover:shadow-xl hover:scale-105'
               }`}
             >
-              <LogOut size={22} className="me-2" />
-              Clock Out
+              <LogOut size={18} className="me-1 sm:me-2" />
+              <span className="hidden sm:inline">Clock Out</span>
+              <span className="sm:hidden">Out</span>
             </Button>
           </div>
         )}
