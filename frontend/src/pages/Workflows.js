@@ -977,7 +977,7 @@ const Workflows = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-slate-900 capitalize">{history.action}ed</p>
                           <p className="text-sm text-slate-500">Step {history.step + 1}</p>
-                          {history.comment && <p className="text-sm text-slate-600 mt-1 break-words">"{history.comment}"</p>}
+                          {history.comment && <p className="text-sm text-slate-600 mt-1 break-words">&ldquo;{history.comment}&rdquo;</p>}
                           <p className="text-xs text-slate-400 mt-1">
                             {new Date(history.timestamp).toLocaleString()}
                           </p>
