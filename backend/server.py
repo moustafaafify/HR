@@ -7027,6 +7027,429 @@ async def delete_disciplinary_action(action_id: str, current_user: User = Depend
     
     return {"message": "Disciplinary action deleted"}
 
+# ============= TRAVEL MODELS =============
+
+class TravelRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    reference_number: str = Field(default_factory=lambda: f"TR-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}")
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    department: Optional[str] = None
+    
+    # Trip Details
+    trip_type: str = "domestic"  # domestic, international
+    purpose: str  # business_meeting, conference, training, client_visit, site_visit, other
+    purpose_details: Optional[str] = None
+    destination_city: str
+    destination_country: str = ""
+    departure_date: str
+    return_date: str
+    
+    # Transportation
+    transportation_type: str = "flight"  # flight, train, bus, car, rental, other
+    transportation_details: Optional[str] = None
+    flight_class: Optional[str] = None  # economy, business, first
+    
+    # Accommodation
+    accommodation_required: bool = True
+    accommodation_type: Optional[str] = None  # hotel, airbnb, company_guest_house, other
+    accommodation_details: Optional[str] = None
+    hotel_name: Optional[str] = None
+    check_in_date: Optional[str] = None
+    check_out_date: Optional[str] = None
+    
+    # Budget
+    estimated_transportation_cost: float = 0
+    estimated_accommodation_cost: float = 0
+    estimated_meals_cost: float = 0
+    estimated_other_cost: float = 0
+    total_estimated_cost: float = 0
+    currency: str = "USD"
+    
+    # Actual Costs (filled after trip)
+    actual_transportation_cost: Optional[float] = None
+    actual_accommodation_cost: Optional[float] = None
+    actual_meals_cost: Optional[float] = None
+    actual_other_cost: Optional[float] = None
+    total_actual_cost: Optional[float] = None
+    
+    # Itinerary
+    itinerary: Optional[str] = None
+    meetings_scheduled: Optional[str] = None
+    
+    # Emergency Contact
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    
+    # Status & Approval
+    status: str = "pending"  # pending, approved, rejected, in_progress, completed, cancelled
+    approved_by: Optional[str] = None
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    
+    # Workflow
+    workflow_instance_id: Optional[str] = None
+    
+    # Documents
+    supporting_documents: Optional[List[str]] = Field(default_factory=list)
+    
+    # Completion
+    trip_report: Optional[str] = None
+    trip_completed_at: Optional[str] = None
+    
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= TRAVEL API ENDPOINTS =============
+
+@api_router.get("/travel/stats")
+async def get_travel_stats(current_user: User = Depends(get_current_user)):
+    """Get travel statistics for admin dashboard"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view travel stats")
+    
+    total = await db.travel_requests.count_documents({})
+    pending = await db.travel_requests.count_documents({"status": "pending"})
+    approved = await db.travel_requests.count_documents({"status": "approved"})
+    in_progress = await db.travel_requests.count_documents({"status": "in_progress"})
+    completed = await db.travel_requests.count_documents({"status": "completed"})
+    rejected = await db.travel_requests.count_documents({"status": "rejected"})
+    
+    # Calculate total budget
+    pipeline = [
+        {"$match": {"status": {"$in": ["approved", "in_progress", "completed"]}}},
+        {"$group": {"_id": None, "total": {"$sum": "$total_estimated_cost"}}}
+    ]
+    budget_result = await db.travel_requests.aggregate(pipeline).to_list(1)
+    total_budget = budget_result[0]["total"] if budget_result else 0
+    
+    # Actual spent
+    pipeline_actual = [
+        {"$match": {"status": "completed", "total_actual_cost": {"$ne": None}}},
+        {"$group": {"_id": None, "total": {"$sum": "$total_actual_cost"}}}
+    ]
+    actual_result = await db.travel_requests.aggregate(pipeline_actual).to_list(1)
+    total_actual = actual_result[0]["total"] if actual_result else 0
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "approved": approved,
+        "in_progress": in_progress,
+        "completed": completed,
+        "rejected": rejected,
+        "total_budget": total_budget,
+        "total_actual": total_actual
+    }
+
+@api_router.get("/travel/my")
+async def get_my_travel_requests(current_user: User = Depends(get_current_user)):
+    """Get current employee's travel requests"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    
+    requests = await db.travel_requests.find(
+        {"employee_id": employee["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return requests
+
+@api_router.get("/travel")
+async def get_travel_requests(
+    status: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all travel requests (admin) or filtered"""
+    query = {}
+    
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        # Non-admins can only see their own requests
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if employee:
+            query["employee_id"] = employee["id"]
+        else:
+            return []
+    else:
+        if employee_id:
+            query["employee_id"] = employee_id
+    
+    if status:
+        query["status"] = status
+    
+    requests = await db.travel_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return requests
+
+@api_router.get("/travel/{request_id}")
+async def get_travel_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific travel request"""
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return request
+
+@api_router.post("/travel")
+async def create_travel_request(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new travel request"""
+    # Get employee info
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    # Get department name
+    dept_name = None
+    if employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+        if dept:
+            dept_name = dept.get("name")
+    
+    # Calculate total estimated cost
+    total_cost = (
+        float(data.get("estimated_transportation_cost", 0) or 0) +
+        float(data.get("estimated_accommodation_cost", 0) or 0) +
+        float(data.get("estimated_meals_cost", 0) or 0) +
+        float(data.get("estimated_other_cost", 0) or 0)
+    )
+    
+    travel_data = {
+        **data,
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "employee_email": employee.get("work_email") or employee.get("personal_email"),
+        "department": dept_name,
+        "total_estimated_cost": total_cost,
+        "status": "pending"
+    }
+    
+    travel_request = TravelRequest(**travel_data)
+    await db.travel_requests.insert_one(travel_request.model_dump())
+    
+    return travel_request.model_dump()
+
+@api_router.put("/travel/{request_id}")
+async def update_travel_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a travel request"""
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        # Employees can only update pending requests
+        if request["status"] != "pending":
+            raise HTTPException(status_code=400, detail="Can only edit pending requests")
+    
+    # Recalculate total if cost fields changed
+    if any(k in data for k in ["estimated_transportation_cost", "estimated_accommodation_cost", "estimated_meals_cost", "estimated_other_cost"]):
+        data["total_estimated_cost"] = (
+            float(data.get("estimated_transportation_cost", request.get("estimated_transportation_cost", 0)) or 0) +
+            float(data.get("estimated_accommodation_cost", request.get("estimated_accommodation_cost", 0)) or 0) +
+            float(data.get("estimated_meals_cost", request.get("estimated_meals_cost", 0)) or 0) +
+            float(data.get("estimated_other_cost", request.get("estimated_other_cost", 0)) or 0)
+        )
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.travel_requests.update_one({"id": request_id}, {"$set": data})
+    
+    updated = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/travel/{request_id}/approve")
+async def approve_travel_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Approve a travel request"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can approve travel requests")
+    
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    if request["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Only pending requests can be approved")
+    
+    await db.travel_requests.update_one({"id": request_id}, {"$set": {
+        "status": "approved",
+        "approved_by": current_user.id,
+        "approved_by_name": current_user.full_name,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.post("/travel/{request_id}/reject")
+async def reject_travel_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject a travel request"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can reject travel requests")
+    
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    if request["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Only pending requests can be rejected")
+    
+    await db.travel_requests.update_one({"id": request_id}, {"$set": {
+        "status": "rejected",
+        "rejection_reason": data.get("reason", ""),
+        "approved_by": current_user.id,
+        "approved_by_name": current_user.full_name,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.post("/travel/{request_id}/start")
+async def start_travel(request_id: str, current_user: User = Depends(get_current_user)):
+    """Mark travel as started (in progress)"""
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    if request["status"] != "approved":
+        raise HTTPException(status_code=400, detail="Only approved requests can be started")
+    
+    await db.travel_requests.update_one({"id": request_id}, {"$set": {
+        "status": "in_progress",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.post("/travel/{request_id}/complete")
+async def complete_travel(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Mark travel as completed with actual expenses and report"""
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    if request["status"] not in ["approved", "in_progress"]:
+        raise HTTPException(status_code=400, detail="Only approved or in-progress requests can be completed")
+    
+    # Calculate actual total
+    total_actual = (
+        float(data.get("actual_transportation_cost", 0) or 0) +
+        float(data.get("actual_accommodation_cost", 0) or 0) +
+        float(data.get("actual_meals_cost", 0) or 0) +
+        float(data.get("actual_other_cost", 0) or 0)
+    )
+    
+    update_data = {
+        "status": "completed",
+        "actual_transportation_cost": data.get("actual_transportation_cost"),
+        "actual_accommodation_cost": data.get("actual_accommodation_cost"),
+        "actual_meals_cost": data.get("actual_meals_cost"),
+        "actual_other_cost": data.get("actual_other_cost"),
+        "total_actual_cost": total_actual,
+        "trip_report": data.get("trip_report"),
+        "trip_completed_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.travel_requests.update_one({"id": request_id}, {"$set": update_data})
+    
+    return await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.post("/travel/{request_id}/cancel")
+async def cancel_travel_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Cancel a travel request"""
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    if request["status"] in ["completed", "cancelled"]:
+        raise HTTPException(status_code=400, detail="Cannot cancel completed or already cancelled requests")
+    
+    await db.travel_requests.update_one({"id": request_id}, {"$set": {
+        "status": "cancelled",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.delete("/travel/{request_id}")
+async def delete_travel_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a travel request (admin only or own pending request)"""
+    request = await db.travel_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Travel request not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if request["status"] != "pending":
+            raise HTTPException(status_code=400, detail="Can only delete pending requests")
+    
+    await db.travel_requests.delete_one({"id": request_id})
+    return {"message": "Travel request deleted"}
+
+@api_router.get("/travel/export")
+async def export_travel_requests(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export travel requests as JSON for CSV conversion"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can export travel data")
+    
+    query = {}
+    if status:
+        query["status"] = status
+    if start_date:
+        query["departure_date"] = {"$gte": start_date}
+    if end_date:
+        if "departure_date" in query:
+            query["departure_date"]["$lte"] = end_date
+        else:
+            query["departure_date"] = {"$lte": end_date}
+    
+    requests = await db.travel_requests.find(query, {"_id": 0}).sort("departure_date", -1).to_list(10000)
+    return {"records": requests, "total": len(requests)}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
