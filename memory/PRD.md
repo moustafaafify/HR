@@ -345,7 +345,7 @@ Build a full-stack HR platform with:
    - Points system for gamification
    - Nominations for formal awards (e.g., Employee of the Month) requiring admin approval
    - Admin: Manage categories, review nominations, view all recognitions
-11. **Team Calendar Module (NEW)** - Full team calendar with:
+11. **Team Calendar Module** - Full team calendar with:
    - Month/Week view toggle with navigation
    - Event types: Meeting, Holiday, Leave, Birthday, Anniversary, Company Event, Team Event, Training, Deadline
    - Auto-display of approved leaves, employee birthdays, and work anniversaries
@@ -353,6 +353,14 @@ Build a full-stack HR platform with:
    - Event creation with location, virtual meeting links, RSVP
    - Company-wide events (admin only)
    - Color-coded event legend
+12. **Succession Planning Module (NEW)** - Strategic workforce planning with:
+   - Key Positions: Define critical roles with criticality levels (Critical, High, Medium, Low)
+   - Risk Assessment: Vacancy risk and flight risk indicators
+   - Succession Candidates: Add candidates with readiness levels (Ready Now, 1-2 Years, 3-5 Years)
+   - 9-Box Grid: Visual performance vs potential matrix for talent assessment
+   - Talent Pool: Identify high-potential employees with detailed assessments
+   - Pipeline Strength: Auto-calculated based on candidate readiness
+   - Employee View: Limited view showing their development status if in talent pool/succession
 
 ## Upcoming Tasks (P1)
 1. **Test & Finalize Payroll Module** - Create salary structure, run payroll, verify payslips
