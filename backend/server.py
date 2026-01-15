@@ -261,14 +261,24 @@ class ExpenseClaim(BaseModel):
     description: Optional[str] = None
     amount: float
     currency: str = "USD"
-    category: str  # "travel", "meals", "office", "equipment", "training", "other"
+    category: str  # "travel", "meals", "office", "equipment", "training", "communication", "transportation", "accommodation", "entertainment", "other"
+    subcategory: Optional[str] = None
     receipt_url: Optional[str] = None
+    receipt_filename: Optional[str] = None
     expense_date: str
-    status: str = "pending"
+    merchant_name: Optional[str] = None
+    payment_method: str = "personal"  # personal, corporate_card, reimbursement
+    project_id: Optional[str] = None
+    department_id: Optional[str] = None
+    status: str = "pending"  # pending, submitted, under_review, approved, rejected, paid, cancelled
+    workflow_instance_id: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[str] = None
     rejection_reason: Optional[str] = None
+    reimbursement_date: Optional[str] = None
+    notes: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class TrainingRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
