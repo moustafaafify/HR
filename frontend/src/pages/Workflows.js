@@ -333,41 +333,41 @@ const Workflows = () => {
               <p className="text-slate-500 text-xs sm:text-sm">Active Workflows</p>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{workflows.filter(w => w.is_active).length}</p>
             </div>
-            <div className="bg-indigo-100 rounded-xl p-3">
-              <GitBranch size={24} className="text-indigo-600" />
+            <div className="bg-indigo-100 rounded-xl p-2 sm:p-3">
+              <GitBranch size={20} className="text-indigo-600 sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-amber-100 text-sm">Pending Approvals</p>
-              <p className="text-3xl font-black mt-1">{pendingCount}</p>
+              <p className="text-amber-100 text-xs sm:text-sm">Pending Approvals</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1">{pendingCount}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <Clock size={24} />
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3">
+              <Clock size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-emerald-100 text-sm">Approved</p>
-              <p className="text-3xl font-black mt-1">{approvedCount}</p>
+              <p className="text-emerald-100 text-xs sm:text-sm">Approved</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1">{approvedCount}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <CheckCircle2 size={24} />
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3">
+              <CheckCircle2 size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
-        <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-rose-100 text-sm">Rejected</p>
-              <p className="text-3xl font-black mt-1">{rejectedCount}</p>
+              <p className="text-rose-100 text-xs sm:text-sm">Rejected</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1">{rejectedCount}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <XCircle size={24} />
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3">
+              <XCircle size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
@@ -375,19 +375,19 @@ const Workflows = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-100 p-1 rounded-xl">
-          <TabsTrigger value="workflows" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <Settings size={16} />
-            Workflow Templates
+        <TabsList className="bg-slate-100 p-1 rounded-xl w-full sm:w-auto flex">
+          <TabsTrigger value="workflows" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <Settings size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Workflow</span> Templates
           </TabsTrigger>
-          <TabsTrigger value="instances" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <GitBranch size={16} />
-            Active Requests
+          <TabsTrigger value="instances" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <GitBranch size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Active</span> Requests
           </TabsTrigger>
         </TabsList>
 
         {/* Workflow Templates Tab */}
-        <TabsContent value="workflows" className="mt-6">
+        <TabsContent value="workflows" className="mt-4 sm:mt-6">
           <div className="flex justify-end mb-4">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
