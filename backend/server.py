@@ -615,11 +615,55 @@ async def get_leaves(employee_id: Optional[str] = None, current_user: User = Dep
 
 @api_router.put("/leaves/{leave_id}", response_model=Leave)
 async def update_leave(leave_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # If approving, add approved_by and approved_at
+    if data.get("status") == "approved":
+        data["approved_by"] = current_user.id
+        data["approved_at"] = datetime.now(timezone.utc).isoformat()
     await db.leaves.update_one({"id": leave_id}, {"$set": data})
     leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
     if not leave:
         raise HTTPException(status_code=404, detail="Leave not found")
     return Leave(**leave)
+
+@api_router.delete("/leaves/{leave_id}")
+async def delete_leave(leave_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.leaves.delete_one({"id": leave_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    return {"message": "Leave request deleted"}
+
+# ============= LEAVE BALANCE ROUTES =============
+
+@api_router.get("/leave-balances/{employee_id}")
+async def get_leave_balance(employee_id: str, year: Optional[int] = None, current_user: User = Depends(get_current_user)):
+    if year is None:
+        year = datetime.now().year
+    balance = await db.leave_balances.find_one({"employee_id": employee_id, "year": year}, {"_id": 0})
+    if not balance:
+        # Create default balance
+        new_balance = LeaveBalance(employee_id=employee_id, year=year)
+        await db.leave_balances.insert_one(new_balance.model_dump())
+        return new_balance.model_dump()
+    return balance
+
+@api_router.put("/leave-balances/{employee_id}")
+async def update_leave_balance(employee_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    year = data.get("year", datetime.now().year)
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.leave_balances.update_one(
+        {"employee_id": employee_id, "year": year},
+        {"$set": data},
+        upsert=True
+    )
+    balance = await db.leave_balances.find_one({"employee_id": employee_id, "year": year}, {"_id": 0})
+    return balance
+
+@api_router.get("/leave-balances")
+async def get_all_leave_balances(year: Optional[int] = None, current_user: User = Depends(get_current_user)):
+    if year is None:
+        year = datetime.now().year
+    balances = await db.leave_balances.find({"year": year}, {"_id": 0}).to_list(1000)
+    return balances
 
 # ============= ATTENDANCE ROUTES =============
 
