@@ -121,6 +121,30 @@ Build a full-stack HR platform with:
   - "Export" button on Leave Requests tab with filter dialog
   - "Export Balances" button on Leave Balances tab with year selector
 
+### Responsive Design Implementation (COMPLETED - Jan 15, 2026)
+- **Layout Component:** 
+  - Mobile header with hamburger menu toggle
+  - Slide-out sidebar with overlay on mobile/tablet (<1024px)
+  - Close button on mobile sidebar
+  - Auto-close sidebar on navigation (mobile)
+  - Full sidebar visible on desktop (>=1024px)
+- **All Pages Updated:**
+  - Dashboard: 2-column grid on mobile, 3-column on desktop
+  - Attendance: Responsive stats cards (2x2 mobile, 4-column desktop), horizontally scrollable table
+  - Leaves: Responsive stats, full-width request button on mobile
+  - Performance: Responsive layout with stacked elements on mobile
+  - Employees: Responsive form tabs, full-width buttons on mobile
+  - Login: Centered card, responsive padding
+- **Breakpoints Used:**
+  - Mobile: default (<640px)
+  - Tablet: sm: (640px+)
+  - Desktop: lg: (1024px+)
+- **Key Responsive Patterns:**
+  - Text sizes scale: text-2xl → text-3xl → text-4xl
+  - Padding adjusts: p-4 → p-5 → p-6
+  - Buttons: full-width on mobile, auto-width on desktop
+  - Dialogs: mx-4 margin on mobile
+
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn/UI, React Router
 - **Backend:** FastAPI, Pydantic, JWT
