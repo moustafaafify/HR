@@ -63,6 +63,30 @@ Build a full-stack HR platform with:
   4. Modified `handleSubmit` to update leave_balances collection after saving employee
   5. Added POST endpoint `/api/leave-balances` for creating new leave balances
 
+### ResizeObserver Error Fix (COMPLETED - Jan 15, 2026)
+- **Bug:** Error screen "ResizeObserver loop completed" appeared when selecting employees in dropdowns
+- **Fix:** Added ResizeObserver patch in `public/index.html` and `src/index.js` to suppress benign Radix UI errors
+
+### Performance Reviews Enhancement (COMPLETED - Jan 15, 2026)
+- **Expanded PerformanceReview Model** with:
+  - Multiple review types (annual, quarterly, probation, project, 360)
+  - Status workflow (draft → pending_self_assessment → pending_review → completed)
+  - Category ratings (communication, teamwork, technical_skills, problem_solving, leadership, punctuality)
+  - Self-assessment fields (self_assessment, self_rating, achievements, challenges)
+  - Manager assessment fields (strengths, areas_for_improvement, feedback, recommendations)
+  - Goals tracking
+- **New Backend Endpoints:**
+  - `PUT /api/reviews/{id}` - Update review
+  - `DELETE /api/reviews/{id}` - Delete review  
+  - `POST /api/reviews/{id}/submit-self-assessment` - Employee self-assessment
+  - `POST /api/reviews/{id}/complete` - Manager completes review
+  - `GET /api/reviews/stats/summary` - Dashboard statistics
+- **Enhanced Frontend:**
+  - Admin view: Stats dashboard, filters, create/edit/delete reviews, complete review dialog
+  - Employee view: See own reviews, submit self-assessment, view completed reviews
+  - Visual rating display with star icons
+  - Alert banner for pending self-assessments
+
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn/UI, React Router
 - **Backend:** FastAPI, Pydantic, JWT
