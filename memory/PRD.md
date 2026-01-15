@@ -159,6 +159,12 @@ Build a full-stack HR platform with:
 - **/api/recruitment/stats** - Overall recruitment stats
 - **/api/workflows/** - Workflow templates
 - **/api/workflow-instances/** - Active approval requests
+- **/api/onboarding-templates/** - Onboarding templates CRUD
+- **/api/onboardings/** - Onboarding instances CRUD
+- **/api/onboardings/my** - Employee's own onboarding
+- **/api/onboardings/stats** - Onboarding statistics
+- **/api/onboardings/{id}/tasks/{index}** - Update task completion
+- **/api/onboardings/{id}/feedback** - Submit feedback
 
 ## Credentials
 - Admin: `admin@hrplatform.com` / `admin123`
