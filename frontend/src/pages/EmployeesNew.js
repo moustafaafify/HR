@@ -333,16 +333,17 @@ const EmployeesNew = () => {
         <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {t('employees')}
         </h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={() => openDialog()} 
-              data-testid="add-employee-button"
-              className="rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl"
-            >
-              <Plus size={20} className="me-2" />
-              {t('addNew')}
-            </Button>
+        {isAdmin && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                onClick={() => openDialog()} 
+                data-testid="add-employee-button"
+                className="rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl"
+              >
+                <Plus size={20} className="me-2" />
+                {t('addNew')}
+              </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
