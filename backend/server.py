@@ -600,6 +600,14 @@ async def get_attendance(employee_id: Optional[str] = None, current_user: User =
     records = await db.attendance.find(query, {"_id": 0}).to_list(1000)
     return [Attendance(**r) for r in records]
 
+@api_router.put("/attendance/{attendance_id}", response_model=Attendance)
+async def update_attendance(attendance_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    await db.attendance.update_one({"id": attendance_id}, {"$set": data})
+    record = await db.attendance.find_one({"id": attendance_id}, {"_id": 0})
+    if not record:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return Attendance(**record)
+
 # ============= PERFORMANCE REVIEW ROUTES =============
 
 @api_router.post("/reviews", response_model=PerformanceReview)
