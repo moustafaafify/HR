@@ -483,6 +483,146 @@ const Documents = () => {
     }
   };
 
+  // Template handlers
+  const handleSaveTemplate = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingTemplate) {
+        await axios.put(`${API}/document-templates/${editingTemplate.id}`, templateForm);
+        toast.success('Template updated');
+      } else {
+        await axios.post(`${API}/document-templates`, templateForm);
+        toast.success('Template created');
+      }
+      fetchTemplates();
+      setTemplateDialogOpen(false);
+      resetTemplateForm();
+    } catch (error) {
+      toast.error('Failed to save template');
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId) => {
+    if (!window.confirm('Are you sure you want to delete this template?')) return;
+    try {
+      await axios.delete(`${API}/document-templates/${templateId}`);
+      toast.success('Template deleted');
+      fetchTemplates();
+    } catch (error) {
+      toast.error('Failed to delete template');
+    }
+  };
+
+  const resetTemplateForm = () => {
+    setTemplateForm({
+      name: '',
+      description: '',
+      document_type_id: '',
+      category_id: '',
+      default_priority: 'normal',
+      document_url: '',
+      instructions: ''
+    });
+    setEditingTemplate(null);
+  };
+
+  // Type handlers
+  const handleSaveType = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingType) {
+        await axios.put(`${API}/document-types/${editingType.id}`, typeForm);
+        toast.success('Document type updated');
+      } else {
+        await axios.post(`${API}/document-types`, typeForm);
+        toast.success('Document type created');
+      }
+      fetchDocumentTypes();
+      setTypeDialogOpen(false);
+      setTypeForm({ name: '', icon: '📄', color: 'bg-slate-100 text-slate-700' });
+      setEditingType(null);
+    } catch (error) {
+      toast.error('Failed to save document type');
+    }
+  };
+
+  const handleDeleteType = async (typeId) => {
+    if (!window.confirm('Are you sure you want to delete this document type?')) return;
+    try {
+      await axios.delete(`${API}/document-types/${typeId}`);
+      toast.success('Document type deleted');
+      fetchDocumentTypes();
+    } catch (error) {
+      toast.error('Failed to delete document type');
+    }
+  };
+
+  const addDefaultTypes = async () => {
+    try {
+      for (const type of DEFAULT_TYPES) {
+        await axios.post(`${API}/document-types`, type);
+      }
+      toast.success('Default types added');
+      fetchDocumentTypes();
+    } catch (error) {
+      toast.error('Failed to add default types');
+    }
+  };
+
+  // Category handlers
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingCategory) {
+        await axios.put(`${API}/document-categories/${editingCategory.id}`, categoryForm);
+        toast.success('Category updated');
+      } else {
+        await axios.post(`${API}/document-categories`, categoryForm);
+        toast.success('Category created');
+      }
+      fetchDocumentCategories();
+      setCategoryDialogOpen(false);
+      setCategoryForm({ name: '', color: 'bg-slate-100 text-slate-700' });
+      setEditingCategory(null);
+    } catch (error) {
+      toast.error('Failed to save category');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    try {
+      await axios.delete(`${API}/document-categories/${categoryId}`);
+      toast.success('Category deleted');
+      fetchDocumentCategories();
+    } catch (error) {
+      toast.error('Failed to delete category');
+    }
+  };
+
+  const addDefaultCategories = async () => {
+    try {
+      for (const cat of DEFAULT_CATEGORIES) {
+        await axios.post(`${API}/document-categories`, cat);
+      }
+      toast.success('Default categories added');
+      fetchDocumentCategories();
+    } catch (error) {
+      toast.error('Failed to add default categories');
+    }
+  };
+
+  // Helper functions for dynamic types/categories
+  const getTypeName = (typeId) => {
+    const type = documentTypes.find(t => t.id === typeId);
+    return type ? type.name : typeId;
+  };
+
+  const getCategoryName = (categoryId) => {
+    const cat = documentCategories.find(c => c.id === categoryId);
+    return cat ? cat.name : categoryId;
+  };
+
   const resetForm = () => {
     setDocumentForm({
       title: '',
