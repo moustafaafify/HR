@@ -32,7 +32,8 @@ import {
   Megaphone,
   AlertOctagon,
   Gavel,
-  Plane
+  Plane,
+  Award
 } from 'lucide-react';
 
 const Layout = () => {
