@@ -140,25 +140,15 @@ const Documents = () => {
     document_url: '',
     priority: 'normal',
     due_date: '',
-    tags: ''
+    tags: '',
+    assign_to_employees: false,
+    employee_ids: []
   });
   
   // File upload state
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-  
-  // Assignment form for admin
-  const [assignForm, setAssignForm] = useState({
-    title: '',
-    description: '',
-    document_type: 'policy',
-    category: 'hr',
-    document_url: '',
-    priority: 'normal',
-    due_date: '',
-    employee_ids: []
-  });
-  const [assignUploadedFile, setAssignUploadedFile] = useState(null);
+  const [templateUploadedFile, setTemplateUploadedFile] = useState(null);
   
   // Template form
   const [templateForm, setTemplateForm] = useState({
