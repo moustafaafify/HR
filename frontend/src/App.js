@@ -84,6 +84,7 @@ function AppRoutes() {
         <Route path="recognition" element={<Recognition />} />
         <Route path="team-calendar" element={<TeamCalendar />} />
         <Route path="succession" element={<SuccessionPlanning />} />
+        <Route path="skills" element={<Skills />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
