@@ -7550,7 +7550,8 @@ async def get_recognition_categories(current_user: User = Depends(get_current_us
             cat["created_at"] = datetime.now(timezone.utc).isoformat()
             cat["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.recognition_categories.insert_many(default_categories)
-        categories = default_categories
+        # Re-fetch to exclude _id
+        categories = await db.recognition_categories.find({}, {"_id": 0}).to_list(100)
     
     return categories
 
