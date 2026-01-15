@@ -36,11 +36,16 @@ class TestRoleAssignment:
         
         yield
         
-        # Cleanup: Delete test employees
-        employees = self.session.get(f"{BASE_URL}/api/employees").json()
-        for emp in employees:
-            if emp.get("full_name", "").startswith("TEST_"):
-                self.session.delete(f"{BASE_URL}/api/employees/{emp['id']}")
+        # Cleanup: Delete test employees (with error handling for rate limiting)
+        try:
+            response = self.session.get(f"{BASE_URL}/api/employees")
+            if response.status_code == 200:
+                employees = response.json()
+                for emp in employees:
+                    if emp.get("full_name", "").startswith("TEST_"):
+                        self.session.delete(f"{BASE_URL}/api/employees/{emp['id']}")
+        except Exception:
+            pass  # Ignore cleanup errors
     
     # ============= ROLES API TESTS =============
     
