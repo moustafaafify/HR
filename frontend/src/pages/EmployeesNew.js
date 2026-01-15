@@ -1021,6 +1021,10 @@ const EmployeesNew = () => {
                   <p className="font-medium text-slate-900">{getManagerName(viewingEmp.reporting_manager_id)}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-slate-500">Role</p>
+                  <p className="font-medium text-slate-900">{getRoleName(viewingEmp.role_id)}</p>
+                </div>
+                <div>
                   <p className="text-sm text-slate-500">Employment Status</p>
                   <p className="font-medium text-slate-900">{viewingEmp.employment_status || '-'}</p>
                 </div>
