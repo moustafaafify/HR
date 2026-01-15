@@ -410,19 +410,147 @@ const Training = () => {
   const getDifficultyInfo = (level) => DIFFICULTY_LEVELS.find(d => d.value === level) || DIFFICULTY_LEVELS[0];
   const getContentTypeInfo = (type) => CONTENT_TYPES.find(c => c.value === type) || CONTENT_TYPES[0];
 
+  // Training Request constants for employees
+  const TRAINING_TYPES_LIST = [
+    { value: 'course', label: 'Course' },
+    { value: 'certification', label: 'Certification' },
+    { value: 'workshop', label: 'Workshop' },
+    { value: 'conference', label: 'Conference' },
+    { value: 'online', label: 'Online Course' },
+    { value: 'seminar', label: 'Seminar' },
+    { value: 'bootcamp', label: 'Bootcamp' }
+  ];
+
+  const TRAINING_CATEGORIES_LIST = [
+    { value: 'professional', label: 'Professional Development' },
+    { value: 'technical', label: 'Technical Skills' },
+    { value: 'leadership', label: 'Leadership & Management' },
+    { value: 'compliance', label: 'Compliance & Regulatory' },
+    { value: 'soft_skills', label: 'Soft Skills' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  const REQUEST_STATUS = [
+    { value: 'pending', label: 'Pending', color: 'bg-slate-100 text-slate-700' },
+    { value: 'submitted', label: 'Submitted', color: 'bg-blue-100 text-blue-700' },
+    { value: 'under_review', label: 'Under Review', color: 'bg-amber-100 text-amber-700' },
+    { value: 'approved', label: 'Approved', color: 'bg-emerald-100 text-emerald-700' },
+    { value: 'rejected', label: 'Rejected', color: 'bg-rose-100 text-rose-700' },
+    { value: 'in_progress', label: 'In Progress', color: 'bg-indigo-100 text-indigo-700' },
+    { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-700' }
+  ];
+
+  const getRequestStatusInfo = (status) => REQUEST_STATUS.find(s => s.value === status) || REQUEST_STATUS[0];
+
   // Employee View
   if (!isAdmin) {
+    // State for training requests
+    const [employeeTab, setEmployeeTab] = useState('assigned');
+    const [myRequests, setMyRequests] = useState([]);
+    const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+    const [editingRequest, setEditingRequest] = useState(null);
+    const [requestForm, setRequestForm] = useState({
+      title: '', description: '', training_type: 'course', category: 'professional',
+      provider: '', provider_url: '', cost: '', currency: 'USD',
+      start_date: '', end_date: '', duration_hours: '', location: 'online',
+      objectives: '', expected_outcomes: ''
+    });
+
+    // Fetch training requests
+    const fetchMyRequests = async () => {
+      try {
+        const response = await axios.get(`${API}/training-requests/my`);
+        setMyRequests(response.data);
+      } catch (error) {
+        console.error('Failed to fetch my requests:', error);
+      }
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { fetchMyRequests(); }, []);
+
+    const handleRequestSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const formData = {
+          ...requestForm,
+          cost: parseFloat(requestForm.cost) || 0,
+          duration_hours: parseInt(requestForm.duration_hours) || null,
+          status: 'submitted'
+        };
+        if (editingRequest) {
+          await axios.put(`${API}/training-requests/${editingRequest.id}`, formData);
+          toast.success('Request updated');
+        } else {
+          await axios.post(`${API}/training-requests`, formData);
+          toast.success('Training request submitted!');
+        }
+        fetchMyRequests();
+        setRequestDialogOpen(false);
+        setEditingRequest(null);
+        setRequestForm({
+          title: '', description: '', training_type: 'course', category: 'professional',
+          provider: '', provider_url: '', cost: '', currency: 'USD',
+          start_date: '', end_date: '', duration_hours: '', location: 'online',
+          objectives: '', expected_outcomes: ''
+        });
+      } catch (error) {
+        toast.error('Failed to submit request');
+      }
+    };
+
+    const handleDeleteRequest = async (requestId) => {
+      if (!window.confirm('Delete this request?')) return;
+      try {
+        await axios.delete(`${API}/training-requests/${requestId}`);
+        toast.success('Request deleted');
+        fetchMyRequests();
+      } catch (error) {
+        toast.error('Failed to delete request');
+      }
+    };
+
+    const openEditRequest = (request) => {
+      setEditingRequest(request);
+      setRequestForm({
+        title: request.title || '',
+        description: request.description || '',
+        training_type: request.training_type || 'course',
+        category: request.category || 'professional',
+        provider: request.provider || '',
+        provider_url: request.provider_url || '',
+        cost: request.cost?.toString() || '',
+        currency: request.currency || 'USD',
+        start_date: request.start_date || '',
+        end_date: request.end_date || '',
+        duration_hours: request.duration_hours?.toString() || '',
+        location: request.location || 'online',
+        objectives: request.objectives || '',
+        expected_outcomes: request.expected_outcomes || ''
+      });
+      setRequestDialogOpen(true);
+    };
+
     return (
       <div data-testid="training-page" className="space-y-4 sm:space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            My Training
-          </h1>
-          <p className="text-slate-500 text-sm sm:text-base mt-1">Complete your assigned training courses</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              My Training
+            </h1>
+            <p className="text-slate-500 text-sm sm:text-base mt-1">Complete assigned courses and request new training</p>
+          </div>
+          <Button 
+            onClick={() => { setEditingRequest(null); setRequestForm({ title: '', description: '', training_type: 'course', category: 'professional', provider: '', provider_url: '', cost: '', currency: 'USD', start_date: '', end_date: '', duration_hours: '', location: 'online', objectives: '', expected_outcomes: '' }); setRequestDialogOpen(true); }}
+            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2"
+          >
+            <Plus size={18} />
+            Request Training
+          </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
             <p className="text-2xl font-bold text-slate-700">{myAssignments.length}</p>
             <p className="text-xs text-slate-500">Assigned</p>
@@ -441,142 +569,166 @@ const Training = () => {
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
             <p className="text-2xl font-bold text-amber-600">
-              {myAssignments.filter(a => a.due_date && new Date(a.due_date) < new Date() && a.status !== 'completed').length}
+              {myRequests.filter(r => ['pending', 'submitted', 'under_review'].includes(r.status)).length}
             </p>
-            <p className="text-xs text-slate-500">Overdue</p>
+            <p className="text-xs text-slate-500">Requests Pending</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <p className="text-2xl font-bold text-green-600">
+              {myRequests.filter(r => r.status === 'approved').length}
+            </p>
+            <p className="text-xs text-slate-500">Approved</p>
           </div>
         </div>
 
-        {/* Assigned Courses */}
-        <div className="space-y-4">
-          {myAssignments.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-              <GraduationCap size={48} className="mx-auto mb-4 text-slate-300" />
-              <p className="text-slate-500">No training assigned yet</p>
-            </div>
-          ) : (
-            myAssignments.map((assignment) => {
-              const course = assignment.course || {};
-              const difficultyInfo = getDifficultyInfo(course.difficulty_level);
-              const ContentIcon = getContentTypeInfo(course.content_type).icon;
-              const isOverdue = assignment.due_date && new Date(assignment.due_date) < new Date() && assignment.status !== 'completed';
-              
-              return (
-                <div key={assignment.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="flex flex-col sm:flex-row">
-                    {/* Thumbnail */}
-                    <div className="sm:w-48 h-32 sm:h-auto bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      {course.thumbnail_url ? (
-                        <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <ContentIcon size={40} className="text-white/80" />
-                      )}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 p-4 sm:p-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="font-bold text-slate-900">{course.title}</h3>
-                            {course.is_mandatory && (
-                              <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs font-bold">Required</span>
-                            )}
-                            {isOverdue && (
-                              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">Overdue</span>
-                            )}
-                          </div>
-                          <p className="text-sm text-slate-500 line-clamp-2">{course.description}</p>
-                          <div className="flex items-center gap-3 mt-2 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${difficultyInfo.color}`}>
-                              {difficultyInfo.label}
-                            </span>
-                            {course.duration_minutes && (
-                              <span className="text-xs text-slate-400 flex items-center gap-1">
-                                <Clock size={12} />
-                                {course.duration_minutes} min
-                              </span>
-                            )}
-                            {assignment.due_date && (
-                              <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-amber-600' : 'text-slate-400'}`}>
-                                Due: {new Date(assignment.due_date).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Progress & Actions */}
-                        <div className="text-right flex flex-col items-end gap-2">
-                          {assignment.status === 'completed' ? (
-                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center gap-1">
-                              <CheckCircle2 size={14} />
-                              Completed
-                            </span>
-                          ) : assignment.status === 'in_progress' ? (
-                            <>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-indigo-600">{assignment.progress || 0}%</p>
-                                <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                  <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${assignment.progress || 0}%` }} />
-                                </div>
-                              </div>
-                              <Button
-                                onClick={() => { setSelectedAssignment(assignment); setCompleteDialogOpen(true); }}
-                                size="sm"
-                                className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
-                              >
-                                <CheckCircle2 size={14} className="mr-1" />
-                                Complete
-                              </Button>
-                            </>
+        {/* Tabs */}
+        <Tabs value={employeeTab} onValueChange={setEmployeeTab} className="w-full">
+          <TabsList className="bg-slate-100 p-1 rounded-xl w-full sm:w-auto flex">
+            <TabsTrigger value="assigned" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-3 sm:px-4">
+              <BookOpen size={14} />
+              Assigned Courses
+              {myAssignments.length > 0 && <span className="ml-1 px-1.5 py-0.5 bg-indigo-500 text-white text-xs rounded-full">{myAssignments.length}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-3 sm:px-4">
+              <GraduationCap size={14} />
+              My Requests
+              {myRequests.length > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs rounded-full">{myRequests.length}</span>}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Assigned Courses Tab */}
+          <TabsContent value="assigned" className="mt-4">
+            <div className="space-y-4">
+              {myAssignments.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                  <BookOpen size={48} className="mx-auto mb-4 text-slate-300" />
+                  <p className="text-slate-500">No training assigned yet</p>
+                  <p className="text-sm text-slate-400 mt-1">Request training to get started!</p>
+                </div>
+              ) : (
+                myAssignments.map((assignment) => {
+                  const course = assignment.course || {};
+                  const difficultyInfo = getDifficultyInfo(course.difficulty_level);
+                  const ContentIcon = getContentTypeInfo(course.content_type).icon;
+                  const isOverdue = assignment.due_date && new Date(assignment.due_date) < new Date() && assignment.status !== 'completed';
+                  
+                  return (
+                    <div key={assignment.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                      <div className="flex flex-col sm:flex-row">
+                        <div className="sm:w-48 h-32 sm:h-auto bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                          {course.thumbnail_url ? (
+                            <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
                           ) : (
-                            <Button
-                              onClick={() => handleStartTraining(assignment.id)}
-                              size="sm"
-                              className="rounded-xl bg-indigo-600 hover:bg-indigo-700"
-                            >
-                              <Play size={14} className="mr-1" />
-                              Start
-                            </Button>
+                            <ContentIcon size={40} className="text-white/80" />
+                          )}
+                        </div>
+                        <div className="flex-1 p-4 sm:p-5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <h3 className="font-bold text-slate-900">{course.title}</h3>
+                                {course.is_mandatory && <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs font-bold">Required</span>}
+                                {isOverdue && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">Overdue</span>}
+                              </div>
+                              <p className="text-sm text-slate-500 line-clamp-2">{course.description}</p>
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${difficultyInfo.color}`}>{difficultyInfo.label}</span>
+                                {course.duration_minutes && <span className="text-xs text-slate-400 flex items-center gap-1"><Clock size={12} />{course.duration_minutes} min</span>}
+                                {assignment.due_date && <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-amber-600' : 'text-slate-400'}`}>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>}
+                              </div>
+                            </div>
+                            <div className="text-right flex flex-col items-end gap-2">
+                              {assignment.status === 'completed' ? (
+                                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14} />Completed</span>
+                              ) : assignment.status === 'in_progress' ? (
+                                <>
+                                  <div className="text-right">
+                                    <p className="text-lg font-bold text-indigo-600">{assignment.progress || 0}%</p>
+                                    <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                      <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${assignment.progress || 0}%` }} />
+                                    </div>
+                                  </div>
+                                  <Button onClick={() => { setSelectedAssignment(assignment); setCompleteDialogOpen(true); }} size="sm" className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
+                                    <CheckCircle2 size={14} className="mr-1" />Complete
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button onClick={() => handleStartTraining(assignment.id)} size="sm" className="rounded-xl bg-indigo-600 hover:bg-indigo-700">
+                                  <Play size={14} className="mr-1" />Start
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          {assignment.status !== 'assigned' && (
+                            <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2 flex-wrap">
+                              {course.video_url && <a href={course.video_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition-colors"><Video size={14} />Watch Video</a>}
+                              {course.document_url && <a href={course.document_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-purple-100 transition-colors"><FileText size={14} />View Document</a>}
+                              {course.external_link && <a href={course.external_link} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-50 text-slate-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors"><Globe size={14} />External Link</a>}
+                            </div>
                           )}
                         </div>
                       </div>
-                      
-                      {/* Content Links */}
-                      {assignment.status !== 'assigned' && (
-                        <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2 flex-wrap">
-                          {course.video_url && (
-                            <a href={course.video_url} target="_blank" rel="noopener noreferrer" 
-                               className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition-colors">
-                              <Video size={14} />
-                              Watch Video
-                            </a>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </TabsContent>
+
+          {/* My Requests Tab */}
+          <TabsContent value="requests" className="mt-4">
+            <div className="space-y-4">
+              {myRequests.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                  <GraduationCap size={48} className="mx-auto mb-4 text-slate-300" />
+                  <p className="text-slate-500">No training requests yet</p>
+                  <Button onClick={() => setRequestDialogOpen(true)} variant="outline" className="mt-4 rounded-xl">
+                    <Plus size={16} className="mr-2" />Request Your First Training
+                  </Button>
+                </div>
+              ) : (
+                myRequests.map((request) => {
+                  const statusInfo = getRequestStatusInfo(request.status);
+                  return (
+                    <div key={request.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="font-bold text-slate-900">{request.title}</h3>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusInfo.color}`}>{statusInfo.label}</span>
+                          </div>
+                          <p className="text-sm text-slate-500 line-clamp-2">{request.description || 'No description'}</p>
+                          <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-slate-400">
+                            <span>{TRAINING_TYPES_LIST.find(t => t.value === request.training_type)?.label || request.training_type}</span>
+                            <span>•</span>
+                            <span>{request.provider || 'No provider'}</span>
+                            {request.cost > 0 && <><span>•</span><span className="font-medium text-slate-600">${request.cost}</span></>}
+                            {request.start_date && <><span>•</span><span>{new Date(request.start_date).toLocaleDateString()}</span></>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {request.status === 'pending' && (
+                            <>
+                              <Button onClick={() => openEditRequest(request)} size="sm" variant="ghost" className="rounded-lg"><Edit2 size={16} /></Button>
+                              <Button onClick={() => handleDeleteRequest(request.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600"><Trash2 size={16} /></Button>
+                            </>
                           )}
-                          {course.document_url && (
-                            <a href={course.document_url} target="_blank" rel="noopener noreferrer"
-                               className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-purple-100 transition-colors">
-                              <FileText size={14} />
-                              View Document
-                            </a>
-                          )}
-                          {course.external_link && (
-                            <a href={course.external_link} target="_blank" rel="noopener noreferrer"
-                               className="px-3 py-1.5 bg-slate-50 text-slate-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors">
-                              <Globe size={14} />
-                              External Link
-                            </a>
-                          )}
+                        </div>
+                      </div>
+                      {request.status === 'rejected' && request.rejection_reason && (
+                        <div className="mt-3 p-3 bg-rose-50 rounded-xl text-sm text-rose-700">
+                          <strong>Rejection reason:</strong> {request.rejection_reason}
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                  );
+                })
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
 
-        {/* Complete Dialog */}
+        {/* Complete Training Dialog */}
         <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
           <DialogContent className="rounded-2xl max-w-md mx-4">
             <DialogHeader>
@@ -590,12 +742,7 @@ const Training = () => {
                 <label className="text-sm font-medium text-slate-700 mb-2 block">How was this training?</label>
                 <div className="flex gap-2 justify-center">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setCompleteForm({ ...completeForm, rating: star })}
-                      className="p-1 transition-transform hover:scale-110"
-                    >
+                    <button key={star} type="button" onClick={() => setCompleteForm({ ...completeForm, rating: star })} className="p-1 transition-transform hover:scale-110">
                       <Star size={32} className={star <= completeForm.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />
                     </button>
                   ))}
@@ -603,17 +750,79 @@ const Training = () => {
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1.5 block">Feedback (optional)</label>
-                <textarea
-                  value={completeForm.feedback}
-                  onChange={(e) => setCompleteForm({ ...completeForm, feedback: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none resize-none"
-                  rows={3}
-                  placeholder="Share your thoughts..."
-                />
+                <textarea value={completeForm.feedback} onChange={(e) => setCompleteForm({ ...completeForm, feedback: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none resize-none" rows={3} placeholder="Share your thoughts..." />
               </div>
-              <Button type="submit" className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700">
-                Mark as Completed
-              </Button>
+              <Button type="submit" className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700">Mark as Completed</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Request Training Dialog */}
+        <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
+          <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <GraduationCap className="text-indigo-600" size={24} />
+                {editingRequest ? 'Edit Training Request' : 'Request Training'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleRequestSubmit} className="space-y-4 mt-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Training Title *</label>
+                <Input value={requestForm.title} onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })} className="rounded-xl" placeholder="e.g. AWS Solutions Architect Certification" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type *</label>
+                  <Select value={requestForm.training_type} onValueChange={(v) => setRequestForm({ ...requestForm, training_type: v })}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TRAINING_TYPES_LIST.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category *</label>
+                  <Select value={requestForm.category} onValueChange={(v) => setRequestForm({ ...requestForm, category: v })}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TRAINING_CATEGORIES_LIST.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Provider</label>
+                  <Input value={requestForm.provider} onChange={(e) => setRequestForm({ ...requestForm, provider: e.target.value })} className="rounded-xl" placeholder="e.g. Coursera, Udemy" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Cost ($)</label>
+                  <Input type="number" step="0.01" value={requestForm.cost} onChange={(e) => setRequestForm({ ...requestForm, cost: e.target.value })} className="rounded-xl" placeholder="0.00" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Start Date *</label>
+                  <Input type="date" value={requestForm.start_date} onChange={(e) => setRequestForm({ ...requestForm, start_date: e.target.value })} className="rounded-xl" required />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">End Date *</label>
+                  <Input type="date" value={requestForm.end_date} onChange={(e) => setRequestForm({ ...requestForm, end_date: e.target.value })} className="rounded-xl" required />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
+                <textarea value={requestForm.description} onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" rows={2} placeholder="Describe the training program..." />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Learning Objectives</label>
+                <textarea value={requestForm.objectives} onChange={(e) => setRequestForm({ ...requestForm, objectives: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" rows={2} placeholder="What will you learn from this training?" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">{editingRequest ? 'Update Request' : 'Submit Request'}</Button>
+                <Button type="button" onClick={() => setRequestDialogOpen(false)} variant="outline" className="rounded-xl">Cancel</Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
