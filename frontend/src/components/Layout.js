@@ -21,7 +21,8 @@ import {
   Workflow,
   UserPlus,
   ClipboardCheck,
-  UserMinus
+  UserMinus,
+  Receipt
 } from 'lucide-react';
 
 const Layout = () => {
