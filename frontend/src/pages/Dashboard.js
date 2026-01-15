@@ -46,6 +46,20 @@ const Dashboard = () => {
       testId: 'stat-branches'
     },
     {
+      label: t('totalDepartments'),
+      value: stats.total_departments,
+      icon: FolderTree,
+      color: 'bg-purple-500',
+      testId: 'stat-departments'
+    },
+    {
+      label: t('totalDivisions'),
+      value: stats.total_divisions,
+      icon: Layers,
+      color: 'bg-indigo-500',
+      testId: 'stat-divisions'
+    },
+    {
       label: t('totalEmployees'),
       value: stats.total_employees,
       icon: Users,
