@@ -638,7 +638,9 @@ const Documents = () => {
       document_url: '',
       priority: 'normal',
       due_date: '',
-      tags: ''
+      tags: '',
+      assign_to_employees: false,
+      employee_ids: []
     });
     setEditingDocument(null);
     setUploadedFile(null);
@@ -654,7 +656,9 @@ const Documents = () => {
       document_url: doc.document_url || '',
       priority: doc.priority || 'normal',
       due_date: doc.due_date || '',
-      tags: doc.tags ? doc.tags.join(', ') : ''
+      tags: doc.tags ? doc.tags.join(', ') : '',
+      assign_to_employees: false,
+      employee_ids: []
     });
     setCreateDialogOpen(true);
   };
