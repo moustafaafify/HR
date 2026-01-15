@@ -179,7 +179,27 @@ class Leave(BaseModel):
     end_date: str
     reason: Optional[str] = None
     status: str = "pending"
+    half_day: bool = False
+    half_day_type: Optional[str] = None  # "morning" or "afternoon"
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class LeaveBalance(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    year: int
+    annual_leave: float = 20.0
+    annual_used: float = 0.0
+    sick_leave: float = 10.0
+    sick_used: float = 0.0
+    personal_leave: float = 5.0
+    personal_used: float = 0.0
+    unpaid_leave: float = 0.0
+    carry_over: float = 0.0
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class Attendance(BaseModel):
     model_config = ConfigDict(extra="ignore")
