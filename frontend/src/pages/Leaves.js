@@ -66,6 +66,18 @@ const Leaves = () => {
     bereavement_leave: 5
   });
 
+  // Export state
+  const [exportRequestsDialogOpen, setExportRequestsDialogOpen] = useState(false);
+  const [exportBalancesDialogOpen, setExportBalancesDialogOpen] = useState(false);
+  const [exportRequestsFilters, setExportRequestsFilters] = useState({
+    start_date: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
+    end_date: new Date().toISOString().split('T')[0],
+    employee_id: 'all',
+    status: 'all',
+    leave_type: 'all'
+  });
+  const [exportBalancesYear, setExportBalancesYear] = useState(new Date().getFullYear());
+
   // Role-based access
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
   const isManager = user?.role === 'branch_manager' || isAdmin;
