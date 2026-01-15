@@ -100,17 +100,67 @@ class Employee(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
+    
+    # Personal & Contact Information
     full_name: str
-    email: str
-    phone: Optional[str] = None
+    employee_id: Optional[str] = None
+    profile_picture: Optional[str] = None
+    home_address: Optional[str] = None
+    personal_phone: Optional[str] = None
+    work_phone: Optional[str] = None
+    personal_email: str
+    work_email: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relationship: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    marital_status: Optional[str] = None
+    ssn: Optional[str] = None
+    
+    # Employment & Job Details
+    job_title: Optional[str] = None
     department_id: Optional[str] = None
     division_id: Optional[str] = None
     branch_id: str
     corporation_id: str
-    position: Optional[str] = None
+    work_location: Optional[str] = None
+    reporting_manager_id: Optional[str] = None
     hire_date: Optional[str] = None
+    employment_status: str = "full-time"
+    probation_end_date: Optional[str] = None
+    employment_history: Optional[str] = None
+    
+    # Payroll & Benefits
+    bank_account_number: Optional[str] = None
+    bank_name: Optional[str] = None
+    bank_routing_number: Optional[str] = None
+    tax_code: Optional[str] = None
     salary: Optional[float] = None
     currency: str = "USD"
+    benefits_enrolled: Optional[str] = None
+    
+    # Time, Attendance & Leave
+    holiday_allowance: Optional[float] = None
+    sick_leave_allowance: Optional[float] = None
+    working_hours: Optional[str] = None
+    shift_pattern: Optional[str] = None
+    
+    # Talent & Compliance
+    certifications: Optional[str] = None
+    professional_memberships: Optional[str] = None
+    skills: Optional[str] = None
+    performance_notes: Optional[str] = None
+    visa_status: Optional[str] = None
+    passport_number: Optional[str] = None
+    right_to_work_verified: bool = False
+    dbs_check_status: Optional[str] = None
+    
+    # Digital Files & Documents
+    documents: Optional[str] = None
+    company_assets: Optional[str] = None
+    
+    # Status
     status: str = "active"
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
