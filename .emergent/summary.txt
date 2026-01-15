@@ -19,27 +19,20 @@ The user wants to create a full-stack HR platform.
 -   **Offboarding Module:** A system to create and manage offboarding workflows for departing employees.
 -   **Expense Claims Module:** A system for employees to submit and track expense claims.
 -   **Training Module:** A system for admins to manage courses and for employees to view assigned training and request new training.
+-   **Document Approvals Module:** A system for employees to submit documents for approval and for admins to manage them. Admins can also manage templates, types, and categories, and assign documents to employees for acknowledgment.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A comprehensive full-stack HR platform with a responsive UI. The following modules are implemented:
--   **Core:** User Authentication (JWT), RBAC, Organizational Hierarchy Management, Employee Management.
--   **Workflow-driven Modules:**
-    -   **Leave:** Request/approval, balance tracking, CSV export.
-    -   **Time Corrections:** Request/approval system.
-    -   **Onboarding (Tested):** Admins manage templates/assignments; employees view tasks.
-    -   **Offboarding (Tested):** Admins manage templates/assignments; employees view tasks.
-    -   **Expense Claims (Implemented, Not Tested):** Admins manage claims; employees submit them.
-    -   **Training Requests (Implemented, Not Tested):** Admins manage requests & courses; employees view assigned courses and can request new training.
--   **Standalone Modules:**
-    -   **Attendance:** Clock-in/out, admin management, CSV export.
-    -   **Performance Reviews:** Admin creation and employee self-assessment.
-    -   **Recruitment:** Job postings, Kanban pipeline, referrals.
-    -   **Training Course Management:** Admins can create courses with video/document uploads, manage categories/types, and assign courses to employees.
+A comprehensive full-stack HR platform. In addition to previously implemented modules (Auth, RBAC, Leave, Onboarding, Offboarding, etc.), the following has been added or significantly enhanced:
+-   **Training Module:** Admins can manage employee training requests (approve, reject, delete). Employees can submit requests. A critical React Hooks bug preventing the page from loading was fixed.
+-   **Document Approvals Module:** A full-featured module has been implemented.
+    -   **Employees:** Can submit documents for approval (by uploading a file or providing a link) and can view/acknowledge documents assigned to them by an admin.
+    -   **Admins:** Can review and manage employee-submitted documents (approve, reject, etc.). They can also create and assign documents to employees for acknowledgment.
+    -   **Admin Management:** Full CRUD functionality for Document Templates, Document Types (with icons), and Document Categories (with colors).
 
 **Last working item**:
--   **Last item agent was working:** Following the user request also allow employees to request training plus what is already installed, the agent began enhancing the employee-facing section of the Training page (). The goal is to create a tabbed interface for employees to switch between viewing their Assigned Courses and a new My Requests section where they can submit and track training requests.
+-   **Last item agent was working:** The agent was implementing a user request to refactor the Document Approvals module. The goal was to: 1) Add file upload capability to Document Templates. 2) Remove the separate Assign to Employees button from the main admin view. 3) Integrate the assignment functionality directly into the Create Document and Use Template flows.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
 -   **Which testing method agent to use?** both
@@ -55,48 +48,57 @@ A comprehensive full-stack HR platform with a responsive UI. The following modul
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Frontend
     -   **Blocked on other issue:** None
+-   **Issue 2: Data seeding inconsistency (P1).**
+    -   **Description:** The test employee records have  values that do not match the uid=0(root) gid=0(root) groups=0(root) of the actual user accounts created by the authentication system. This caused failures in features that link user actions to employee profiles.
+    -   **Attempted fixes:** The agent implemented a patch in the backend to look up employees by email ( or ) as a fallback if the  lookup fails. This fixed the immediate problem for document submissions.
+    -   **Next debug checklist:** Review the data seeding process to ensure  in the  collection matches the uid=0(root) gid=0(root) groups=0(root) in the  collection for test accounts.
+    -   **Why fix this issue and what will be achieved with the fix?** This will remove the need for the backend patch, making the data model more robust and preventing similar bugs in other modules.
+    -   **Status:** IN PROGRESS (Patched, not fully resolved)
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Finalize & Test Employee Training Page Enhancements (P0)**
-    -   **Where to resume:** Continue editing . The current task is to replace the existing employee view with a new component that includes two tabs: My Courses (showing assigned training) and My Requests (showing a list of their training requests and a button to create a new one).
-    -   **What will be achieved with this?** A unified Training page for employees that allows them to manage both their assigned learning path and their self-initiated training requests.
+-   **Task 1: Finalize & Test Document Module Refactor (P0)**
+    -   **Where to resume:** The agent has modified  and  to support the new assignment flow and file uploads for templates. However, these changes have not been tested. The immediate next step is to test the entire document creation and assignment flow for admins.
+    -   **What will be achieved with this?** A streamlined UX for admins, allowing them to create and assign documents in a single step, fulfilling the user's latest request.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on something:** None
 -   **Task 2: Comprehensive Testing of Expense Claims Module (P1)**
-    -   **Where to resume:** The module's backend and frontend have been built (), and basic API tests passed. However, it has not undergone full functional testing.
-    -   **What will be achieved with this?** A fully verified and stable Expense Claims module, integrated with the workflow system.
+    -   **Where to resume:** The module's backend and frontend () are built, but it has not undergone full functional testing.
+    -   **What will be achieved with this?** A fully verified and stable Expense Claims module.
     -   **Status:** NOT STARTED
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on something:** None
 -   **Task 3: Comprehensive Testing of Enhanced Training Module (P1)**
-    -   **Where to resume:** The Training module was significantly enhanced with course management, assignments, and type/category management. Basic API tests and screenshots were taken, but full user flow testing is pending.
-    -   **What will be achieved with this?** A fully verified and stable Training Management module for admins and the initial employee view.
+    -   **Where to resume:** While several bugs were fixed and features added, the entire module (admin course management, employee assignments, and requests) has not been tested end-to-end.
+    -   **What will be achieved with this?** A fully verified and stable Training Management module.
     -   **Status:** NOT STARTED
     -   **Should Test frontend/backend/both after fix?** Both
-    -   **Blocked on something:** Task 1
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   **Implement Document Approvals Module (P1):** Build the next workflow-driven module as planned.
 -   **Future Tasks:**
     -   Implement budget allocation per department/division.
     -   Add a comprehensive reporting and analytics dashboard.
     -   Create a bulk employee import feature using CSV files.
     -   Add an employment history timeline view to the employee profile.
-    -   Refactor large frontend components (, , , , , , ) into smaller sub-components.
+    -   Refactor large frontend components (, , , , , , , and now ) into smaller sub-components.
 
 **Completed work in this session**
--   **Onboarding Module (DONE):** Fully implemented and passed comprehensive testing via .
--   **Offboarding Module (DONE):** Implemented backend models/APIs and a full-featured frontend page. Passed comprehensive testing via .
--   **Expense Claims Module (Implemented):** Implemented backend model/APIs () and a frontend page ().
--   **Training Module Enhancement (Implemented):** Significantly enhanced the backend () and frontend () to include admin-side course management, video/document uploads, employee assignments, and management of course types/categories.
--   **Bug Fix:** Corrected a  vs  function name mismatch in .
--   **Bug Fix:** Added the My Onboarding link to the employee sidebar, which was missed during initial implementation.
+-   **Bug Fix: Critical React Hooks Violation (DONE):** Fixed a fatal error in  caused by conditional hook calls, which was crashing the employee-facing training page.
+-   **Feature: Admin Training Request Management (DONE):** Implemented an admin-facing Requests tab in the Training module to view, approve, reject, and delete employee training submissions.
+-   **Feature: Document Approvals Module (DONE):** Built a new, comprehensive module from scratch.
+    -   **Employee View:** Submit documents for approval, view assigned documents, and acknowledge them.
+    -   **Admin View:** Review/manage employee submissions, create documents (with file upload), and assign documents for acknowledgment.
+-   **Feature: Document Templates and Taxonomies (DONE):** Implemented full CRUD for Document Templates, Types, and Categories within the Documents module, including file uploads for templates.
+-   **Bug Fix: Data Inconsistency Patch (DONE):** Addressed an issue where employee profiles couldn't be found by adding a fallback lookup by email in .
+-   **Bug Fix: Admin Create Document Dialog (DONE):** Fixed an issue where the create/edit dialog was not rendered in the admin view of the Documents page.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Lack of a proper data migration strategy.**
-    -   **Debug checklist:** The schema is evolving rapidly with new modules, but there are no scripts to update existing database documents. This forces defensive coding (e.g., checking for missing fields) and risks data integrity issues. A fix involves creating a data migration script that can be run to update database documents to match new Pydantic models.
+    -   **Debug checklist:** The schema is evolving rapidly, but there are no scripts to update existing database documents. This risks data integrity and requires defensive coding. A fix involves creating a data migration script.
     -   **Why to solve this issue and what will be achieved with this?** Ensures data integrity, prevents future validation errors, and simplifies API code.
     -   **Should Test frontend/backend/both after fix:** Backend
     -   **Is recurring issue?** Y
@@ -104,90 +106,83 @@ A comprehensive full-stack HR platform with a responsive UI. The following modul
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Employee data inconsistency causing API failures.
 -   **Recurrence count:** 3+
--   **Status:** NOT STARTED (The root cause—lack of data migrations—remains unaddressed).
+-   **Status:** IN PROGRESS (A patch was applied by adding an email-based lookup, but the underlying data seeding issue is not resolved).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Frontend:** React, Tailwind CSS, React Router, , Shadcn UI, .
--   **Backend:** FastAPI, Pydantic, JWT for authentication.
+-   **Backend:** FastAPI, Pydantic, JWT for authentication, serving static files for uploads.
 -   **Database:** MongoDB.
 -   **Architecture:** Single-page application (SPA) with a RESTful API backend.
 
 **key DB schema**
--   **expenses:** Enhanced with , , , , , , , etc.
--   **training_requests:** Enhanced with , , , , , , etc.
--   **training_courses (New):** { uid=0(root) gid=0(root) groups=0(root), , , , , , , ,  }
--   **training_assignments (New):** { uid=0(root) gid=0(root) groups=0(root), , , , ,  }
--   **training_categories (New):** { uid=0(root) gid=0(root) groups=0(root),  }
--   **training_types (New):** { uid=0(root) gid=0(root) groups=0(root),  }
--   **offboarding_templates (New):** { uid=0(root) gid=0(root) groups=0(root), , ,  }
--   **offboardings (New):** { uid=0(root) gid=0(root) groups=0(root), , , ,  }
+-   **document_assignments (New):** 
+-   **document_templates (New):** 
+-   **document_types (New):** 
+-   **document_categories (New):** 
+-   **document_approvals:** Enhanced with fields for , , etc.
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   ****: Heavily modified with new models and endpoints for Onboarding, Offboarding, Expenses, and the enhanced Training module.
--   ****: Verified and completed.
--   ****: Created and verified.
--   ****: Created.
--   ****: Created, then overwritten with a more comprehensive version, and now currently being edited again for employee-side enhancements.
--   ****: Modified to add routes for Offboarding, Expenses, and Training.
--   ****: Modified to add sidebar links for Offboarding, Expenses, and Training.
--   ****: Inspected to debug an issue.
+-   ****: Heavily modified with new models and endpoints for the Document Approvals module (including templates, types, categories, assignments, and file uploads), and bug fixes for training requests and employee lookups.
+-   ****: Heavily modified to fix a critical React hooks bug and add admin functionality for managing training requests (including deletion).
+-   ****: A new, very large file (over 2000 lines) created to manage all aspects of the Document Approvals module for both admins and employees. It includes multiple dialogs, tabs, and complex state management.
+-   ****: Modified to add the route for .
+-   ****: Modified to add the sidebar link for the Documents page.
 
 **Areas that need refactoring**:
--   The main page components (, , , , , , ) are becoming extremely large and complex. They urgently need to be broken down into smaller, single-responsibility components to improve maintainability and prevent regressions.
+-   **** is now the primary candidate for refactoring. It has become a monolithic component managing state and UI for document submissions, reviews, assignments, templates, types, and categories. It should be broken down into smaller, focused components (e.g., , , , ).
+-   The list of other large components (, , , , etc.) still needs attention.
 
 **key api endpoints**
--   **/api/offboarding-templates/**: Full CRUD for Offboarding Templates.
--   **/api/offboardings/**: Full CRUD for Offboarding instances.
--   **/api/expenses/**: Full CRUD for Expense Claims.
--   **/api/expenses/stats**: Get expense statistics.
--   **/api/training-requests/**: Full CRUD for Training Requests.
--   **/api/training/stats**: Get training statistics.
--   **/api/training/courses/**: Full CRUD for Training Courses.
--   **/api/training/assignments/**: CRUD for Course Assignments.
--   **/api/training/types/**: CRUD for Training Types.
--   **/api/training/categories/**: CRUD for Training Categories.
+-   **/api/upload/**: (New)  endpoint for uploading files.
+-   **/uploads/{filename}**: (New)  endpoint to serve uploaded static files.
+-   **/api/document-templates/**: (New) Full CRUD for Document Templates.
+-   **/api/document-types/**: (New) Full CRUD for Document Types.
+-   **/api/document-categories/**: (New) Full CRUD for Document Categories.
+-   **/api/document-assignments/**: (New) Full CRUD for assigning documents to employees.
+-   **/api/document-approvals/**: Enhanced to support new functionality.
+-   **/api/training-requests/{request_id}**: Enhanced with  method.
 
 **Critical Info for New Agent**
--   **Development Pattern:** The previous agent's pattern was to build a full module (backend and frontend), perform a quick API check and screenshot, and then move on. This has left the **Expenses** and **Training** modules implemented but not comprehensively tested. Prioritize calling  after each major module implementation is complete.
--   **Component Complexity:** The frontend page components are monolithic and difficult to manage. Be cautious when editing them and strongly consider refactoring them into smaller components as a future task.
--   **Current Task Context:** The immediate task is to finish editing  to add a tabbed view for employees, allowing them to see assigned courses and request new training.
+-   **Component Complexity:**  is extremely large and fragile. It was built rapidly by adding features upon features. Be very cautious when editing this file. The top priority for technical debt reduction should be refactoring this component.
+-   **Current Task Context:** The immediate task is to test the latest user request: merging document creation and assignment into a single workflow. The agent removed the standalone Assign button and added assignment logic to the Create Document dialog. This flow is untested.
+-   **Data Inconsistency Patch:** The backend now looks up employees by email if the  match fails. This is a temporary fix for a data seeding problem. Be aware that the root cause (mismatched IDs in the database) still exists and could affect other modules.
 
 **documents and test reports created in this job**
 -    (Updated)
--    (Onboarding test report)
--    (Offboarding test report)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  ** (In Progress):** User requested combining assigned courses and training requests on the employee training page.
-2.  ** (Completed):** User requested a full course management system for admins.
-3.  ** (Superseded):** This request was fulfilled as part of a larger training module enhancement.
-4.  ** (Implemented):** User requested the Expense Claims module.
-5.  ** (Completed):** User selected option 4 to implement the Offboarding module.
-6.  ** (Resolved):** User reported a missing sidebar link.
-7.  ** (Completed):** User selected option 1 to finalize and test the Onboarding module.
+1.  ** (In Progress):** The current task. User wants to refactor the document assignment flow.
+2.  ** (Completed):** User requested document templates, types, and categories.
+3.  ** (Completed):** User requested file upload functionality in addition to URL links for documents.
+4.  ** (Resolved):** User reported a bug where the Create Document dialog was missing for admins.
+5.  ** (Mostly Completed):** User requested three features. The document assignment part was just refactored in the latest request.
+6.  ** (Completed):** User initiated the creation of the Document Approvals module.
+7.  ** (Clarified):** User was confused about an automated test that approved a training request. The agent explained the automated testing process.
+8.  ** (Resolved):** User reported that admin couldn't see employee training requests. This was fixed by adding a Requests tab to the admin training page.
+9.  ** (User provided screenshot of error) (Resolved):** User provided a screenshot of a critical frontend crash, which was due to a React Hooks violation in .
+10. **Initial confirmation message from agent.**
 
 **Project Health Check:**
 -   **Broken:** None confirmed.
 -   **Mocked:**
-    -   **Expense Claims Module:** UI and backend are implemented but have not undergone comprehensive functional or workflow testing.
-    -   **Training Module:** The enhanced admin features and the in-progress employee view require comprehensive testing.
+    -   **Expense Claims Module:** UI and backend are implemented but have not undergone comprehensive functional testing.
+    -   **Training Module:** Enhanced features (admin course management, requests) have been added, but the module lacks comprehensive E2E testing.
+    -   **Document Module (Assignment Flow):** The newly refactored flow for creating and assigning documents in a single step is implemented but completely untested.
 
 **3rd Party Integrations**
 -   None.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (for Onboarding and Offboarding).
+-   **Testing agent used after significant changes:** NO (Agent attempted but the testing agent failed due to an error. The agent then proceeded with manual testing via screenshots).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:**
-    -   
-    -   
--   **Known regressions:** The risk of data inconsistency due to schema changes without a migration strategy persists.
+-   **Test files created:** None in this session.
+-   **Known regressions:** The data inconsistency issue remains a risk, though it has been patched for the documents module.
 
 **Credentials to test flow:**
 -   **Admin Email:** 
@@ -196,7 +191,6 @@ A comprehensive full-stack HR platform with a responsive UI. The following modul
 -   **Employee Password:** 
 
 **What agent forgot to execute**
--   The agent did not run comprehensive tests on the **Expense Claims Module** after implementing it.
--   The agent did not run comprehensive tests on the enhanced **Training Module** (admin course management features) after implementing it.
--   The agent has not yet addressed the technical debt of refactoring large frontend components.
--   The agent has not created a data seeding or migration script to manage schema changes.</analysis>
+-   The agent did not run comprehensive tests on the **Expense Claims Module** or the enhanced **Training Module** as planned in the previous handoff.
+-   The agent did not address the technical debt of refactoring large frontend components; in fact, it created a new, very large component ().
+-   The agent has not yet tested the latest refactoring of the document assignment flow.</analysis>
