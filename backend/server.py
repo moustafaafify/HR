@@ -445,9 +445,14 @@ class OnboardingTask(BaseModel):
     due_day: int = 1
     is_required: bool = True
     assigned_to_type: str = "employee"  # employee, manager, hr
+    assigned_to_id: Optional[str] = None  # Specific person if assigned_to_type is specific
     order: int = 1
     completed: bool = False
     completed_at: Optional[str] = None
+    completed_by: Optional[str] = None
+    completion_notes: Optional[str] = None
+    resource_url: Optional[str] = None  # Link to documentation/resource
+    resource_type: Optional[str] = None  # document, video, link, form
 
 class OnboardingTemplate(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -455,27 +460,38 @@ class OnboardingTemplate(BaseModel):
     name: str
     description: Optional[str] = None
     department_id: Optional[str] = None
+    position_type: Optional[str] = None  # engineering, sales, hr, etc.
     duration_days: int = 30
     tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    welcome_message: Optional[str] = None
     is_active: bool = True
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class Onboarding(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     employee_id: str
     template_id: Optional[str] = None
+    template_name: Optional[str] = None
     department_id: Optional[str] = None
+    position: Optional[str] = None
     start_date: str
-    end_date: Optional[str] = None
+    target_end_date: Optional[str] = None
+    actual_end_date: Optional[str] = None
     duration_days: int = 30
-    status: str = "in_progress"  # not_started, in_progress, completed, on_hold
+    status: str = "in_progress"  # not_started, in_progress, completed, on_hold, cancelled
     manager_id: Optional[str] = None
     hr_contact_id: Optional[str] = None
+    buddy_id: Optional[str] = None  # Onboarding buddy
     tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    welcome_message: Optional[str] = None
     completed_at: Optional[str] = None
     notes: Optional[str] = None
+    feedback: Optional[str] = None  # Employee feedback on onboarding
+    feedback_rating: Optional[int] = None  # 1-5 rating
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class PerformanceReview(BaseModel):
     model_config = ConfigDict(extra="ignore")
