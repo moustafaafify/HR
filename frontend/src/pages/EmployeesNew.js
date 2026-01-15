@@ -140,6 +140,15 @@ const EmployeesNew = () => {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const response = await axios.get(`${API}/roles`);
+      setRoles(response.data);
+    } catch (error) {
+      console.error('Failed to fetch roles:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
