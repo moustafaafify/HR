@@ -72,6 +72,7 @@ function AppRoutes() {
         <Route path="payroll" element={<Payroll />} />
         <Route path="assets" element={<Assets />} />
         <Route path="communications" element={<Communications />} />
+        <Route path="complaints" element={<Complaints />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
