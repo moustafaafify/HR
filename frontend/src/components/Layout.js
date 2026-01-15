@@ -25,16 +25,19 @@ const Layout = () => {
   const { t, currentLanguage, availableLanguages, changeLanguage, isRTL } = useLanguage();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [employeesExpanded, setEmployeesExpanded] = useState(true);
 
   const organizationItems = [
     { path: '/corporations', icon: Building2, label: t('corporations') },
     { path: '/branches', icon: GitBranch, label: t('branches'), nested: true },
   ];
 
-  const employeeItems = [
-    { path: '/employees', icon: Users, label: t('employees') },
-    { path: '/departments', icon: FolderTree, label: t('departments'), nested: true },
-    { path: '/divisions', icon: Layers, label: t('divisions'), nested: true },
+  const employeeSubItems = [
+    { path: '/departments', icon: FolderTree, label: t('departments') },
+    { path: '/divisions', icon: Layers, label: t('divisions') },
+  ];
+
+  const peopleItems = [
     { path: '/leaves', icon: Calendar, label: t('leaves') },
     { path: '/attendance', icon: Clock, label: t('attendance') },
     { path: '/performance', icon: BarChart3, label: t('performance') },
