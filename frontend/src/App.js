@@ -25,6 +25,7 @@ import Training from './pages/Training';
 import Documents from './pages/Documents';
 import Appraisals from './pages/Appraisals';
 import OrgChart from './pages/OrgChart';
+import Payroll from './pages/Payroll';
 import Layout from './components/Layout';
 import './App.css';
 
