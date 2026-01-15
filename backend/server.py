@@ -763,6 +763,287 @@ async def get_all_leave_balances(year: Optional[int] = None, current_user: User 
     balances = await db.leave_balances.find({"year": year}, {"_id": 0}).to_list(1000)
     return balances
 
+# ============= WORKFLOW ROUTES =============
+
+@api_router.post("/workflows", response_model=Workflow)
+async def create_workflow(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    workflow = Workflow(**data)
+    await db.workflows.insert_one(workflow.model_dump())
+    return workflow
+
+@api_router.get("/workflows")
+async def get_workflows(module: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {"module": module} if module else {}
+    workflows = await db.workflows.find(query, {"_id": 0}).to_list(100)
+    return workflows
+
+@api_router.get("/workflows/{workflow_id}")
+async def get_workflow(workflow_id: str, current_user: User = Depends(get_current_user)):
+    workflow = await db.workflows.find_one({"id": workflow_id}, {"_id": 0})
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow
+
+@api_router.put("/workflows/{workflow_id}")
+async def update_workflow(workflow_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.workflows.update_one({"id": workflow_id}, {"$set": data})
+    workflow = await db.workflows.find_one({"id": workflow_id}, {"_id": 0})
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow
+
+@api_router.delete("/workflows/{workflow_id}")
+async def delete_workflow(workflow_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.workflows.delete_one({"id": workflow_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return {"message": "Workflow deleted"}
+
+# Workflow Instances
+@api_router.post("/workflow-instances")
+async def create_workflow_instance(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    instance = WorkflowInstance(**data)
+    await db.workflow_instances.insert_one(instance.model_dump())
+    return instance.model_dump()
+
+@api_router.get("/workflow-instances")
+async def get_workflow_instances(module: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if module:
+        query["module"] = module
+    if status:
+        query["status"] = status
+    instances = await db.workflow_instances.find(query, {"_id": 0}).to_list(1000)
+    return instances
+
+@api_router.get("/workflow-instances/{instance_id}")
+async def get_workflow_instance(instance_id: str, current_user: User = Depends(get_current_user)):
+    instance = await db.workflow_instances.find_one({"id": instance_id}, {"_id": 0})
+    if not instance:
+        raise HTTPException(status_code=404, detail="Workflow instance not found")
+    return instance
+
+@api_router.put("/workflow-instances/{instance_id}/action")
+async def workflow_action(instance_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    action = data.get("action")  # "approve", "reject", "skip"
+    comment = data.get("comment", "")
+    
+    instance = await db.workflow_instances.find_one({"id": instance_id}, {"_id": 0})
+    if not instance:
+        raise HTTPException(status_code=404, detail="Workflow instance not found")
+    
+    workflow = await db.workflows.find_one({"id": instance["workflow_id"]}, {"_id": 0})
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    step_history = instance.get("step_history", [])
+    current_step = instance.get("current_step", 0)
+    
+    # Record the action
+    step_history.append({
+        "step": current_step,
+        "action": action,
+        "user_id": current_user.id,
+        "comment": comment,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    if action == "reject":
+        # Rejected - update instance and the referenced item
+        await db.workflow_instances.update_one(
+            {"id": instance_id},
+            {"$set": {
+                "status": "rejected",
+                "step_history": step_history,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        # Update the referenced item (leave, expense, etc.)
+        collection_map = {
+            "leave": "leaves",
+            "expense": "expenses",
+            "training": "training_requests",
+            "document": "document_approvals"
+        }
+        if instance["module"] in collection_map:
+            await db[collection_map[instance["module"]]].update_one(
+                {"id": instance["reference_id"]},
+                {"$set": {"status": "rejected", "rejection_reason": comment}}
+            )
+    elif action in ["approve", "skip"]:
+        next_step = current_step + 1
+        steps = workflow.get("steps", [])
+        
+        if next_step >= len(steps):
+            # All steps completed - approved
+            await db.workflow_instances.update_one(
+                {"id": instance_id},
+                {"$set": {
+                    "status": "approved",
+                    "current_step": next_step,
+                    "step_history": step_history,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            # Update the referenced item
+            collection_map = {
+                "leave": "leaves",
+                "expense": "expenses",
+                "training": "training_requests",
+                "document": "document_approvals"
+            }
+            if instance["module"] in collection_map:
+                await db[collection_map[instance["module"]]].update_one(
+                    {"id": instance["reference_id"]},
+                    {"$set": {
+                        "status": "approved",
+                        "approved_by": current_user.id,
+                        "approved_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+        else:
+            # Move to next step
+            await db.workflow_instances.update_one(
+                {"id": instance_id},
+                {"$set": {
+                    "status": "in_progress",
+                    "current_step": next_step,
+                    "step_history": step_history,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+    
+    return await db.workflow_instances.find_one({"id": instance_id}, {"_id": 0})
+
+# ============= EXPENSE ROUTES =============
+
+@api_router.post("/expenses")
+async def create_expense(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    expense = ExpenseClaim(**data)
+    await db.expenses.insert_one(expense.model_dump())
+    return expense.model_dump()
+
+@api_router.get("/expenses")
+async def get_expenses(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    expenses = await db.expenses.find(query, {"_id": 0}).to_list(1000)
+    return expenses
+
+@api_router.put("/expenses/{expense_id}")
+async def update_expense(expense_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if data.get("status") == "approved":
+        data["approved_by"] = current_user.id
+        data["approved_at"] = datetime.now(timezone.utc).isoformat()
+    await db.expenses.update_one({"id": expense_id}, {"$set": data})
+    expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    return expense
+
+@api_router.delete("/expenses/{expense_id}")
+async def delete_expense(expense_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.expenses.delete_one({"id": expense_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return {"message": "Expense deleted"}
+
+# ============= TRAINING ROUTES =============
+
+@api_router.post("/training-requests")
+async def create_training_request(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    training = TrainingRequest(**data)
+    await db.training_requests.insert_one(training.model_dump())
+    return training.model_dump()
+
+@api_router.get("/training-requests")
+async def get_training_requests(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    requests = await db.training_requests.find(query, {"_id": 0}).to_list(1000)
+    return requests
+
+@api_router.put("/training-requests/{request_id}")
+async def update_training_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if data.get("status") == "approved":
+        data["approved_by"] = current_user.id
+        data["approved_at"] = datetime.now(timezone.utc).isoformat()
+    await db.training_requests.update_one({"id": request_id}, {"$set": data})
+    request = await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+    return request
+
+@api_router.delete("/training-requests/{request_id}")
+async def delete_training_request(request_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.training_requests.delete_one({"id": request_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return {"message": "Training request deleted"}
+
+# ============= DOCUMENT APPROVAL ROUTES =============
+
+@api_router.post("/document-approvals")
+async def create_document_approval(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    doc = DocumentApproval(**data)
+    await db.document_approvals.insert_one(doc.model_dump())
+    return doc.model_dump()
+
+@api_router.get("/document-approvals")
+async def get_document_approvals(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    docs = await db.document_approvals.find(query, {"_id": 0}).to_list(1000)
+    return docs
+
+@api_router.put("/document-approvals/{doc_id}")
+async def update_document_approval(doc_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if data.get("status") == "approved":
+        data["approved_by"] = current_user.id
+        data["approved_at"] = datetime.now(timezone.utc).isoformat()
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": data})
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return doc
+
+# ============= ONBOARDING ROUTES =============
+
+@api_router.post("/onboarding-tasks")
+async def create_onboarding_task(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    task = OnboardingTask(**data)
+    await db.onboarding_tasks.insert_one(task.model_dump())
+    return task.model_dump()
+
+@api_router.get("/onboarding-tasks")
+async def get_onboarding_tasks(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    tasks = await db.onboarding_tasks.find(query, {"_id": 0}).to_list(1000)
+    return tasks
+
+@api_router.put("/onboarding-tasks/{task_id}")
+async def update_onboarding_task(task_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if data.get("status") == "completed":
+        data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    await db.onboarding_tasks.update_one({"id": task_id}, {"$set": data})
+    task = await db.onboarding_tasks.find_one({"id": task_id}, {"_id": 0})
+    return task
+
+@api_router.delete("/onboarding-tasks/{task_id}")
+async def delete_onboarding_task(task_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.onboarding_tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task deleted"}
+
 # ============= ATTENDANCE ROUTES =============
 
 @api_router.post("/attendance", response_model=Attendance)
