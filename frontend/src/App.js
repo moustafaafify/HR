@@ -54,6 +54,7 @@ function AppRoutes() {
         <Route path="performance" element={<Performance />} />
         <Route path="recruitment" element={<Recruitment />} />
         <Route path="onboarding" element={<Onboarding />} />
+        <Route path="offboarding" element={<Offboarding />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
