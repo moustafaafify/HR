@@ -2302,8 +2302,14 @@ async def get_my_document_approvals(current_user: User = Depends(get_current_use
     """Get current user's document approval requests"""
     employee = await db.employees.find_one({"user_id": current_user.id})
     if not employee:
-        return []
-    docs = await db.document_approvals.find({"employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        # Fallback: try to find employee by email
+        employee = await db.employees.find_one({"email": current_user.email})
+    
+    # Search by employee ID if found, otherwise by user ID
+    if employee:
+        docs = await db.document_approvals.find({"employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    else:
+        docs = await db.document_approvals.find({"employee_id": current_user.id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return docs
 
 @api_router.get("/document-approvals/stats")
