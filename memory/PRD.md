@@ -197,6 +197,14 @@ Build a full-stack HR platform with:
 - **/api/onboardings/stats** - Onboarding statistics
 - **/api/onboardings/{id}/tasks/{index}** - Update task completion
 - **/api/onboardings/{id}/feedback** - Submit feedback
+- **/api/offboarding-templates/** - Offboarding templates CRUD
+- **/api/offboardings/** - Offboarding instances CRUD
+- **/api/offboardings/my** - Employee's own offboarding
+- **/api/offboardings/stats** - Offboarding statistics
+- **/api/offboardings/{id}/tasks/{index}** - Update task completion
+- **/api/offboardings/{id}/clearance** - Update clearance status
+- **/api/offboardings/{id}/exit-interview** - Update exit interview
+- **/api/offboardings/{id}/feedback** - Submit feedback
 
 ## Credentials
 - Admin: `admin@hrplatform.com` / `admin123`
