@@ -70,6 +70,25 @@ const STATUS_CONFIG = [
   { value: 'acknowledged', label: 'Acknowledged', color: 'bg-teal-100 text-teal-700', icon: FileCheck }
 ];
 
+const DEFAULT_TYPES = [
+  { name: 'Policy', icon: '📋', color: 'bg-blue-100 text-blue-700' },
+  { name: 'Contract', icon: '📝', color: 'bg-purple-100 text-purple-700' },
+  { name: 'Report', icon: '📊', color: 'bg-emerald-100 text-emerald-700' },
+  { name: 'Proposal', icon: '💡', color: 'bg-amber-100 text-amber-700' },
+  { name: 'Invoice', icon: '🧾', color: 'bg-rose-100 text-rose-700' },
+  { name: 'Certificate', icon: '🏆', color: 'bg-teal-100 text-teal-700' },
+  { name: 'Other', icon: '📄', color: 'bg-slate-100 text-slate-700' }
+];
+
+const DEFAULT_CATEGORIES = [
+  { name: 'Human Resources', color: 'bg-purple-100 text-purple-700' },
+  { name: 'Finance', color: 'bg-emerald-100 text-emerald-700' },
+  { name: 'Legal', color: 'bg-rose-100 text-rose-700' },
+  { name: 'Operations', color: 'bg-blue-100 text-blue-700' },
+  { name: 'Technical', color: 'bg-amber-100 text-amber-700' },
+  { name: 'General', color: 'bg-slate-100 text-slate-700' }
+];
+
 const Documents = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
@@ -81,6 +100,9 @@ const Documents = () => {
   const [assignedDocuments, setAssignedDocuments] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState(null);
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [documentCategories, setDocumentCategories] = useState([]);
+  const [templates, setTemplates] = useState([]);
   
   // Dialogs
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -89,10 +111,16 @@ const Documents = () => {
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
   const [resubmitDialogOpen, setResubmitDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   
   // Selected/Editing
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [editingDocument, setEditingDocument] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editingType, setEditingType] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
