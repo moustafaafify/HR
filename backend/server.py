@@ -286,17 +286,32 @@ class TrainingRequest(BaseModel):
     employee_id: str
     title: str
     description: Optional[str] = None
-    training_type: str  # "course", "certification", "workshop", "conference", "online"
+    training_type: str = "course"  # course, certification, workshop, conference, online, seminar, bootcamp
+    category: str = "professional"  # professional, technical, leadership, compliance, soft_skills, other
     provider: Optional[str] = None
-    cost: Optional[float] = None
+    provider_url: Optional[str] = None
+    cost: float = 0
     currency: str = "USD"
     start_date: str
     end_date: str
-    status: str = "pending"
+    duration_hours: Optional[int] = None
+    location: Optional[str] = None  # online, onsite, offsite, hybrid
+    objectives: Optional[str] = None
+    expected_outcomes: Optional[str] = None
+    department_id: Optional[str] = None
+    manager_id: Optional[str] = None
+    status: str = "pending"  # pending, submitted, under_review, approved, rejected, in_progress, completed, cancelled
+    workflow_instance_id: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[str] = None
     rejection_reason: Optional[str] = None
+    completion_date: Optional[str] = None
+    completion_certificate_url: Optional[str] = None
+    feedback: Optional[str] = None
+    feedback_rating: Optional[int] = None
+    notes: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class DocumentApproval(BaseModel):
     model_config = ConfigDict(extra="ignore")
