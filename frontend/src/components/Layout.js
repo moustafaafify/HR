@@ -253,11 +253,11 @@ const Layout = () => {
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'My Training' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'My Documents' }} />
               <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'My Appraisals' }} />
+              <NavLink item={{ path: '/disciplinary', icon: Gavel, label: 'Disciplinary' }} />
               <NavLink item={{ path: '/payroll', icon: Wallet, label: 'My Payslips' }} />
               <NavLink item={{ path: '/assets', icon: Package, label: 'My Assets' }} />
               <NavLink item={{ path: '/communications', icon: Megaphone, label: 'Communications' }} />
               <NavLink item={{ path: '/complaints', icon: AlertOctagon, label: 'Complaints' }} />
-              <NavLink item={{ path: '/disciplinary', icon: Gavel, label: 'My Records' }} />
               <NavLink item={{ path: '/org-chart', icon: Network, label: 'Org Chart' }} />
             </>
           )}
