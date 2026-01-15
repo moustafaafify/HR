@@ -286,13 +286,16 @@ const Recruitment = () => {
       const formData = {
         ...applicationForm,
         experience_years: applicationForm.experience_years ? parseInt(applicationForm.experience_years) : null,
-        expected_salary: applicationForm.expected_salary ? parseFloat(applicationForm.expected_salary) : null
+        expected_salary: applicationForm.expected_salary ? parseFloat(applicationForm.expected_salary) : null,
+        // Set referral_employee_id if this is a referral from an employee
+        referral_employee_id: applicationForm.source === 'referral' && currentEmployee ? currentEmployee.id : applicationForm.referral_employee_id
       };
       await axios.post(`${API}/applications`, formData);
       toast.success('Application submitted successfully');
       fetchApplications();
       fetchStats();
       setApplicationDialogOpen(false);
+      setReferralDialogOpen(false);
       resetApplicationForm();
     } catch (error) {
       toast.error('Failed to submit application');
