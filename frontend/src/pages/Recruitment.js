@@ -98,6 +98,7 @@ const Recruitment = () => {
   const [interviews, setInterviews] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [currentEmployee, setCurrentEmployee] = useState(null);
   const [stats, setStats] = useState(null);
   
   // Dialogs
