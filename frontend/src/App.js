@@ -66,6 +66,7 @@ function AppRoutes() {
         <Route path="documents" element={<Documents />} />
         <Route path="appraisals" element={<Appraisals />} />
         <Route path="org-chart" element={<OrgChart />} />
+        <Route path="payroll" element={<Payroll />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
