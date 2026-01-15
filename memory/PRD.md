@@ -108,6 +108,19 @@ Build a full-stack HR platform with:
   - Admin view shows pending requests with Approve/Reject buttons
   - Employee view shows their own request history and status
 
+### Leave Export Features (COMPLETED - Jan 15, 2026)
+- **Export Leave Requests:**
+  - Filter by date range, employee, status, and leave type
+  - Downloads CSV with: Employee, Leave Type, Start Date, End Date, Days, Status, Reason, Submitted
+  - New endpoint: `GET /api/leaves/export`
+- **Export Leave Balances:**
+  - Filter by year
+  - Downloads CSV with: Employee, Department, and all leave types (Total/Used)
+  - New endpoint: `GET /api/leave-balances/export`
+- **Enhanced Frontend:**
+  - "Export" button on Leave Requests tab with filter dialog
+  - "Export Balances" button on Leave Balances tab with year selector
+
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn/UI, React Router
 - **Backend:** FastAPI, Pydantic, JWT
