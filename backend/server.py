@@ -5606,6 +5606,612 @@ async def delete_asset_request(request_id: str, current_user: User = Depends(get
     await db.asset_requests.delete_one({"id": request_id})
     return {"message": "Request deleted"}
 
+# ============= ANNOUNCEMENTS, MEMOS & SURVEYS MODELS =============
+
+class Announcement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    type: str = "company"  # company, branch, department
+    target_ids: List[str] = []  # branch/department IDs if type is not company
+    priority: str = "normal"  # low, normal, high, urgent
+    status: str = "draft"  # draft, published, archived
+    published_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    pinned: bool = False
+    attachments: List[str] = []
+    created_by: Optional[str] = None
+    created_by_name: Optional[str] = None
+    read_by: List[str] = []  # employee IDs who have read
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Memo(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    from_id: Optional[str] = None
+    from_name: Optional[str] = None
+    to_type: str = "employees"  # employees, department, branch, all
+    to_ids: List[str] = []  # employee/department/branch IDs
+    to_names: List[str] = []
+    priority: str = "normal"  # low, normal, high, urgent
+    requires_acknowledgment: bool = False
+    acknowledged_by: List[Dict[str, Any]] = []  # [{employee_id, employee_name, acknowledged_at}]
+    status: str = "sent"  # draft, sent, archived
+    attachments: List[str] = []
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class SurveyQuestion(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    type: str = "text"  # text, single_choice, multiple_choice, rating, scale
+    question: str
+    options: List[str] = []  # For choice questions
+    required: bool = True
+    min_value: Optional[int] = None  # For scale/rating
+    max_value: Optional[int] = None
+
+class Survey(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    questions: List[Dict[str, Any]] = []
+    target_type: str = "all"  # all, department, branch, specific
+    target_ids: List[str] = []
+    status: str = "draft"  # draft, active, closed, archived
+    anonymous: bool = True
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    created_by: Optional[str] = None
+    created_by_name: Optional[str] = None
+    response_count: int = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class SurveyResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    survey_id: str
+    employee_id: Optional[str] = None  # Null if anonymous
+    employee_name: Optional[str] = None
+    answers: Dict[str, Any] = {}  # {question_id: answer}
+    submitted_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= ANNOUNCEMENTS ROUTES =============
+
+@api_router.get("/announcements")
+async def get_announcements(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    
+    # Non-admins only see published announcements
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        query["status"] = "published"
+        # Filter by target audience
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee:
+            employee = await db.employees.find_one({"work_email": current_user.email})
+        
+        if employee:
+            branch_id = employee.get("branch_id")
+            dept_id = employee.get("department_id")
+            query["$or"] = [
+                {"type": "company"},
+                {"type": "branch", "target_ids": branch_id},
+                {"type": "department", "target_ids": dept_id}
+            ]
+    
+    announcements = await db.announcements.find(query, {"_id": 0}).sort([("pinned", -1), ("created_at", -1)]).to_list(100)
+    return announcements
+
+@api_router.get("/announcements/unread-count")
+async def get_unread_announcements_count(current_user: User = Depends(get_current_user)):
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        return {"count": 0}
+    
+    employee_id = employee["id"]
+    branch_id = employee.get("branch_id")
+    dept_id = employee.get("department_id")
+    
+    query = {
+        "status": "published",
+        "read_by": {"$nin": [employee_id]},
+        "$or": [
+            {"type": "company"},
+            {"type": "branch", "target_ids": branch_id},
+            {"type": "department", "target_ids": dept_id}
+        ]
+    }
+    
+    count = await db.announcements.count_documents(query)
+    return {"count": count}
+
+@api_router.get("/announcements/{announcement_id}")
+async def get_announcement(announcement_id: str, current_user: User = Depends(get_current_user)):
+    announcement = await db.announcements.find_one({"id": announcement_id}, {"_id": 0})
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return announcement
+
+@api_router.post("/announcements")
+async def create_announcement(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can create announcements")
+    
+    data["created_by"] = current_user.id
+    data["created_by_name"] = current_user.full_name
+    
+    if data.get("status") == "published" and not data.get("published_at"):
+        data["published_at"] = datetime.now(timezone.utc).isoformat()
+    
+    announcement = Announcement(**data)
+    await db.announcements.insert_one(announcement.model_dump())
+    return announcement.model_dump()
+
+@api_router.put("/announcements/{announcement_id}")
+async def update_announcement(announcement_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update announcements")
+    
+    # Set published_at when status changes to published
+    existing = await db.announcements.find_one({"id": announcement_id})
+    if existing and existing.get("status") != "published" and data.get("status") == "published":
+        data["published_at"] = datetime.now(timezone.utc).isoformat()
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.announcements.update_one({"id": announcement_id}, {"$set": data})
+    announcement = await db.announcements.find_one({"id": announcement_id}, {"_id": 0})
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return announcement
+
+@api_router.post("/announcements/{announcement_id}/read")
+async def mark_announcement_read(announcement_id: str, current_user: User = Depends(get_current_user)):
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee record not found")
+    
+    await db.announcements.update_one(
+        {"id": announcement_id},
+        {"$addToSet": {"read_by": employee["id"]}}
+    )
+    return {"message": "Marked as read"}
+
+@api_router.delete("/announcements/{announcement_id}")
+async def delete_announcement(announcement_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete announcements")
+    
+    result = await db.announcements.delete_one({"id": announcement_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return {"message": "Announcement deleted"}
+
+# ============= MEMOS ROUTES =============
+
+@api_router.get("/memos")
+async def get_memos(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    query = {}
+    if status:
+        query["status"] = status
+    
+    # Non-admins only see memos sent to them
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        if employee:
+            branch_id = employee.get("branch_id")
+            dept_id = employee.get("department_id")
+            query["$or"] = [
+                {"to_type": "all"},
+                {"to_type": "employees", "to_ids": employee["id"]},
+                {"to_type": "department", "to_ids": dept_id},
+                {"to_type": "branch", "to_ids": branch_id}
+            ]
+        else:
+            return []
+    
+    memos = await db.memos.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return memos
+
+@api_router.get("/memos/my")
+async def get_my_memos(current_user: User = Depends(get_current_user)):
+    """Get memos for current employee"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        return []
+    
+    branch_id = employee.get("branch_id")
+    dept_id = employee.get("department_id")
+    
+    query = {
+        "status": {"$ne": "draft"},
+        "$or": [
+            {"to_type": "all"},
+            {"to_type": "employees", "to_ids": employee["id"]},
+            {"to_type": "department", "to_ids": dept_id},
+            {"to_type": "branch", "to_ids": branch_id}
+        ]
+    }
+    
+    memos = await db.memos.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return memos
+
+@api_router.get("/memos/{memo_id}")
+async def get_memo(memo_id: str, current_user: User = Depends(get_current_user)):
+    memo = await db.memos.find_one({"id": memo_id}, {"_id": 0})
+    if not memo:
+        raise HTTPException(status_code=404, detail="Memo not found")
+    return memo
+
+@api_router.post("/memos")
+async def create_memo(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can create memos")
+    
+    data["from_id"] = current_user.id
+    data["from_name"] = current_user.full_name
+    
+    # Get recipient names
+    to_names = []
+    if data.get("to_type") == "employees" and data.get("to_ids"):
+        for emp_id in data["to_ids"]:
+            emp = await db.employees.find_one({"id": emp_id}, {"_id": 0})
+            if emp:
+                to_names.append(emp.get("full_name", "Unknown"))
+    elif data.get("to_type") == "department" and data.get("to_ids"):
+        for dept_id in data["to_ids"]:
+            dept = await db.departments.find_one({"id": dept_id}, {"_id": 0})
+            if dept:
+                to_names.append(dept.get("name", "Unknown"))
+    elif data.get("to_type") == "branch" and data.get("to_ids"):
+        for branch_id in data["to_ids"]:
+            branch = await db.branches.find_one({"id": branch_id}, {"_id": 0})
+            if branch:
+                to_names.append(branch.get("name", "Unknown"))
+    elif data.get("to_type") == "all":
+        to_names.append("All Employees")
+    
+    data["to_names"] = to_names
+    
+    memo = Memo(**data)
+    await db.memos.insert_one(memo.model_dump())
+    return memo.model_dump()
+
+@api_router.put("/memos/{memo_id}")
+async def update_memo(memo_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update memos")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.memos.update_one({"id": memo_id}, {"$set": data})
+    memo = await db.memos.find_one({"id": memo_id}, {"_id": 0})
+    if not memo:
+        raise HTTPException(status_code=404, detail="Memo not found")
+    return memo
+
+@api_router.post("/memos/{memo_id}/acknowledge")
+async def acknowledge_memo(memo_id: str, current_user: User = Depends(get_current_user)):
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee record not found")
+    
+    acknowledgment = {
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name", "Unknown"),
+        "acknowledged_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Check if already acknowledged
+    memo = await db.memos.find_one({"id": memo_id})
+    if memo:
+        existing_acks = memo.get("acknowledged_by", [])
+        if not any(a["employee_id"] == employee["id"] for a in existing_acks):
+            await db.memos.update_one(
+                {"id": memo_id},
+                {"$push": {"acknowledged_by": acknowledgment}}
+            )
+    
+    return {"message": "Memo acknowledged"}
+
+@api_router.delete("/memos/{memo_id}")
+async def delete_memo(memo_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete memos")
+    
+    result = await db.memos.delete_one({"id": memo_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Memo not found")
+    return {"message": "Memo deleted"}
+
+# ============= SURVEYS ROUTES =============
+
+@api_router.get("/surveys")
+async def get_surveys(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    
+    # Non-admins only see active surveys targeted at them
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        query["status"] = "active"
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee:
+            employee = await db.employees.find_one({"work_email": current_user.email})
+        
+        if employee:
+            branch_id = employee.get("branch_id")
+            dept_id = employee.get("department_id")
+            query["$or"] = [
+                {"target_type": "all"},
+                {"target_type": "specific", "target_ids": employee["id"]},
+                {"target_type": "department", "target_ids": dept_id},
+                {"target_type": "branch", "target_ids": branch_id}
+            ]
+    
+    surveys = await db.surveys.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return surveys
+
+@api_router.get("/surveys/my")
+async def get_my_surveys(current_user: User = Depends(get_current_user)):
+    """Get active surveys for current employee"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        return []
+    
+    branch_id = employee.get("branch_id")
+    dept_id = employee.get("department_id")
+    
+    query = {
+        "status": "active",
+        "$or": [
+            {"target_type": "all"},
+            {"target_type": "specific", "target_ids": employee["id"]},
+            {"target_type": "department", "target_ids": dept_id},
+            {"target_type": "branch", "target_ids": branch_id}
+        ]
+    }
+    
+    surveys = await db.surveys.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Check if already responded
+    for survey in surveys:
+        if survey.get("anonymous"):
+            # For anonymous, we can't check by employee_id, so skip
+            survey["has_responded"] = False
+        else:
+            response = await db.survey_responses.find_one({
+                "survey_id": survey["id"],
+                "employee_id": employee["id"]
+            })
+            survey["has_responded"] = response is not None
+    
+    return surveys
+
+@api_router.get("/surveys/{survey_id}")
+async def get_survey(survey_id: str, current_user: User = Depends(get_current_user)):
+    survey = await db.surveys.find_one({"id": survey_id}, {"_id": 0})
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    return survey
+
+@api_router.get("/surveys/{survey_id}/results")
+async def get_survey_results(survey_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view survey results")
+    
+    survey = await db.surveys.find_one({"id": survey_id}, {"_id": 0})
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    
+    responses = await db.survey_responses.find({"survey_id": survey_id}, {"_id": 0}).to_list(1000)
+    
+    # Aggregate results
+    results = {
+        "survey": survey,
+        "total_responses": len(responses),
+        "questions": []
+    }
+    
+    for question in survey.get("questions", []):
+        q_id = question.get("id")
+        q_type = question.get("type")
+        q_results = {
+            "question": question,
+            "responses": []
+        }
+        
+        if q_type in ["single_choice", "multiple_choice"]:
+            # Count options
+            option_counts = {}
+            for opt in question.get("options", []):
+                option_counts[opt] = 0
+            
+            for resp in responses:
+                answer = resp.get("answers", {}).get(q_id)
+                if isinstance(answer, list):
+                    for a in answer:
+                        if a in option_counts:
+                            option_counts[a] += 1
+                elif answer in option_counts:
+                    option_counts[answer] += 1
+            
+            q_results["summary"] = option_counts
+        elif q_type in ["rating", "scale"]:
+            # Calculate average
+            values = []
+            for resp in responses:
+                answer = resp.get("answers", {}).get(q_id)
+                if answer is not None:
+                    try:
+                        values.append(float(answer))
+                    except:
+                        pass
+            
+            if values:
+                q_results["summary"] = {
+                    "average": sum(values) / len(values),
+                    "min": min(values),
+                    "max": max(values),
+                    "count": len(values)
+                }
+        else:
+            # Text responses
+            q_results["responses"] = [
+                resp.get("answers", {}).get(q_id)
+                for resp in responses
+                if resp.get("answers", {}).get(q_id)
+            ]
+        
+        results["questions"].append(q_results)
+    
+    return results
+
+@api_router.post("/surveys")
+async def create_survey(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can create surveys")
+    
+    data["created_by"] = current_user.id
+    data["created_by_name"] = current_user.full_name
+    
+    # Ensure questions have IDs
+    questions = data.get("questions", [])
+    for q in questions:
+        if "id" not in q:
+            q["id"] = str(uuid.uuid4())
+    
+    survey = Survey(**data)
+    await db.surveys.insert_one(survey.model_dump())
+    return survey.model_dump()
+
+@api_router.put("/surveys/{survey_id}")
+async def update_survey(survey_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update surveys")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.surveys.update_one({"id": survey_id}, {"$set": data})
+    survey = await db.surveys.find_one({"id": survey_id}, {"_id": 0})
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    return survey
+
+@api_router.post("/surveys/{survey_id}/respond")
+async def submit_survey_response(survey_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    survey = await db.surveys.find_one({"id": survey_id}, {"_id": 0})
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    
+    if survey.get("status") != "active":
+        raise HTTPException(status_code=400, detail="Survey is not active")
+    
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    response_data = {
+        "survey_id": survey_id,
+        "answers": data.get("answers", {})
+    }
+    
+    # Only include employee info if not anonymous
+    if not survey.get("anonymous"):
+        if employee:
+            response_data["employee_id"] = employee["id"]
+            response_data["employee_name"] = employee.get("full_name")
+            
+            # Check for duplicate response
+            existing = await db.survey_responses.find_one({
+                "survey_id": survey_id,
+                "employee_id": employee["id"]
+            })
+            if existing:
+                raise HTTPException(status_code=400, detail="You have already responded to this survey")
+    
+    response = SurveyResponse(**response_data)
+    await db.survey_responses.insert_one(response.model_dump())
+    
+    # Update response count
+    await db.surveys.update_one(
+        {"id": survey_id},
+        {"$inc": {"response_count": 1}}
+    )
+    
+    return {"message": "Response submitted successfully"}
+
+@api_router.delete("/surveys/{survey_id}")
+async def delete_survey(survey_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete surveys")
+    
+    result = await db.surveys.delete_one({"id": survey_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    
+    # Delete associated responses
+    await db.survey_responses.delete_many({"survey_id": survey_id})
+    
+    return {"message": "Survey and responses deleted"}
+
+# ============= COMMUNICATION STATS =============
+
+@api_router.get("/communications/stats")
+async def get_communications_stats(current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view stats")
+    
+    announcements_total = await db.announcements.count_documents({})
+    announcements_published = await db.announcements.count_documents({"status": "published"})
+    memos_total = await db.memos.count_documents({})
+    memos_pending_ack = await db.memos.count_documents({
+        "requires_acknowledgment": True,
+        "acknowledged_by": {"$size": 0}
+    })
+    surveys_total = await db.surveys.count_documents({})
+    surveys_active = await db.surveys.count_documents({"status": "active"})
+    
+    return {
+        "announcements_total": announcements_total,
+        "announcements_published": announcements_published,
+        "memos_total": memos_total,
+        "memos_pending_ack": memos_pending_ack,
+        "surveys_total": surveys_total,
+        "surveys_active": surveys_active
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
