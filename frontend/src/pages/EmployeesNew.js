@@ -1017,6 +1017,69 @@ const EmployeesNew = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
+          {selectedEmpForPassword && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-900">
+                  <strong>Employee:</strong> {selectedEmpForPassword.full_name}
+                </p>
+                <p className="text-sm text-blue-900">
+                  <strong>Email:</strong> {selectedEmpForPassword.personal_email}
+                </p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  New Password (minimum 6 characters)
+                </label>
+                <input
+                  type="password"
+                  data-testid="new-password-input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                  placeholder="Enter new password"
+                />
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-xs text-yellow-900">
+                  ⚠️ The employee will be prompted to change this password on their next login.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleResetPassword} 
+                  data-testid="confirm-reset-button"
+                  className="rounded-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Key size={16} className="me-2" />
+                  Reset Password
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={() => {
+                    setPasswordDialogOpen(false);
+                    setNewPassword('');
+                  }} 
+                  variant="outline" 
+                  className="rounded-full"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
