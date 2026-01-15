@@ -328,7 +328,7 @@ class TestEmployeeAccess:
         
     def test_employee_can_view_my_documents(self, employee_headers):
         """Test employee can view their documents"""
-        response = requests.get(f"{API}/documents/my", headers=employee_headers)
+        response = requests.get(f"{API}/document-approvals/my", headers=employee_headers)
         assert response.status_code == 200
 
 
