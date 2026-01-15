@@ -2165,8 +2165,17 @@ async def get_onboardings(status: Optional[str] = None, employee_id: Optional[st
 @api_router.get("/onboardings/my")
 async def get_my_onboarding(current_user: User = Depends(get_current_user)):
     """Get the current user's onboarding (for employees)"""
-    # Find employee by user email
-    employee = await db.employees.find_one({"email": current_user.email}, {"_id": 0})
+    # Find employee by user email - check multiple email fields
+    employee = await db.employees.find_one({
+        "$or": [
+            {"email": current_user.email},
+            {"work_email": current_user.email},
+            {"personal_email": current_user.email}
+        ]
+    }, {"_id": 0})
+    if not employee:
+        # Also try to find by user_id
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
     if not employee:
         return None
     # Get active onboarding for this employee
