@@ -37,6 +37,27 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
+# ============= MONGODB HELPER FUNCTIONS =============
+
+def clean_mongo_response(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove MongoDB _id field from a document to prevent serialization errors.
+    
+    MongoDB adds an _id field (ObjectId type) when inserting documents.
+    ObjectId is not JSON serializable. This helper ensures clean responses.
+    
+    Usage:
+        - After insert_one: return clean_mongo_response(doc)
+        - Or use projection in find: find({}, {"_id": 0})
+    """
+    if doc is None:
+        return None
+    result = {k: v for k, v in doc.items() if k != "_id"}
+    return result
+
+def clean_mongo_list(docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Remove MongoDB _id field from a list of documents."""
+    return [clean_mongo_response(doc) for doc in docs if doc is not None]
+
 # Mount static files for uploads
 app.mount("/uploads", StaticFiles(directory=str(ROOT_DIR / "uploads")), name="uploads")
 
