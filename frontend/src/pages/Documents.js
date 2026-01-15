@@ -979,9 +979,27 @@ const Documents = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Document Approvals
+            Document Management
           </h1>
-          <p className="text-slate-500 text-sm sm:text-base mt-1">Review and approve employee document submissions</p>
+          <p className="text-slate-500 text-sm sm:text-base mt-1">Create, assign, and manage document approvals</p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => { resetForm(); setCreateDialogOpen(true); }}
+            variant="outline"
+            className="rounded-xl gap-2"
+          >
+            <Plus size={18} />
+            Create Document
+          </Button>
+          <Button 
+            onClick={() => setAssignDialogOpen(true)}
+            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2"
+            data-testid="assign-document-btn"
+          >
+            <Users size={18} />
+            Assign to Employees
+          </Button>
         </div>
       </div>
 
