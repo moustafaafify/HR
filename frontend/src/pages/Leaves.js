@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { 
   Plus, CheckCircle2, XCircle, Calendar, Clock, Sun, Palmtree, 
   Heart, Briefcase, AlertCircle, Filter, Eye, Trash2, CalendarDays,
-  TrendingUp, CalendarCheck, CalendarX, Timer, ChevronRight, X
+  TrendingUp, CalendarCheck, CalendarX, Timer, ChevronRight, X, Download
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
