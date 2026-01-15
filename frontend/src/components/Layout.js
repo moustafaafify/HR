@@ -23,7 +23,8 @@ import {
   ClipboardCheck,
   UserMinus,
   Receipt,
-  GraduationCap
+  GraduationCap,
+  FileCheck
 } from 'lucide-react';
 
 const Layout = () => {
