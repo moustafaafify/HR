@@ -208,7 +208,10 @@ const Leaves = () => {
     setBalanceForm({
       annual_leave: balance.annual_leave || 20,
       sick_leave: balance.sick_leave || 10,
-      personal_leave: balance.personal_leave || 5
+      personal_leave: balance.personal_leave || 5,
+      maternity_leave: balance.maternity_leave || 90,
+      paternity_leave: balance.paternity_leave || 14,
+      bereavement_leave: balance.bereavement_leave || 5
     });
     setBalanceDialogOpen(true);
   };
