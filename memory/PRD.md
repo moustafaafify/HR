@@ -11,6 +11,26 @@ Build a full-stack HR platform with:
 - Workflow system for approval processes
 - Recruitment module for job postings and candidate management
 
+## Data Seeding Fix (Jan 15, 2026)
+**Issue:** Employee records had mismatched `user_id` values that didn't match the `id` in the `users` collection, and name fields were often empty.
+
+**Root Cause:** No proper data seeding script existed. The database was empty or had inconsistent data.
+
+**Solution:** Created `/app/backend/seed_data.py` that:
+- Creates users with unique `id` fields
+- Creates employees with `user_id` = corresponding `user.id`
+- Populates all name fields (first_name, last_name, full_name) consistently
+- Seeds organizational hierarchy (1 corporation, 1 branch, 5 departments, 4 divisions)
+- Creates leave balances for all employees
+- Creates default roles
+
+**Test Data Created:**
+- 10 users (1 admin + 9 employees)
+- 9 employees with complete profiles
+- Credentials: admin@hrplatform.com / admin123, sarah.johnson@lojyn.com / sarah123
+
+**Verification:** 27/27 backend tests passed, all frontend pages loading correctly
+
 ## What's Been Implemented
 
 ### Core Features (COMPLETED)
