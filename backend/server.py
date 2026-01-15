@@ -437,6 +437,46 @@ class Interview(BaseModel):
     notes: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+class OnboardingTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: str
+    description: Optional[str] = None
+    category: str = "documentation"  # documentation, it_setup, training, compliance, introduction, administrative, other
+    due_day: int = 1
+    is_required: bool = True
+    assigned_to_type: str = "employee"  # employee, manager, hr
+    order: int = 1
+    completed: bool = False
+    completed_at: Optional[str] = None
+
+class OnboardingTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    department_id: Optional[str] = None
+    duration_days: int = 30
+    tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Onboarding(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    template_id: Optional[str] = None
+    department_id: Optional[str] = None
+    start_date: str
+    end_date: Optional[str] = None
+    duration_days: int = 30
+    status: str = "in_progress"  # not_started, in_progress, completed, on_hold
+    manager_id: Optional[str] = None
+    hr_contact_id: Optional[str] = None
+    tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    completed_at: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class PerformanceReview(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
