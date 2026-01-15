@@ -27,7 +27,8 @@ import {
   FileCheck,
   ClipboardList,
   Network,
-  Wallet
+  Wallet,
+  Package
 } from 'lucide-react';
 
 const Layout = () => {
