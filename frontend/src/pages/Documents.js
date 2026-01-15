@@ -404,9 +404,13 @@ const Documents = () => {
   const pendingDocuments = filteredDocuments.filter(d => ['submitted', 'under_review'].includes(d.status));
   const approvedDocuments = filteredDocuments.filter(d => d.status === 'approved');
   const rejectedDocuments = filteredDocuments.filter(d => ['rejected', 'revision_requested'].includes(d.status));
+  const assignedDocs = filteredDocuments.filter(d => d.is_assigned);
 
   // Employee View
   if (!isAdmin) {
+    const pendingAcknowledgment = assignedDocuments.filter(d => !d.acknowledged);
+    const acknowledgedDocs = assignedDocuments.filter(d => d.acknowledged);
+    
     return (
       <div data-testid="documents-page" className="space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -414,7 +418,7 @@ const Documents = () => {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
               My Documents
             </h1>
-            <p className="text-slate-500 text-sm sm:text-base mt-1">Submit documents for approval and track their status</p>
+            <p className="text-slate-500 text-sm sm:text-base mt-1">Submit documents and view assigned documents</p>
           </div>
           <Button 
             onClick={() => { resetForm(); setCreateDialogOpen(true); }}
@@ -427,14 +431,14 @@ const Documents = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-            <p className="text-2xl font-bold text-slate-700">{myDocuments.length}</p>
-            <p className="text-xs text-slate-500">Total</p>
+            <p className="text-2xl font-bold text-slate-700">{myDocuments.filter(d => !d.is_assigned).length}</p>
+            <p className="text-xs text-slate-500">Submitted</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
             <p className="text-2xl font-bold text-blue-600">
-              {myDocuments.filter(d => ['submitted', 'under_review'].includes(d.status)).length}
+              {myDocuments.filter(d => ['submitted', 'under_review'].includes(d.status) && !d.is_assigned).length}
             </p>
             <p className="text-xs text-slate-500">Pending</p>
           </div>
@@ -445,89 +449,243 @@ const Documents = () => {
             <p className="text-xs text-slate-500">Approved</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-            <p className="text-2xl font-bold text-rose-600">
-              {myDocuments.filter(d => d.status === 'rejected').length}
-            </p>
-            <p className="text-xs text-slate-500">Rejected</p>
+            <p className="text-2xl font-bold text-purple-600">{assignedDocuments.length}</p>
+            <p className="text-xs text-slate-500">Assigned</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-            <p className="text-2xl font-bold text-orange-600">
-              {myDocuments.filter(d => d.status === 'revision_requested').length}
-            </p>
-            <p className="text-xs text-slate-500">Needs Revision</p>
+            <p className="text-2xl font-bold text-amber-600">{pendingAcknowledgment.length}</p>
+            <p className="text-xs text-slate-500">To Review</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <p className="text-2xl font-bold text-teal-600">{acknowledgedDocs.length}</p>
+            <p className="text-xs text-slate-500">Acknowledged</p>
           </div>
         </div>
 
-        {/* Documents List */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200">
-            <h3 className="font-bold text-slate-900 flex items-center gap-2">
-              <FileText size={18} />
-              My Submitted Documents
-            </h3>
-          </div>
-          {myDocuments.length === 0 ? (
-            <div className="p-12 text-center">
-              <FileText size={48} className="mx-auto mb-4 text-slate-300" />
-              <p className="text-slate-500">No documents submitted yet</p>
-              <Button onClick={() => setCreateDialogOpen(true)} variant="outline" className="mt-4 rounded-xl">
-                <Plus size={16} className="mr-2" />
-                Submit Your First Document
-              </Button>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {myDocuments.map((doc) => {
-                const statusInfo = getStatusInfo(doc.status);
-                const typeInfo = getTypeInfo(doc.document_type);
-                const priorityInfo = getPriorityInfo(doc.priority);
-                const StatusIcon = statusInfo.icon;
-                
-                return (
-                  <div key={doc.id} className="p-4 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-lg">{typeInfo.icon}</span>
-                          <h4 className="font-bold text-slate-900">{doc.title}</h4>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${statusInfo.color}`}>
-                            <StatusIcon size={12} />
-                            {statusInfo.label}
-                          </span>
-                          {doc.priority !== 'normal' && (
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityInfo.color}`}>
-                              {priorityInfo.label}
-                            </span>
-                          )}
-                          {doc.version > 1 && (
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">
-                              v{doc.version}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-slate-500 line-clamp-2 mb-2">
-                          {doc.description || 'No description'}
-                        </p>
-                        <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400">
-                          <span>{typeInfo.label}</span>
-                          <span>•</span>
-                          <span>{getCategoryInfo(doc.category).label}</span>
-                          {doc.due_date && (
-                            <>
+        {/* Tabs */}
+        <Tabs value={employeeTab} onValueChange={setEmployeeTab} className="w-full">
+          <TabsList className="bg-slate-100 p-1 rounded-xl w-full sm:w-auto flex">
+            <TabsTrigger value="submitted" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-3 sm:px-4">
+              <Send size={14} />
+              My Submissions
+            </TabsTrigger>
+            <TabsTrigger value="assigned" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-3 sm:px-4">
+              <FileCheck size={14} />
+              Assigned to Me
+              {pendingAcknowledgment.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs rounded-full">
+                  {pendingAcknowledgment.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* My Submissions Tab */}
+          <TabsContent value="submitted" className="mt-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <FileText size={18} />
+                  Documents I've Submitted
+                </h3>
+              </div>
+              {myDocuments.filter(d => !d.is_assigned).length === 0 ? (
+                <div className="p-12 text-center">
+                  <FileText size={48} className="mx-auto mb-4 text-slate-300" />
+                  <p className="text-slate-500">No documents submitted yet</p>
+                  <Button onClick={() => setCreateDialogOpen(true)} variant="outline" className="mt-4 rounded-xl">
+                    <Plus size={16} className="mr-2" />
+                    Submit Your First Document
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {myDocuments.filter(d => !d.is_assigned).map((doc) => {
+                    const statusInfo = getStatusInfo(doc.status);
+                    const typeInfo = getTypeInfo(doc.document_type);
+                    const priorityInfo = getPriorityInfo(doc.priority);
+                    const StatusIcon = statusInfo.icon;
+                    
+                    return (
+                      <div key={doc.id} className="p-4 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="text-lg">{typeInfo.icon}</span>
+                              <h4 className="font-bold text-slate-900">{doc.title}</h4>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${statusInfo.color}`}>
+                                <StatusIcon size={12} />
+                                {statusInfo.label}
+                              </span>
+                              {doc.priority !== 'normal' && (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityInfo.color}`}>
+                                  {priorityInfo.label}
+                                </span>
+                              )}
+                              {doc.version > 1 && (
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">
+                                  v{doc.version}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-500 line-clamp-2 mb-2">
+                              {doc.description || 'No description'}
+                            </p>
+                            <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400">
+                              <span>{typeInfo.label}</span>
                               <span>•</span>
-                              <span>Due: {new Date(doc.due_date).toLocaleDateString()}</span>
-                            </>
-                          )}
-                          <span>•</span>
-                          <span>{new Date(doc.created_at).toLocaleDateString()}</span>
-                        </div>
-                        {doc.status === 'rejected' && doc.rejection_reason && (
-                          <div className="mt-2 p-2 bg-rose-50 rounded-lg text-sm text-rose-700">
-                            <strong>Rejection reason:</strong> {doc.rejection_reason}
+                              <span>{getCategoryInfo(doc.category).label}</span>
+                              {doc.due_date && (
+                                <>
+                                  <span>•</span>
+                                  <span>Due: {new Date(doc.due_date).toLocaleDateString()}</span>
+                                </>
+                              )}
+                              <span>•</span>
+                              <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                            </div>
+                            {doc.status === 'rejected' && doc.rejection_reason && (
+                              <div className="mt-2 p-2 bg-rose-50 rounded-lg text-sm text-rose-700">
+                                <strong>Rejection reason:</strong> {doc.rejection_reason}
+                              </div>
+                            )}
+                            {doc.status === 'revision_requested' && doc.revision_notes && (
+                              <div className="mt-2 p-2 bg-orange-50 rounded-lg text-sm text-orange-700">
+                                <strong>Revision notes:</strong> {doc.revision_notes}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {doc.status === 'revision_requested' && doc.revision_notes && (
-                          <div className="mt-2 p-2 bg-orange-50 rounded-lg text-sm text-orange-700">
+                          <div className="flex gap-1">
+                            <Button onClick={() => openViewDocument(doc)} size="sm" variant="ghost" className="rounded-lg">
+                              <Eye size={16} />
+                            </Button>
+                            {['draft', 'rejected', 'revision_requested'].includes(doc.status) && (
+                              <>
+                                {doc.status === 'revision_requested' ? (
+                                  <Button 
+                                    onClick={() => { setSelectedDocument(doc); setResubmitDialogOpen(true); }} 
+                                    size="sm" 
+                                    className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
+                                  >
+                                    <RefreshCw size={14} className="mr-1" />
+                                    Resubmit
+                                  </Button>
+                                ) : (
+                                  <Button onClick={() => openEditDocument(doc)} size="sm" variant="ghost" className="rounded-lg">
+                                    <Edit2 size={16} />
+                                  </Button>
+                                )}
+                                <Button onClick={() => handleDelete(doc.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                                  <Trash2 size={16} />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Assigned Documents Tab */}
+          <TabsContent value="assigned" className="mt-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <FileCheck size={18} />
+                  Documents Assigned to Me
+                </h3>
+              </div>
+              {assignedDocuments.length === 0 ? (
+                <div className="p-12 text-center">
+                  <FileCheck size={48} className="mx-auto mb-4 text-slate-300" />
+                  <p className="text-slate-500">No documents assigned to you yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {assignedDocuments.map((doc) => {
+                    const statusInfo = getStatusInfo(doc.status);
+                    const typeInfo = getTypeInfo(doc.document_type);
+                    const priorityInfo = getPriorityInfo(doc.priority);
+                    const StatusIcon = statusInfo.icon;
+                    
+                    return (
+                      <div key={doc.id} className={`p-4 hover:bg-slate-50 transition-colors ${!doc.acknowledged ? 'bg-amber-50/50' : ''}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="text-lg">{typeInfo.icon}</span>
+                              <h4 className="font-bold text-slate-900">{doc.title}</h4>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${statusInfo.color}`}>
+                                <StatusIcon size={12} />
+                                {doc.acknowledged ? 'Acknowledged' : 'Pending Acknowledgment'}
+                              </span>
+                              {doc.priority !== 'normal' && (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityInfo.color}`}>
+                                  {priorityInfo.label}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-500 line-clamp-2 mb-2">
+                              {doc.description || 'No description'}
+                            </p>
+                            <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400">
+                              <span>{typeInfo.label}</span>
+                              <span>•</span>
+                              <span>{getCategoryInfo(doc.category).label}</span>
+                              {doc.due_date && (
+                                <>
+                                  <span>•</span>
+                                  <span className={new Date(doc.due_date) < new Date() && !doc.acknowledged ? 'text-rose-500 font-medium' : ''}>
+                                    Due: {new Date(doc.due_date).toLocaleDateString()}
+                                  </span>
+                                </>
+                              )}
+                              <span>•</span>
+                              <span>Assigned: {new Date(doc.assigned_at || doc.created_at).toLocaleDateString()}</span>
+                              {doc.acknowledged_at && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-teal-600">Acknowledged: {new Date(doc.acknowledged_at).toLocaleDateString()}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {doc.document_url && (
+                              <a 
+                                href={doc.document_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors"
+                              >
+                                <LinkIcon size={14} />
+                                View
+                              </a>
+                            )}
+                            {!doc.acknowledged && (
+                              <Button 
+                                onClick={() => handleAcknowledge(doc.id)} 
+                                size="sm" 
+                                className="rounded-lg bg-teal-600 hover:bg-teal-700"
+                              >
+                                <Check size={14} className="mr-1" />
+                                Acknowledge
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
                             <strong>Revision notes:</strong> {doc.revision_notes}
                           </div>
                         )}
