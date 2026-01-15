@@ -1046,7 +1046,8 @@ async def workflow_action(instance_id: str, data: Dict[str, Any], current_user: 
             "leave": "leaves",
             "expense": "expenses",
             "training": "training_requests",
-            "document": "document_approvals"
+            "document": "document_approvals",
+            "time_correction": "time_corrections"
         }
         if instance["module"] in collection_map:
             await db[collection_map[instance["module"]]].update_one(
@@ -1073,7 +1074,8 @@ async def workflow_action(instance_id: str, data: Dict[str, Any], current_user: 
                 "leave": "leaves",
                 "expense": "expenses",
                 "training": "training_requests",
-                "document": "document_approvals"
+                "document": "document_approvals",
+                "time_correction": "time_corrections"
             }
             if instance["module"] in collection_map:
                 await db[collection_map[instance["module"]]].update_one(
