@@ -7450,6 +7450,537 @@ async def export_travel_requests(
     requests = await db.travel_requests.find(query, {"_id": 0}).sort("departure_date", -1).to_list(10000)
     return {"records": requests, "total": len(requests)}
 
+# ============= RECOGNITION & AWARDS MODELS =============
+
+class RecognitionCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    icon: str = "star"  # icon name for display
+    points: int = 10  # points awarded for this type
+    color: str = "#6366f1"  # color for badges
+    is_nomination_required: bool = False  # requires admin approval
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Recognition(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Recipient info
+    recipient_id: str
+    recipient_name: Optional[str] = None
+    recipient_department: Optional[str] = None
+    
+    # Giver info
+    giver_id: str
+    giver_name: Optional[str] = None
+    giver_department: Optional[str] = None
+    
+    # Recognition details
+    category_id: str
+    category_name: Optional[str] = None
+    title: str
+    message: str
+    points: int = 0
+    
+    # Visibility
+    is_public: bool = True
+    
+    # Status for nominations
+    status: str = "approved"  # approved, pending (for nominations)
+    
+    # Reactions/engagement
+    likes: List[str] = Field(default_factory=list)  # user_ids who liked
+    comments: List[Dict[str, Any]] = Field(default_factory=list)
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Nomination(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Nominee
+    nominee_id: str
+    nominee_name: Optional[str] = None
+    nominee_department: Optional[str] = None
+    
+    # Nominator
+    nominator_id: str
+    nominator_name: Optional[str] = None
+    
+    # Award category
+    category_id: str
+    category_name: Optional[str] = None
+    
+    # Nomination details
+    reason: str
+    achievements: Optional[str] = None
+    
+    # Status
+    status: str = "pending"  # pending, approved, rejected
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    review_notes: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= RECOGNITION API ENDPOINTS =============
+
+@api_router.get("/recognition/categories")
+async def get_recognition_categories(current_user: User = Depends(get_current_user)):
+    """Get all recognition categories"""
+    categories = await db.recognition_categories.find({}, {"_id": 0}).to_list(100)
+    
+    # Seed default categories if none exist
+    if not categories:
+        default_categories = [
+            {"id": str(uuid.uuid4()), "name": "Star Performer", "description": "Outstanding performance", "icon": "star", "points": 50, "color": "#f59e0b", "is_nomination_required": False, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Team Player", "description": "Excellent teamwork and collaboration", "icon": "users", "points": 30, "color": "#3b82f6", "is_nomination_required": False, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Innovation", "description": "Creative thinking and innovation", "icon": "lightbulb", "points": 40, "color": "#8b5cf6", "is_nomination_required": False, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Customer Champion", "description": "Exceptional customer service", "icon": "heart", "points": 35, "color": "#ec4899", "is_nomination_required": False, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Rising Star", "description": "New employee showing great potential", "icon": "rocket", "points": 25, "color": "#10b981", "is_nomination_required": False, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Employee of the Month", "description": "Top performer of the month", "icon": "award", "points": 100, "color": "#f97316", "is_nomination_required": True, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Leadership", "description": "Demonstrating leadership qualities", "icon": "crown", "points": 45, "color": "#6366f1", "is_nomination_required": False, "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Thank You", "description": "Simple appreciation", "icon": "thumbs-up", "points": 10, "color": "#14b8a6", "is_nomination_required": False, "is_active": True},
+        ]
+        for cat in default_categories:
+            cat["created_at"] = datetime.now(timezone.utc).isoformat()
+            cat["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.recognition_categories.insert_many(default_categories)
+        categories = default_categories
+    
+    return categories
+
+@api_router.post("/recognition/categories")
+async def create_recognition_category(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new recognition category (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage categories")
+    
+    category = RecognitionCategory(**data)
+    await db.recognition_categories.insert_one(category.model_dump())
+    return category.model_dump()
+
+@api_router.put("/recognition/categories/{category_id}")
+async def update_recognition_category(category_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a recognition category (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage categories")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.recognition_categories.update_one({"id": category_id}, {"$set": data})
+    return await db.recognition_categories.find_one({"id": category_id}, {"_id": 0})
+
+@api_router.delete("/recognition/categories/{category_id}")
+async def delete_recognition_category(category_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a recognition category (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage categories")
+    
+    await db.recognition_categories.delete_one({"id": category_id})
+    return {"message": "Category deleted"}
+
+@api_router.get("/recognition/stats")
+async def get_recognition_stats(current_user: User = Depends(get_current_user)):
+    """Get recognition statistics"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    total = await db.recognitions.count_documents({"status": "approved"})
+    this_month = await db.recognitions.count_documents({
+        "status": "approved",
+        "created_at": {"$gte": datetime.now(timezone.utc).replace(day=1).isoformat()}
+    })
+    
+    # Total points given
+    pipeline = [
+        {"$match": {"status": "approved"}},
+        {"$group": {"_id": None, "total": {"$sum": "$points"}}}
+    ]
+    points_result = await db.recognitions.aggregate(pipeline).to_list(1)
+    total_points = points_result[0]["total"] if points_result else 0
+    
+    # Pending nominations (admin only)
+    pending_nominations = 0
+    if is_admin:
+        pending_nominations = await db.nominations.count_documents({"status": "pending"})
+    
+    # Top categories
+    cat_pipeline = [
+        {"$match": {"status": "approved"}},
+        {"$group": {"_id": "$category_name", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]
+    top_categories = await db.recognitions.aggregate(cat_pipeline).to_list(5)
+    
+    return {
+        "total_recognitions": total,
+        "this_month": this_month,
+        "total_points": total_points,
+        "pending_nominations": pending_nominations,
+        "top_categories": top_categories
+    }
+
+@api_router.get("/recognition/wall")
+async def get_recognition_wall(
+    limit: int = 50,
+    skip: int = 0,
+    current_user: User = Depends(get_current_user)
+):
+    """Get public recognition wall/feed"""
+    recognitions = await db.recognitions.find(
+        {"is_public": True, "status": "approved"},
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return recognitions
+
+@api_router.get("/recognition/my")
+async def get_my_recognitions(current_user: User = Depends(get_current_user)):
+    """Get current user's recognitions (received and given)"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return {"received": [], "given": [], "total_points": 0}
+    
+    received = await db.recognitions.find(
+        {"recipient_id": employee["id"], "status": "approved"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    given = await db.recognitions.find(
+        {"giver_id": employee["id"], "status": "approved"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    total_points = sum(r.get("points", 0) for r in received)
+    
+    return {
+        "received": received,
+        "given": given,
+        "total_points": total_points
+    }
+
+@api_router.get("/recognition/leaderboard")
+async def get_recognition_leaderboard(
+    period: str = "all",  # all, month, quarter, year
+    current_user: User = Depends(get_current_user)
+):
+    """Get recognition leaderboard"""
+    match_query = {"status": "approved"}
+    
+    if period == "month":
+        match_query["created_at"] = {"$gte": datetime.now(timezone.utc).replace(day=1).isoformat()}
+    elif period == "quarter":
+        now = datetime.now(timezone.utc)
+        quarter_start = now.replace(month=((now.month - 1) // 3) * 3 + 1, day=1)
+        match_query["created_at"] = {"$gte": quarter_start.isoformat()}
+    elif period == "year":
+        match_query["created_at"] = {"$gte": datetime.now(timezone.utc).replace(month=1, day=1).isoformat()}
+    
+    pipeline = [
+        {"$match": match_query},
+        {"$group": {
+            "_id": "$recipient_id",
+            "name": {"$first": "$recipient_name"},
+            "department": {"$first": "$recipient_department"},
+            "total_points": {"$sum": "$points"},
+            "recognition_count": {"$sum": 1}
+        }},
+        {"$sort": {"total_points": -1}},
+        {"$limit": 20}
+    ]
+    
+    leaderboard = await db.recognitions.aggregate(pipeline).to_list(20)
+    
+    # Add rank
+    for i, entry in enumerate(leaderboard):
+        entry["rank"] = i + 1
+        entry["employee_id"] = entry.pop("_id")
+    
+    return leaderboard
+
+@api_router.get("/recognition")
+async def get_recognitions(
+    status: Optional[str] = None,
+    category_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all recognitions (admin) or filtered"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {}
+    if status:
+        query["status"] = status
+    elif not is_admin:
+        query["status"] = "approved"
+    
+    if category_id:
+        query["category_id"] = category_id
+    
+    recognitions = await db.recognitions.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return recognitions
+
+@api_router.post("/recognition")
+async def create_recognition(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Give recognition to someone"""
+    # Get giver info
+    giver = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not giver:
+        # Admin without employee profile
+        giver_id = current_user.id
+        giver_name = current_user.full_name
+        giver_dept = None
+    else:
+        giver_id = giver["id"]
+        giver_name = giver.get("full_name")
+        if giver.get("department_id"):
+            dept = await db.departments.find_one({"id": giver["department_id"]}, {"_id": 0})
+            giver_dept = dept.get("name") if dept else None
+        else:
+            giver_dept = None
+    
+    # Get recipient info
+    recipient = await db.employees.find_one({"id": data.get("recipient_id")}, {"_id": 0})
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+    
+    recipient_dept = None
+    if recipient.get("department_id"):
+        dept = await db.departments.find_one({"id": recipient["department_id"]}, {"_id": 0})
+        recipient_dept = dept.get("name") if dept else None
+    
+    # Get category
+    category = await db.recognition_categories.find_one({"id": data.get("category_id")}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    # Determine status
+    status = "approved"
+    if category.get("is_nomination_required"):
+        status = "pending"
+    
+    recognition_data = {
+        "recipient_id": recipient["id"],
+        "recipient_name": recipient.get("full_name"),
+        "recipient_department": recipient_dept,
+        "giver_id": giver_id,
+        "giver_name": giver_name,
+        "giver_department": giver_dept,
+        "category_id": category["id"],
+        "category_name": category["name"],
+        "title": data.get("title", category["name"]),
+        "message": data.get("message", ""),
+        "points": category.get("points", 0),
+        "is_public": data.get("is_public", True),
+        "status": status
+    }
+    
+    recognition = Recognition(**recognition_data)
+    await db.recognitions.insert_one(recognition.model_dump())
+    
+    return recognition.model_dump()
+
+@api_router.post("/recognition/{recognition_id}/like")
+async def like_recognition(recognition_id: str, current_user: User = Depends(get_current_user)):
+    """Like/unlike a recognition"""
+    recognition = await db.recognitions.find_one({"id": recognition_id}, {"_id": 0})
+    if not recognition:
+        raise HTTPException(status_code=404, detail="Recognition not found")
+    
+    likes = recognition.get("likes", [])
+    if current_user.id in likes:
+        likes.remove(current_user.id)
+    else:
+        likes.append(current_user.id)
+    
+    await db.recognitions.update_one({"id": recognition_id}, {"$set": {"likes": likes}})
+    return {"likes": len(likes), "liked": current_user.id in likes}
+
+@api_router.post("/recognition/{recognition_id}/comment")
+async def comment_on_recognition(recognition_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a comment to a recognition"""
+    recognition = await db.recognitions.find_one({"id": recognition_id}, {"_id": 0})
+    if not recognition:
+        raise HTTPException(status_code=404, detail="Recognition not found")
+    
+    comment = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user.id,
+        "user_name": current_user.full_name,
+        "text": data.get("text", ""),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.recognitions.update_one(
+        {"id": recognition_id},
+        {"$push": {"comments": comment}}
+    )
+    
+    return comment
+
+@api_router.delete("/recognition/{recognition_id}")
+async def delete_recognition(recognition_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a recognition (admin only or own)"""
+    recognition = await db.recognitions.find_one({"id": recognition_id}, {"_id": 0})
+    if not recognition:
+        raise HTTPException(status_code=404, detail="Recognition not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin and recognition["giver_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.recognitions.delete_one({"id": recognition_id})
+    return {"message": "Recognition deleted"}
+
+# ============= NOMINATIONS API ENDPOINTS =============
+
+@api_router.get("/recognition/nominations")
+async def get_nominations(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get nominations (admin sees all, employee sees own)"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {}
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if employee:
+            query["nominator_id"] = employee["id"]
+        else:
+            return []
+    
+    if status:
+        query["status"] = status
+    
+    nominations = await db.nominations.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return nominations
+
+@api_router.post("/recognition/nominations")
+async def create_nomination(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a nomination"""
+    # Get nominator info
+    nominator = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not nominator:
+        nominator_id = current_user.id
+        nominator_name = current_user.full_name
+    else:
+        nominator_id = nominator["id"]
+        nominator_name = nominator.get("full_name")
+    
+    # Get nominee info
+    nominee = await db.employees.find_one({"id": data.get("nominee_id")}, {"_id": 0})
+    if not nominee:
+        raise HTTPException(status_code=404, detail="Nominee not found")
+    
+    nominee_dept = None
+    if nominee.get("department_id"):
+        dept = await db.departments.find_one({"id": nominee["department_id"]}, {"_id": 0})
+        nominee_dept = dept.get("name") if dept else None
+    
+    # Get category
+    category = await db.recognition_categories.find_one({"id": data.get("category_id")}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    nomination_data = {
+        "nominee_id": nominee["id"],
+        "nominee_name": nominee.get("full_name"),
+        "nominee_department": nominee_dept,
+        "nominator_id": nominator_id,
+        "nominator_name": nominator_name,
+        "category_id": category["id"],
+        "category_name": category["name"],
+        "reason": data.get("reason", ""),
+        "achievements": data.get("achievements"),
+        "status": "pending"
+    }
+    
+    nomination = Nomination(**nomination_data)
+    await db.nominations.insert_one(nomination.model_dump())
+    
+    return nomination.model_dump()
+
+@api_router.post("/recognition/nominations/{nomination_id}/approve")
+async def approve_nomination(nomination_id: str, current_user: User = Depends(get_current_user)):
+    """Approve a nomination (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can approve nominations")
+    
+    nomination = await db.nominations.find_one({"id": nomination_id}, {"_id": 0})
+    if not nomination:
+        raise HTTPException(status_code=404, detail="Nomination not found")
+    
+    if nomination["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Nomination already processed")
+    
+    # Update nomination status
+    await db.nominations.update_one({"id": nomination_id}, {"$set": {
+        "status": "approved",
+        "reviewed_by": current_user.full_name,
+        "reviewed_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    # Get category for points
+    category = await db.recognition_categories.find_one({"id": nomination["category_id"]}, {"_id": 0})
+    
+    # Create recognition from approved nomination
+    recognition_data = {
+        "recipient_id": nomination["nominee_id"],
+        "recipient_name": nomination["nominee_name"],
+        "recipient_department": nomination["nominee_department"],
+        "giver_id": nomination["nominator_id"],
+        "giver_name": nomination["nominator_name"],
+        "giver_department": None,
+        "category_id": nomination["category_id"],
+        "category_name": nomination["category_name"],
+        "title": f"{nomination['category_name']} Award",
+        "message": nomination["reason"],
+        "points": category.get("points", 0) if category else 0,
+        "is_public": True,
+        "status": "approved"
+    }
+    
+    recognition = Recognition(**recognition_data)
+    await db.recognitions.insert_one(recognition.model_dump())
+    
+    return {"message": "Nomination approved and recognition created"}
+
+@api_router.post("/recognition/nominations/{nomination_id}/reject")
+async def reject_nomination(nomination_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject a nomination (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can reject nominations")
+    
+    nomination = await db.nominations.find_one({"id": nomination_id}, {"_id": 0})
+    if not nomination:
+        raise HTTPException(status_code=404, detail="Nomination not found")
+    
+    await db.nominations.update_one({"id": nomination_id}, {"$set": {
+        "status": "rejected",
+        "reviewed_by": current_user.full_name,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+        "review_notes": data.get("notes", "")
+    }})
+    
+    return {"message": "Nomination rejected"}
+
+@api_router.get("/recognition/employee/{employee_id}/points")
+async def get_employee_points(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get total points for an employee"""
+    pipeline = [
+        {"$match": {"recipient_id": employee_id, "status": "approved"}},
+        {"$group": {"_id": None, "total": {"$sum": "$points"}, "count": {"$sum": 1}}}
+    ]
+    result = await db.recognitions.aggregate(pipeline).to_list(1)
+    
+    if result:
+        return {"total_points": result[0]["total"], "recognition_count": result[0]["count"]}
+    return {"total_points": 0, "recognition_count": 0}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
