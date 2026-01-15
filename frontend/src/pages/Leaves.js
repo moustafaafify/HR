@@ -1082,52 +1082,96 @@ const Leaves = () => {
 
       {/* Edit Balance Dialog */}
       <Dialog open={balanceDialogOpen} onOpenChange={setBalanceDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-xl">Edit Leave Balance</DialogTitle>
           </DialogHeader>
           <form onSubmit={updateBalance} className="space-y-4 mt-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
-                <Palmtree size={16} className="text-emerald-600" />
-                Annual Leave Days
-              </label>
-              <input
-                type="number"
-                value={balanceForm.annual_leave}
-                onChange={(e) => setBalanceForm({ ...balanceForm, annual_leave: parseFloat(e.target.value) })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                min="0"
-                step="0.5"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
-                <Heart size={16} className="text-rose-600" />
-                Sick Leave Days
-              </label>
-              <input
-                type="number"
-                value={balanceForm.sick_leave}
-                onChange={(e) => setBalanceForm({ ...balanceForm, sick_leave: parseFloat(e.target.value) })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                min="0"
-                step="0.5"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
-                <Briefcase size={16} className="text-blue-600" />
-                Personal Leave Days
-              </label>
-              <input
-                type="number"
-                value={balanceForm.personal_leave}
-                onChange={(e) => setBalanceForm({ ...balanceForm, personal_leave: parseFloat(e.target.value) })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                min="0"
-                step="0.5"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
+                  <Palmtree size={16} className="text-emerald-600" />
+                  Annual Leave
+                </label>
+                <input
+                  type="number"
+                  value={balanceForm.annual_leave}
+                  onChange={(e) => setBalanceForm({ ...balanceForm, annual_leave: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
+                  <Heart size={16} className="text-rose-600" />
+                  Sick Leave
+                </label>
+                <input
+                  type="number"
+                  value={balanceForm.sick_leave}
+                  onChange={(e) => setBalanceForm({ ...balanceForm, sick_leave: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
+                  <Briefcase size={16} className="text-blue-600" />
+                  Personal Leave
+                </label>
+                <input
+                  type="number"
+                  value={balanceForm.personal_leave}
+                  onChange={(e) => setBalanceForm({ ...balanceForm, personal_leave: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
+                  <Heart size={16} className="text-slate-600" />
+                  Bereavement
+                </label>
+                <input
+                  type="number"
+                  value={balanceForm.bereavement_leave}
+                  onChange={(e) => setBalanceForm({ ...balanceForm, bereavement_leave: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
+                  <Heart size={16} className="text-pink-600" />
+                  Maternity Leave
+                </label>
+                <input
+                  type="number"
+                  value={balanceForm.maternity_leave}
+                  onChange={(e) => setBalanceForm({ ...balanceForm, maternity_leave: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2">
+                  <Heart size={16} className="text-indigo-600" />
+                  Paternity Leave
+                </label>
+                <input
+                  type="number"
+                  value={balanceForm.paternity_leave}
+                  onChange={(e) => setBalanceForm({ ...balanceForm, paternity_leave: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="rounded-xl bg-indigo-950 hover:bg-indigo-900 flex-1">
