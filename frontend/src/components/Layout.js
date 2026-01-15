@@ -37,7 +37,8 @@ import {
   Award,
   Target,
   Code,
-  Timer
+  Timer,
+  Sheet
 } from 'lucide-react';
 
 const Layout = () => {
