@@ -1,0 +1,197 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useLanguage } from '../contexts/LanguageContext';
+import { toast } from 'sonner';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const Divisions = () => {
+  const { t } = useLanguage();
+  const [divisions, setDivisions] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDiv, setEditingDiv] = useState(null);
+  const [formData, setFormData] = useState({ name: '', department_id: '' });
+
+  useEffect(() => {
+    fetchDivisions();
+    fetchDepartments();
+  }, []);
+
+  const fetchDivisions = async () => {
+    try {
+      const response = await axios.get(`${API}/divisions`);
+      setDivisions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch divisions:', error);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(`${API}/departments`);
+      setDepartments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingDiv) {
+        await axios.put(`${API}/divisions/${editingDiv.id}`, formData);
+        toast.success('Division updated successfully');
+      } else {
+        await axios.post(`${API}/divisions`, formData);
+        toast.success('Division created successfully');
+      }
+      setDialogOpen(false);
+      setEditingDiv(null);
+      setFormData({ name: '', department_id: '' });
+      fetchDivisions();
+    } catch (error) {
+      toast.error('Failed to save division');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure?')) {
+      try {
+        await axios.delete(`${API}/divisions/${id}`);
+        toast.success('Division deleted');
+        fetchDivisions();
+      } catch (error) {
+        toast.error('Failed to delete division');
+      }
+    }
+  };
+
+  const openDialog = (div = null) => {
+    if (div) {
+      setEditingDiv(div);
+      setFormData({ name: div.name, department_id: div.department_id });
+    } else {
+      setEditingDiv(null);
+      setFormData({ name: '', department_id: '' });
+    }
+    setDialogOpen(true);
+  };
+
+  const getDepartmentName = (deptId) => {
+    const dept = departments.find(d => d.id === deptId);
+    return dept ? dept.name : '-';
+  };
+
+  return (
+    <div data-testid="divisions-page">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          {t('divisions')}
+        </h1>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              onClick={() => openDialog()} 
+              data-testid="add-division-button"
+              className="rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl"
+            >
+              <Plus size={20} className="me-2" />
+              {t('addNew')}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingDiv ? t('edit') : t('addNew')} {t('divisions')}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4" data-testid="division-form">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">{t('name')}</label>
+                <input
+                  type="text"
+                  data-testid="div-name-input"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Department</label>
+                <Select 
+                  value={formData.department_id} 
+                  onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                  required
+                >
+                  <SelectTrigger data-testid="div-department-select">
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" data-testid="div-submit-button" className="rounded-full bg-indigo-950 hover:bg-indigo-900">
+                  {t('save')}
+                </Button>
+                <Button type="button" onClick={() => setDialogOpen(false)} variant="outline" className="rounded-full">
+                  {t('cancel')}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full" data-testid="divisions-table">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('name')}</th>
+                <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Department</th>
+                <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {divisions.map((div) => (
+                <tr key={div.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors" data-testid={`div-row-${div.id}`}>
+                  <td className="px-6 py-4 text-slate-900 font-medium">{div.name}</td>
+                  <td className="px-6 py-4 text-slate-600">{getDepartmentName(div.department_id)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openDialog(div)}
+                        data-testid={`edit-div-${div.id}`}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(div.id)}
+                        data-testid={`delete-div-${div.id}`}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Divisions;
