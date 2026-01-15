@@ -525,6 +525,16 @@ const Recruitment = () => {
               <span className="hidden sm:inline">Create Job</span>
               <span className="sm:hidden">New</span>
             </Button>
+            <Button 
+              onClick={() => { resetApplicationForm(); setApplicationDialogOpen(true); }}
+              variant="outline"
+              className="rounded-xl gap-2"
+              data-testid="add-candidate-btn"
+            >
+              <UserPlus size={18} />
+              <span className="hidden sm:inline">Add Candidate</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
           </div>
         )}
       </div>
