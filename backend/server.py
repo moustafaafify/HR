@@ -364,12 +364,22 @@ class Job(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     department_id: Optional[str] = None
+    branch_id: Optional[str] = None
     location: Optional[str] = None
     job_type: str = "full_time"  # full_time, part_time, contract, internship, remote
+    experience_level: str = "mid"  # entry, mid, senior, lead, executive
     description: Optional[str] = None
+    responsibilities: Optional[str] = None
     requirements: Optional[str] = None
+    benefits: Optional[str] = None
     salary_min: Optional[float] = None
     salary_max: Optional[float] = None
+    salary_currency: str = "USD"
+    show_salary: bool = True
+    hiring_manager_id: Optional[str] = None
+    positions_count: int = 1
+    is_internal: bool = False  # Internal job posting for employees
+    expiry_date: Optional[str] = None
     status: str = "draft"  # draft, open, on_hold, closed
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -383,10 +393,49 @@ class Application(BaseModel):
     phone: Optional[str] = None
     resume_url: Optional[str] = None
     cover_letter: Optional[str] = None
-    status: str = "new"  # new, screening, interview, offer, hired, rejected
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    current_company: Optional[str] = None
+    current_title: Optional[str] = None
+    experience_years: Optional[int] = None
+    expected_salary: Optional[float] = None
+    notice_period: Optional[str] = None
+    source: str = "direct"  # direct, referral, linkedin, indeed, other
+    referral_employee_id: Optional[str] = None
+    status: str = "new"  # new, screening, interview, offer, hired, rejected, withdrawn
+    rating: Optional[int] = None  # 1-5 star rating
     notes: Optional[str] = None
+    # Interview tracking
+    interview_date: Optional[str] = None
+    interview_type: Optional[str] = None  # phone, video, onsite, panel
+    interview_feedback: Optional[str] = None
+    interviewed_by: Optional[str] = None
+    # Offer details
+    offered_salary: Optional[float] = None
+    offer_date: Optional[str] = None
+    offer_accepted_date: Optional[str] = None
+    rejection_reason: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Interview(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    application_id: str
+    job_id: str
+    interview_type: str = "video"  # phone, video, onsite, panel, technical
+    scheduled_date: str
+    scheduled_time: str
+    duration_minutes: int = 60
+    location: Optional[str] = None
+    meeting_link: Optional[str] = None
+    interviewers: List[str] = Field(default_factory=list)  # List of employee IDs
+    status: str = "scheduled"  # scheduled, completed, cancelled, no_show
+    feedback: Optional[str] = None
+    rating: Optional[int] = None
+    recommendation: Optional[str] = None  # hire, no_hire, next_round, hold
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class PerformanceReview(BaseModel):
     model_config = ConfigDict(extra="ignore")
