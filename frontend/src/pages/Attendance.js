@@ -449,11 +449,6 @@ const Attendance = () => {
   };
 
   // Helper functions
-  const getEmployeeName = (empId) => {
-    const emp = employees.find(e => e.id === empId);
-    return emp ? emp.full_name : '-';
-  };
-
   const getScheduleName = (scheduleId) => {
     const schedule = schedules.find(s => s.id === scheduleId);
     return schedule ? schedule.name : '-';
