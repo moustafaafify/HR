@@ -211,7 +211,7 @@ Build a full-stack HR platform with:
 - Employee: `sarah.johnson@lojyn.com` / `sarah123`
 
 ## Upcoming Tasks (P1)
-1. **Implement New Workflow-driven Modules** - Expense Claims, Training Requests, Document Approvals, Offboarding
+1. **Implement New Workflow-driven Modules** - Expense Claims, Training Requests, Document Approvals
 
 ## Future/Backlog (P2+)
 - Budget allocation per department/division
@@ -219,18 +219,21 @@ Build a full-stack HR platform with:
 - Bulk employee import via CSV
 - Employment history timeline view
 - Email notifications for workflows and recruitment
-- Refactor large components (EmployeesNew.js, Leaves.js, Attendance.js, Workflows.js, Recruitment.js, Onboarding.js)
+- Refactor large components (EmployeesNew.js, Leaves.js, Attendance.js, Workflows.js, Recruitment.js, Onboarding.js, Offboarding.js)
 
 ## Test Reports
 - `/app/test_reports/iteration_3.json` - Workflow system tests
 - `/app/test_reports/iteration_4.json` - Recruitment module tests (100% backend, 95% frontend)
 - `/app/test_reports/iteration_5.json` - Onboarding module tests (100% backend, 100% frontend)
+- `/app/test_reports/iteration_6.json` - Offboarding module tests (100% backend, 100% frontend)
 - `/app/tests/test_recruitment.py` - Recruitment pytest file (26 tests)
 - `/app/tests/test_onboarding.py` - Onboarding pytest file (23 tests)
+- `/app/tests/test_offboarding.py` - Offboarding pytest file (26 tests)
 
 ## Key Files
 - `backend/server.py` - All API endpoints
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
+- `frontend/src/pages/Offboarding.js` - Offboarding UI
 - `frontend/src/pages/Workflows.js` - Workflow management
 - `frontend/src/components/Layout.js` - Responsive layout
