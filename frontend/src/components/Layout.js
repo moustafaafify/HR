@@ -246,6 +246,7 @@ const Layout = () => {
               <NavLink item={{ path: '/expenses', icon: Receipt, label: 'My Expenses' }} />
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'My Training' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'My Documents' }} />
+              <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'My Appraisals' }} />
             </>
           )}
 
@@ -260,6 +261,7 @@ const Layout = () => {
               <NavLink item={{ path: '/expenses', icon: Receipt, label: 'Expenses' }} />
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'Training' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'Documents' }} />
+              <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'Appraisals' }} />
               <NavLink item={{ path: '/settings/workflows', icon: Workflow, label: 'Workflows' }} />
               <NavLink item={{ path: '/settings', icon: SettingsIcon, label: t('settings') }} />
             </>
