@@ -201,6 +201,104 @@ class LeaveBalance(BaseModel):
     carry_over: float = 0.0
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+# ============= WORKFLOW MODELS =============
+
+class WorkflowStep(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    order: int
+    name: str
+    approver_type: str  # "role", "specific_user", "manager", "department_head"
+    approver_id: Optional[str] = None  # role_id or user_id if specific
+    can_skip: bool = False
+    auto_approve_after_days: Optional[int] = None
+
+class Workflow(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    module: str  # "leave", "expense", "training", "document", "onboarding", "offboarding", "performance"
+    is_active: bool = True
+    steps: List[Dict[str, Any]] = Field(default_factory=list)
+    conditions: Optional[Dict[str, Any]] = None  # e.g., {"leave_days_gt": 3} for multi-level approval
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class WorkflowInstance(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    workflow_id: str
+    module: str
+    reference_id: str  # ID of the leave/expense/etc request
+    requester_id: str
+    current_step: int = 0
+    status: str = "pending"  # "pending", "in_progress", "approved", "rejected", "cancelled"
+    step_history: List[Dict[str, Any]] = Field(default_factory=list)
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ExpenseClaim(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    title: str
+    description: Optional[str] = None
+    amount: float
+    currency: str = "USD"
+    category: str  # "travel", "meals", "office", "equipment", "training", "other"
+    receipt_url: Optional[str] = None
+    expense_date: str
+    status: str = "pending"
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TrainingRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    title: str
+    description: Optional[str] = None
+    training_type: str  # "course", "certification", "workshop", "conference", "online"
+    provider: Optional[str] = None
+    cost: Optional[float] = None
+    currency: str = "USD"
+    start_date: str
+    end_date: str
+    status: str = "pending"
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class DocumentApproval(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    title: str
+    description: Optional[str] = None
+    document_type: str  # "policy", "contract", "report", "proposal", "other"
+    document_url: Optional[str] = None
+    status: str = "pending"
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class OnboardingTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    task_name: str
+    description: Optional[str] = None
+    category: str  # "documentation", "equipment", "training", "access", "introduction"
+    assigned_to: Optional[str] = None
+    due_date: Optional[str] = None
+    status: str = "pending"  # "pending", "in_progress", "completed"
+    completed_at: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class Attendance(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
