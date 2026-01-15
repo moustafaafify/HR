@@ -77,26 +77,26 @@ const Dashboard = () => {
 
   return (
     <div data-testid="dashboard-page">
-      <h1 className="text-4xl font-black text-slate-900 mb-8" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-6 lg:mb-8" style={{ fontFamily: 'Manrope, sans-serif' }}>
         {t('dashboard')}
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div
               key={index}
               data-testid={stat.testId}
-              className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 p-6 card-hover"
+              className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-5 lg:p-6 card-hover"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10`}>
-                  <Icon className={stat.color.replace('bg-', 'text-')} size={24} />
+              <div className="flex items-center justify-between mb-3 lg:mb-4">
+                <div className={`p-2 sm:p-3 rounded-lg ${stat.color} bg-opacity-10`}>
+                  <Icon className={stat.color.replace('bg-', 'text-')} size={20} />
                 </div>
               </div>
-              <p className="text-sm text-slate-500 mb-1">{stat.label}</p>
-              <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+              <p className="text-xs sm:text-sm text-slate-500 mb-1 truncate">{stat.label}</p>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">{stat.value}</p>
             </div>
           );
         })}
