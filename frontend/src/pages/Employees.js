@@ -17,6 +17,8 @@ const Employees = () => {
   const [employees, setEmployees] = useState([]);
   const [corporations, setCorporations] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [divisions, setDivisions] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEmp, setEditingEmp] = useState(null);
   const [formData, setFormData] = useState({ 
