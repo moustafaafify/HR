@@ -1527,6 +1527,170 @@ const Recruitment = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Add Candidate Dialog - Admin Only */}
+      <Dialog open={applicationDialogOpen} onOpenChange={setApplicationDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <UserPlus className="text-indigo-600" size={24} />
+              Add Candidate
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleApplicationSubmit} className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Position *</label>
+                <Select value={applicationForm.job_id} onValueChange={(v) => setApplicationForm({ ...applicationForm, job_id: v })} required>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Select position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jobs.map((job) => (
+                      <SelectItem key={job.id} value={job.id}>{job.title} {job.status !== 'open' ? `(${job.status})` : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Candidate Name *</label>
+                <Input
+                  value={applicationForm.candidate_name}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, candidate_name: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="Full name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Email *</label>
+                <Input
+                  type="email"
+                  value={applicationForm.email}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, email: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="candidate@email.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Phone</label>
+                <Input
+                  value={applicationForm.phone}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, phone: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Source *</label>
+                <Select value={applicationForm.source} onValueChange={(v) => setApplicationForm({ ...applicationForm, source: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APPLICATION_SOURCES.map((src) => (
+                      <SelectItem key={src.value} value={src.value}>{src.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Current Company</label>
+                <Input
+                  value={applicationForm.current_company}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, current_company: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="Company name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Current Title</label>
+                <Input
+                  value={applicationForm.current_title}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, current_title: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="Job title"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Experience (Years)</label>
+                <Input
+                  type="number"
+                  value={applicationForm.experience_years}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, experience_years: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Expected Salary</label>
+                <Input
+                  type="number"
+                  value={applicationForm.expected_salary}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, expected_salary: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="75000"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Notice Period</label>
+                <Input
+                  value={applicationForm.notice_period}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, notice_period: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="2 weeks"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">LinkedIn URL</label>
+                <Input
+                  value={applicationForm.linkedin_url}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, linkedin_url: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="https://linkedin.com/in/..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Portfolio URL</label>
+                <Input
+                  value={applicationForm.portfolio_url}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, portfolio_url: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Resume URL</label>
+                <Input
+                  value={applicationForm.resume_url}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, resume_url: e.target.value })}
+                  className="rounded-xl"
+                  placeholder="https://drive.google.com/..."
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Cover Letter / Notes</label>
+                <textarea
+                  value={applicationForm.cover_letter}
+                  onChange={(e) => setApplicationForm({ ...applicationForm, cover_letter: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
+                  rows={3}
+                  placeholder="Additional notes about the candidate..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                Add Candidate
+              </Button>
+              <Button type="button" onClick={() => setApplicationDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Referral Dialog */}
       <Dialog open={referralDialogOpen} onOpenChange={setReferralDialogOpen}>
         <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
