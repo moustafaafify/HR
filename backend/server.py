@@ -1836,10 +1836,19 @@ async def initialize_default_roles(current_user: User = Depends(get_current_user
 # ============= RECRUITMENT ROUTES =============
 
 @api_router.get("/jobs")
-async def get_jobs(status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+async def get_jobs(status: Optional[str] = None, is_internal: Optional[bool] = None, current_user: User = Depends(get_current_user)):
     query = {}
     if status:
         query["status"] = status
+    if is_internal is not None:
+        query["is_internal"] = is_internal
+    jobs = await db.jobs.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return jobs
+
+@api_router.get("/jobs/open")
+async def get_open_jobs(current_user: User = Depends(get_current_user)):
+    """Get all open jobs for employees to view (job board)"""
+    query = {"status": "open"}
     jobs = await db.jobs.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return jobs
 
@@ -1849,6 +1858,21 @@ async def get_job(job_id: str, current_user: User = Depends(get_current_user)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+@api_router.get("/jobs/{job_id}/stats")
+async def get_job_stats(job_id: str, current_user: User = Depends(get_current_user)):
+    """Get statistics for a specific job"""
+    applications = await db.applications.find({"job_id": job_id}, {"_id": 0}).to_list(1000)
+    stats = {
+        "total": len(applications),
+        "new": len([a for a in applications if a.get("status") == "new"]),
+        "screening": len([a for a in applications if a.get("status") == "screening"]),
+        "interview": len([a for a in applications if a.get("status") == "interview"]),
+        "offer": len([a for a in applications if a.get("status") == "offer"]),
+        "hired": len([a for a in applications if a.get("status") == "hired"]),
+        "rejected": len([a for a in applications if a.get("status") == "rejected"]),
+    }
+    return stats
 
 @api_router.post("/jobs")
 async def create_job(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
@@ -1869,19 +1893,61 @@ async def delete_job(job_id: str, current_user: User = Depends(get_current_user)
     result = await db.jobs.delete_one({"id": job_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Job not found")
-    # Also delete related applications
+    # Also delete related applications and interviews
     await db.applications.delete_many({"job_id": job_id})
+    await db.interviews.delete_many({"job_id": job_id})
     return {"message": "Job deleted"}
 
 @api_router.get("/applications")
-async def get_applications(job_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+async def get_applications(job_id: Optional[str] = None, status: Optional[str] = None, referral_employee_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
     query = {}
     if job_id:
         query["job_id"] = job_id
     if status:
         query["status"] = status
+    if referral_employee_id:
+        query["referral_employee_id"] = referral_employee_id
     applications = await db.applications.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return applications
+
+@api_router.get("/applications/my-referrals")
+async def get_my_referrals(current_user: User = Depends(get_current_user)):
+    """Get applications referred by the current user"""
+    # Find employee record for current user
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    applications = await db.applications.find({"referral_employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return applications
+
+@api_router.get("/applications/export")
+async def export_applications(job_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Export applications as JSON (frontend will convert to CSV)"""
+    query = {}
+    if job_id:
+        query["job_id"] = job_id
+    applications = await db.applications.find(query, {"_id": 0}).to_list(1000)
+    
+    # Get job titles for the export
+    job_ids = list(set([a.get("job_id") for a in applications if a.get("job_id")]))
+    jobs = await db.jobs.find({"id": {"$in": job_ids}}, {"_id": 0, "id": 1, "title": 1}).to_list(1000)
+    job_map = {j["id"]: j["title"] for j in jobs}
+    
+    export_data = []
+    for app in applications:
+        export_data.append({
+            "Candidate Name": app.get("candidate_name", ""),
+            "Email": app.get("email", ""),
+            "Phone": app.get("phone", ""),
+            "Position": job_map.get(app.get("job_id"), ""),
+            "Status": app.get("status", ""),
+            "Source": app.get("source", ""),
+            "Experience (Years)": app.get("experience_years", ""),
+            "Expected Salary": app.get("expected_salary", ""),
+            "Rating": app.get("rating", ""),
+            "Applied Date": app.get("created_at", "")[:10] if app.get("created_at") else "",
+        })
+    return export_data
 
 @api_router.get("/applications/{application_id}")
 async def get_application(application_id: str, current_user: User = Depends(get_current_user)):
@@ -1909,7 +1975,88 @@ async def delete_application(application_id: str, current_user: User = Depends(g
     result = await db.applications.delete_one({"id": application_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
+    # Also delete related interviews
+    await db.interviews.delete_many({"application_id": application_id})
     return {"message": "Application deleted"}
+
+# Interview routes
+@api_router.get("/interviews")
+async def get_interviews(application_id: Optional[str] = None, job_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if application_id:
+        query["application_id"] = application_id
+    if job_id:
+        query["job_id"] = job_id
+    if status:
+        query["status"] = status
+    interviews = await db.interviews.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(1000)
+    return interviews
+
+@api_router.post("/interviews")
+async def create_interview(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    interview = Interview(**data)
+    await db.interviews.insert_one(interview.model_dump())
+    # Update application status to interview
+    await db.applications.update_one(
+        {"id": data.get("application_id")},
+        {"$set": {"status": "interview", "interview_date": data.get("scheduled_date"), "interview_type": data.get("interview_type")}}
+    )
+    return interview.model_dump()
+
+@api_router.put("/interviews/{interview_id}")
+async def update_interview(interview_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    result = await db.interviews.update_one({"id": interview_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    # If interview is completed, update application with feedback
+    if data.get("status") == "completed":
+        interview = await db.interviews.find_one({"id": interview_id}, {"_id": 0})
+        if interview:
+            await db.applications.update_one(
+                {"id": interview["application_id"]},
+                {"$set": {"interview_feedback": data.get("feedback"), "interviewed_by": ",".join(interview.get("interviewers", []))}}
+            )
+    return await db.interviews.find_one({"id": interview_id}, {"_id": 0})
+
+@api_router.delete("/interviews/{interview_id}")
+async def delete_interview(interview_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.interviews.delete_one({"id": interview_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    return {"message": "Interview deleted"}
+
+# Recruitment stats
+@api_router.get("/recruitment/stats")
+async def get_recruitment_stats(current_user: User = Depends(get_current_user)):
+    """Get overall recruitment statistics"""
+    jobs = await db.jobs.find({}, {"_id": 0}).to_list(1000)
+    applications = await db.applications.find({}, {"_id": 0}).to_list(1000)
+    interviews = await db.interviews.find({}, {"_id": 0}).to_list(1000)
+    
+    return {
+        "jobs": {
+            "total": len(jobs),
+            "open": len([j for j in jobs if j.get("status") == "open"]),
+            "closed": len([j for j in jobs if j.get("status") == "closed"]),
+            "on_hold": len([j for j in jobs if j.get("status") == "on_hold"]),
+            "draft": len([j for j in jobs if j.get("status") == "draft"]),
+        },
+        "applications": {
+            "total": len(applications),
+            "new": len([a for a in applications if a.get("status") == "new"]),
+            "screening": len([a for a in applications if a.get("status") == "screening"]),
+            "interview": len([a for a in applications if a.get("status") == "interview"]),
+            "offer": len([a for a in applications if a.get("status") == "offer"]),
+            "hired": len([a for a in applications if a.get("status") == "hired"]),
+            "rejected": len([a for a in applications if a.get("status") == "rejected"]),
+            "referrals": len([a for a in applications if a.get("source") == "referral"]),
+        },
+        "interviews": {
+            "total": len(interviews),
+            "scheduled": len([i for i in interviews if i.get("status") == "scheduled"]),
+            "completed": len([i for i in interviews if i.get("status") == "completed"]),
+        }
+    }
 
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
