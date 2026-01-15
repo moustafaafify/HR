@@ -39,6 +39,7 @@ function AppRoutes() {
         <Route path="attendance" element={<Attendance />} />
         <Route path="performance" element={<Performance />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="settings/roles" element={<RolesPermissions />} />
       </Route>
     </Routes>
   );
