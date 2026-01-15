@@ -28,6 +28,8 @@ const Layout = () => {
     { path: '/', icon: LayoutDashboard, label: t('dashboard') },
     { path: '/corporations', icon: Building2, label: t('corporations') },
     { path: '/branches', icon: GitBranch, label: t('branches') },
+    { path: '/departments', icon: FolderTree, label: t('departments') },
+    { path: '/divisions', icon: Layers, label: t('divisions') },
     { path: '/employees', icon: Users, label: t('employees') },
     { path: '/leaves', icon: Calendar, label: t('leaves') },
     { path: '/attendance', icon: Clock, label: t('attendance') },
