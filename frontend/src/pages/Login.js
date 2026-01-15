@@ -49,17 +49,17 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-slate-50 noise-texture flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-8">
-          <div className="flex items-center justify-center mb-8">
-            <div className="p-4 bg-indigo-950 rounded-full">
-              <Building2 className="text-white" size={32} />
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-lg p-6 sm:p-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
+            <div className="p-3 sm:p-4 bg-indigo-950 rounded-full">
+              <Building2 className="text-white" size={28} />
             </div>
           </div>
 
-          <h1 className="text-3xl font-black text-center text-indigo-950 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl font-black text-center text-indigo-950 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
             HR Platform
           </h1>
-          <p className="text-center text-slate-500 mb-8">
+          <p className="text-center text-slate-500 mb-6 sm:mb-8 text-sm sm:text-base">
             {isLogin ? t('login') : t('register')}
           </p>
 
@@ -74,7 +74,7 @@ const Login = () => {
                   data-testid="fullname-input"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none text-base"
                   required={!isLogin}
                 />
               </div>
@@ -89,7 +89,7 @@ const Login = () => {
                 data-testid="email-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none text-base"
                 required
               />
             </div>
@@ -103,7 +103,7 @@ const Login = () => {
                 data-testid="password-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none text-base"
                 required
               />
             </div>
@@ -111,7 +111,7 @@ const Login = () => {
             <button
               type="submit"
               data-testid="submit-button"
-              className="w-full py-3 bg-indigo-950 text-white rounded-full font-medium hover:bg-indigo-900 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full py-3 bg-indigo-950 text-white rounded-full font-medium hover:bg-indigo-900 shadow-lg hover:shadow-xl transition-all duration-300 text-base"
             >
               {isLogin ? t('login') : t('register')}
             </button>
