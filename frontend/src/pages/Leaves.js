@@ -570,51 +570,51 @@ const Leaves = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div className="bg-white rounded-xl lg:rounded-2xl border border-slate-200 p-4 lg:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 text-sm font-medium">Total Requests</p>
-              <p className="text-3xl font-black text-slate-900 mt-1">{stats.total}</p>
+            <div className="min-w-0">
+              <p className="text-slate-500 text-xs lg:text-sm font-medium truncate">Total Requests</p>
+              <p className="text-2xl lg:text-3xl font-black text-slate-900 mt-1">{stats.total}</p>
             </div>
-            <div className="bg-slate-100 rounded-xl p-3">
-              <CalendarDays size={24} className="text-slate-600" />
+            <div className="bg-slate-100 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <CalendarDays size={20} className="lg:w-6 lg:h-6 text-slate-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-amber-100 text-sm font-medium">Pending</p>
-              <p className="text-3xl font-black mt-1">{stats.pending}</p>
+            <div className="min-w-0">
+              <p className="text-amber-100 text-xs lg:text-sm font-medium truncate">Pending</p>
+              <p className="text-2xl lg:text-3xl font-black mt-1">{stats.pending}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <Clock size={24} />
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <Clock size={20} className="lg:w-6 lg:h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-emerald-100 text-sm font-medium">Approved</p>
-              <p className="text-3xl font-black mt-1">{stats.approved}</p>
+            <div className="min-w-0">
+              <p className="text-emerald-100 text-xs lg:text-sm font-medium truncate">Approved</p>
+              <p className="text-2xl lg:text-3xl font-black mt-1">{stats.approved}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <CalendarCheck size={24} />
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <CalendarCheck size={20} className="lg:w-6 lg:h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-rose-100 text-sm font-medium">Rejected</p>
-              <p className="text-3xl font-black mt-1">{stats.rejected}</p>
+            <div className="min-w-0">
+              <p className="text-rose-100 text-xs lg:text-sm font-medium truncate">Rejected</p>
+              <p className="text-2xl lg:text-3xl font-black mt-1">{stats.rejected}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <CalendarX size={24} />
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <CalendarX size={20} className="lg:w-6 lg:h-6" />
             </div>
           </div>
         </div>
@@ -622,12 +622,12 @@ const Leaves = () => {
 
       {/* My Leave Balance Card - For Employees */}
       {currentEmployee && myBalance && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
-            <h3 className="text-lg font-bold">My Leave Balance</h3>
-            <p className="text-slate-400 text-sm">{new Date().getFullYear()} Allocation</p>
+        <div className="bg-white rounded-xl lg:rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-4 lg:p-6 text-white">
+            <h3 className="text-base lg:text-lg font-bold">My Leave Balance</h3>
+            <p className="text-slate-400 text-xs lg:text-sm">{new Date().getFullYear()} Allocation</p>
           </div>
-          <div className="p-6">
+          <div className="p-4 lg:p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Annual Leave */}
               <div className="bg-emerald-50 rounded-xl p-4">
