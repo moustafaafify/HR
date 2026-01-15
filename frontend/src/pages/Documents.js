@@ -307,16 +307,29 @@ const Documents = () => {
     e.preventDefault();
     try {
       const formData = {
-        ...documentForm,
+        title: documentForm.title,
+        description: documentForm.description,
+        document_type: documentForm.document_type,
+        category: documentForm.category,
+        document_url: documentForm.document_url,
+        priority: documentForm.priority,
+        due_date: documentForm.due_date,
         tags: documentForm.tags ? documentForm.tags.split(',').map(t => t.trim()) : []
       };
       
       if (editingDocument) {
         await axios.put(`${API}/document-approvals/${editingDocument.id}`, formData);
         toast.success('Document updated successfully');
+      } else if (isAdmin && documentForm.assign_to_employees && documentForm.employee_ids.length > 0) {
+        // Admin assigning document to employees
+        await axios.post(`${API}/document-approvals/assign`, {
+          ...formData,
+          employee_ids: documentForm.employee_ids
+        });
+        toast.success(`Document assigned to ${documentForm.employee_ids.length} employee(s)`);
       } else {
         await axios.post(`${API}/document-approvals`, formData);
-        toast.success('Document submitted for approval');
+        toast.success('Document created successfully');
       }
       
       fetchDocuments();
