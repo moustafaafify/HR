@@ -124,6 +124,18 @@ const Training = () => {
   const [assignForm, setAssignForm] = useState({ course_id: '', employee_ids: [], due_date: '' });
   const [completeForm, setCompleteForm] = useState({ feedback: '', rating: 0 });
 
+  // Employee-specific state (for training requests)
+  const [employeeTab, setEmployeeTab] = useState('assigned');
+  const [myRequests, setMyRequests] = useState([]);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState(null);
+  const [requestForm, setRequestForm] = useState({
+    title: '', description: '', training_type: 'course', category: 'professional',
+    provider: '', provider_url: '', cost: '', currency: 'USD',
+    start_date: '', end_date: '', duration_hours: '', location: 'online',
+    objectives: '', expected_outcomes: ''
+  });
+
   useEffect(() => {
     fetchCourses();
     fetchTypes();
