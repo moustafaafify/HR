@@ -842,6 +842,7 @@ const EmployeesNew = () => {
                   <td className="px-6 py-4 text-slate-600">{emp.employee_id || '-'}</td>
                   <td className="px-6 py-4 text-slate-900 font-medium">{emp.full_name}</td>
                   <td className="px-6 py-4 text-slate-600">{emp.job_title || '-'}</td>
+                  <td className="px-6 py-4 text-slate-600">{getManagerName(emp.reporting_manager_id)}</td>
                   <td className="px-6 py-4 text-slate-600">{emp.personal_email}</td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
