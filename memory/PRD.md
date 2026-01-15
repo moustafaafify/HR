@@ -401,7 +401,8 @@ Build a full-stack HR platform with:
 - `frontend/src/pages/Disciplinary.js` - Disciplinary Actions UI
 - `frontend/src/pages/Travel.js` - Travel Management UI
 - `frontend/src/pages/Recognition.js` - Recognition & Awards UI
-- `frontend/src/pages/TeamCalendar.js` - Team Calendar UI (NEW)
+- `frontend/src/pages/TeamCalendar.js` - Team Calendar UI
+- `frontend/src/pages/SuccessionPlanning.js` - Succession Planning UI (NEW)
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
 - `frontend/src/pages/Offboarding.js` - Offboarding UI
