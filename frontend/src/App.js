@@ -37,6 +37,7 @@ import SuccessionPlanning from './pages/SuccessionPlanning';
 import Skills from './pages/Skills';
 import Overtime from './pages/Overtime';
 import Timesheets from './pages/Timesheets';
+import Projects from './pages/Projects';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -89,6 +90,7 @@ function AppRoutes() {
         <Route path="skills" element={<Skills />} />
         <Route path="overtime" element={<Overtime />} />
         <Route path="timesheets" element={<Timesheets />} />
+        <Route path="projects" element={<Projects />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
