@@ -243,12 +243,21 @@ const Workflows = () => {
         action,
         comment
       });
-      toast.success(`Request ${action}ed`);
+      toast.success(`Request ${action}ed successfully`);
       fetchInstances();
       setViewDialogOpen(false);
+      setRejectDialogOpen(false);
+      setRejectionComment('');
+      setInstanceDetails(null);
     } catch (error) {
       toast.error('Failed to process action');
     }
+  };
+
+  const openInstanceDetails = async (instance) => {
+    setSelectedInstance(instance);
+    setViewDialogOpen(true);
+    await fetchInstanceDetails(instance.id);
   };
 
   const getModuleInfo = (module) => {
