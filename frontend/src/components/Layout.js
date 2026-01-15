@@ -251,6 +251,7 @@ const Layout = () => {
               <NavLink item={{ path: '/onboarding', icon: ClipboardCheck, label: 'My Onboarding' }} />
               <NavLink item={{ path: '/offboarding', icon: UserMinus, label: 'My Offboarding' }} />
               <NavLink item={{ path: '/expenses', icon: Receipt, label: 'My Expenses' }} />
+              <NavLink item={{ path: '/travel', icon: Plane, label: 'My Travel' }} />
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'My Training' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'My Documents' }} />
               <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'My Appraisals' }} />
@@ -272,6 +273,7 @@ const Layout = () => {
               <NavLink item={{ path: '/onboarding', icon: ClipboardCheck, label: 'Onboarding' }} />
               <NavLink item={{ path: '/offboarding', icon: UserMinus, label: 'Offboarding' }} />
               <NavLink item={{ path: '/expenses', icon: Receipt, label: 'Expenses' }} />
+              <NavLink item={{ path: '/travel', icon: Plane, label: 'Travel' }} />
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'Training' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'Documents' }} />
               <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'Appraisals' }} />
