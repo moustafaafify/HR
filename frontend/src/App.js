@@ -28,6 +28,7 @@ import OrgChart from './pages/OrgChart';
 import Payroll from './pages/Payroll';
 import Assets from './pages/Assets';
 import Communications from './pages/Communications';
+import Complaints from './pages/Complaints';
 import Layout from './components/Layout';
 import './App.css';
 
