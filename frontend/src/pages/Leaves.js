@@ -136,6 +136,101 @@ const Leaves = () => {
     }
   };
 
+  // Export Leave Requests to CSV
+  const handleExportRequests = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (exportRequestsFilters.start_date) params.append('start_date', exportRequestsFilters.start_date);
+      if (exportRequestsFilters.end_date) params.append('end_date', exportRequestsFilters.end_date);
+      if (exportRequestsFilters.employee_id !== 'all') params.append('employee_id', exportRequestsFilters.employee_id);
+      if (exportRequestsFilters.status !== 'all') params.append('status', exportRequestsFilters.status);
+      if (exportRequestsFilters.leave_type !== 'all') params.append('leave_type', exportRequestsFilters.leave_type);
+      
+      const response = await axios.get(`${API}/leaves/export?${params.toString()}`);
+      const records = response.data.records;
+      
+      if (records.length === 0) {
+        toast.error('No records found for the selected filters');
+        return;
+      }
+      
+      // Convert to CSV
+      const headers = ['Employee', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Status', 'Reason', 'Submitted'];
+      const csvContent = [
+        headers.join(','),
+        ...records.map(r => [
+          `"${r.employee_name || 'Unknown'}"`,
+          r.leave_type || '-',
+          r.start_date || '-',
+          r.end_date || '-',
+          r.days || '-',
+          r.status || '-',
+          `"${(r.reason || '').replace(/"/g, '""')}"`,
+          r.created_at ? new Date(r.created_at).toLocaleDateString() : '-'
+        ].join(','))
+      ].join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `leave_requests_${exportRequestsFilters.start_date}_to_${exportRequestsFilters.end_date}.csv`;
+      link.click();
+      
+      toast.success(`Exported ${records.length} leave requests`);
+      setExportRequestsDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to export leave requests');
+    }
+  };
+
+  // Export Leave Balances to CSV
+  const handleExportBalances = async () => {
+    try {
+      const response = await axios.get(`${API}/leave-balances/export?year=${exportBalancesYear}`);
+      const records = response.data.records;
+      
+      if (records.length === 0) {
+        toast.error('No balance records found');
+        return;
+      }
+      
+      // Convert to CSV
+      const headers = ['Employee', 'Department', 'Annual (Total)', 'Annual (Used)', 'Sick (Total)', 'Sick (Used)', 'Personal (Total)', 'Personal (Used)', 'Maternity (Total)', 'Maternity (Used)', 'Paternity (Total)', 'Paternity (Used)', 'Bereavement (Total)', 'Bereavement (Used)'];
+      const csvContent = [
+        headers.join(','),
+        ...records.map(r => [
+          `"${r.employee_name || 'Unknown'}"`,
+          `"${r.department_name || '-'}"`,
+          r.annual_leave || 0,
+          r.annual_used || 0,
+          r.sick_leave || 0,
+          r.sick_used || 0,
+          r.personal_leave || 0,
+          r.personal_used || 0,
+          r.maternity_leave || 0,
+          r.maternity_used || 0,
+          r.paternity_leave || 0,
+          r.paternity_used || 0,
+          r.bereavement_leave || 0,
+          r.bereavement_used || 0
+        ].join(','))
+      ].join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `leave_balances_${exportBalancesYear}.csv`;
+      link.click();
+      
+      toast.success(`Exported ${records.length} balance records`);
+      setExportBalancesDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to export leave balances');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const submitData = {
