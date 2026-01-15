@@ -341,6 +341,57 @@ async def get_departments(branch_id: Optional[str] = None, current_user: User = 
     depts = await db.departments.find(query, {"_id": 0}).to_list(1000)
     return [Department(**d) for d in depts]
 
+@api_router.put("/departments/{dept_id}", response_model=Department)
+async def update_department(dept_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    await db.departments.update_one({"id": dept_id}, {"$set": data})
+    dept = await db.departments.find_one({"id": dept_id}, {"_id": 0})
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return Department(**dept)
+
+@api_router.delete("/departments/{dept_id}")
+async def delete_department(dept_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.departments.delete_one({"id": dept_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return {"message": "Department deleted"}
+
+# ============= DIVISION ROUTES =============
+
+@api_router.post("/divisions", response_model=Division)
+async def create_division(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    division = Division(**data)
+    await db.divisions.insert_one(division.model_dump())
+    return division
+
+@api_router.get("/divisions", response_model=List[Division])
+async def get_divisions(department_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {"department_id": department_id} if department_id else {}
+    divisions = await db.divisions.find(query, {"_id": 0}).to_list(1000)
+    return [Division(**d) for d in divisions]
+
+@api_router.get("/divisions/{div_id}", response_model=Division)
+async def get_division(div_id: str, current_user: User = Depends(get_current_user)):
+    division = await db.divisions.find_one({"id": div_id}, {"_id": 0})
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    return Division(**division)
+
+@api_router.put("/divisions/{div_id}", response_model=Division)
+async def update_division(div_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    await db.divisions.update_one({"id": div_id}, {"$set": data})
+    division = await db.divisions.find_one({"id": div_id}, {"_id": 0})
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    return Division(**division)
+
+@api_router.delete("/divisions/{div_id}")
+async def delete_division(div_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.divisions.delete_one({"id": div_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Division not found")
+    return {"message": "Division deleted"}
+
 # ============= EMPLOYEE ROUTES =============
 
 @api_router.post("/employees", response_model=Employee)
