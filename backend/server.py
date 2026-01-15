@@ -104,6 +104,7 @@ class Employee(BaseModel):
     email: str
     phone: Optional[str] = None
     department_id: Optional[str] = None
+    division_id: Optional[str] = None
     branch_id: str
     corporation_id: str
     position: Optional[str] = None
