@@ -344,9 +344,40 @@ class PerformanceReview(BaseModel):
     employee_id: str
     reviewer_id: str
     period: str
-    rating: Optional[float] = None
+    review_type: str = "annual"  # annual, quarterly, probation, project, 360
+    status: str = "draft"  # draft, pending_self_assessment, pending_review, completed
+    
+    # Overall Rating
+    overall_rating: Optional[float] = None
+    
+    # Category Ratings (1-5)
+    communication_rating: Optional[float] = None
+    teamwork_rating: Optional[float] = None
+    technical_skills_rating: Optional[float] = None
+    problem_solving_rating: Optional[float] = None
+    leadership_rating: Optional[float] = None
+    punctuality_rating: Optional[float] = None
+    
+    # Goals and Objectives
+    goals: Optional[List[Dict[str, Any]]] = Field(default_factory=list)  # [{title, description, status, progress}]
+    
+    # Self Assessment (filled by employee)
+    self_assessment: Optional[str] = None
+    self_rating: Optional[float] = None
+    achievements: Optional[str] = None
+    challenges: Optional[str] = None
+    
+    # Manager Assessment
+    strengths: Optional[str] = None
+    areas_for_improvement: Optional[str] = None
     feedback: Optional[str] = None
+    recommendations: Optional[str] = None
+    
+    # Dates
+    review_date: Optional[str] = None
+    next_review_date: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class Settings(BaseModel):
     model_config = ConfigDict(extra="ignore")
