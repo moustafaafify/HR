@@ -151,22 +151,24 @@ const Layout = () => {
               {sidebarOpen && (
                 <>
                   <span className="font-medium flex-1">{t('employees')}</span>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setEmployeesExpanded(!employeesExpanded);
-                    }}
-                    className="hover:bg-white/10 rounded p-1 transition-colors"
-                  >
-                    {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  </button>
+                  {employeeSubItems.length > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEmployeesExpanded(!employeesExpanded);
+                      }}
+                      className="hover:bg-white/10 rounded p-1 transition-colors"
+                    >
+                      {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                  )}
                 </>
               )}
             </Link>
             
-            {/* Employee sub-items */}
-            {employeesExpanded && sidebarOpen && (
+            {/* Employee sub-items - Only for managers and admins */}
+            {employeesExpanded && sidebarOpen && employeeSubItems.length > 0 && (
               <div className="ms-4 border-s-2 border-slate-200 mt-1">
                 {employeeSubItems.map((item) => {
                   const Icon = item.icon;
