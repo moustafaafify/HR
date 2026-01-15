@@ -1086,6 +1086,21 @@ async def workflow_action(instance_id: str, data: Dict[str, Any], current_user: 
                         "approved_at": datetime.now(timezone.utc).isoformat()
                     }}
                 )
+                
+                # Special handling for time corrections - update attendance record
+                if instance["module"] == "time_correction":
+                    correction = await db.time_corrections.find_one({"id": instance["reference_id"]}, {"_id": 0})
+                    if correction:
+                        update_data = {}
+                        if correction.get("requested_clock_in"):
+                            update_data["clock_in"] = correction["requested_clock_in"]
+                        if correction.get("requested_clock_out"):
+                            update_data["clock_out"] = correction["requested_clock_out"]
+                        if update_data and correction.get("attendance_id"):
+                            await db.attendance.update_one(
+                                {"id": correction["attendance_id"]},
+                                {"$set": update_data}
+                            )
         else:
             # Move to next step
             await db.workflow_instances.update_one(
