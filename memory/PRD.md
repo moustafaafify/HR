@@ -334,10 +334,17 @@ Build a full-stack HR platform with:
 6. **Communications Module** - Announcements, Memos (with acknowledgment), and Surveys (with results aggregation).
 7. **Complaints Management Module** - Submit/track complaints (anonymous supported), assign, investigate, resolve workflow.
 8. **Disciplinary Actions Module** - Full implementation with admin/employee views, action types, notes, and appeals workflow.
-9. **Travel Module (NEW)** - Full travel request management with:
+9. **Travel Module** - Full travel request management with:
    - Employee: Submit travel requests, track status, start/complete trips with expense reporting
    - Admin: Approve/reject requests, view stats, manage all requests
    - Features: Trip types (domestic/international), purpose categories, transportation, accommodation, budget tracking
+10. **Recognition & Awards Module (NEW)** - Full peer recognition and awards system with:
+   - Recognition Wall: Public feed of recognitions with likes and comments
+   - Leaderboard: Rankings by points (all time, monthly, quarterly, yearly)
+   - 8 pre-seeded categories (Star Performer, Team Player, Innovation, etc.)
+   - Points system for gamification
+   - Nominations for formal awards (e.g., Employee of the Month) requiring admin approval
+   - Admin: Manage categories, review nominations, view all recognitions
 
 ## Upcoming Tasks (P1)
 1. **Test & Finalize Payroll Module** - Create salary structure, run payroll, verify payslips
