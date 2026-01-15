@@ -1013,48 +1013,6 @@ const Workflows = () => {
           )}
         </DialogContent>
       </Dialog>
-                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold mt-1 ${getStatusInfo(selectedInstance.status).color}`}>
-                  {React.createElement(getStatusInfo(selectedInstance.status).icon, { size: 14 })}
-                  {getStatusInfo(selectedInstance.status).label}
-                </span>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Approval History</p>
-                <div className="space-y-2">
-                  {selectedInstance.step_history?.length > 0 ? (
-                    selectedInstance.step_history.map((history, idx) => (
-                      <div key={idx} className="flex items-start gap-3 bg-slate-50 rounded-lg p-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          history.action === 'approve' ? 'bg-emerald-100' : history.action === 'reject' ? 'bg-rose-100' : 'bg-amber-100'
-                        }`}>
-                          {history.action === 'approve' ? (
-                            <CheckCircle2 size={16} className="text-emerald-600" />
-                          ) : history.action === 'reject' ? (
-                            <XCircle size={16} className="text-rose-600" />
-                          ) : (
-                            <ArrowRight size={16} className="text-amber-600" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900 capitalize">{history.action}ed</p>
-                          <p className="text-sm text-slate-500">Step {history.step + 1}</p>
-                          {history.comment && <p className="text-sm text-slate-600 mt-1">"{history.comment}"</p>}
-                          <p className="text-xs text-slate-400 mt-1">
-                            {new Date(history.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-slate-400 text-sm">No actions taken yet</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
