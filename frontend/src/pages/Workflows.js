@@ -286,6 +286,7 @@ const Workflows = () => {
   const getStatusInfo = (status) => {
     const statusMap = {
       pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700', icon: Clock },
+      pending_approval: { label: 'Pending Approval', color: 'bg-amber-100 text-amber-700', icon: Clock },
       in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700', icon: GitBranch },
       approved: { label: 'Approved', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
       rejected: { label: 'Rejected', color: 'bg-rose-100 text-rose-700', icon: XCircle },
@@ -294,30 +295,43 @@ const Workflows = () => {
     return statusMap[status] || statusMap.pending;
   };
 
+  // Filter instances
+  const filteredInstances = instances.filter(i => {
+    if (filterModule !== 'all' && i.module !== filterModule) return false;
+    if (filterStatus !== 'all' && i.status !== filterStatus) return false;
+    return true;
+  });
+
   // Stats
   const pendingCount = instances.filter(i => i.status === 'pending' || i.status === 'in_progress').length;
   const approvedCount = instances.filter(i => i.status === 'approved').length;
   const rejectedCount = instances.filter(i => i.status === 'rejected').length;
 
+  // Format date for display
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString();
+  };
+
   return (
-    <div data-testid="workflows-page" className="space-y-6">
+    <div data-testid="workflows-page" className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Workflows
           </h1>
-          <p className="text-slate-500 mt-1">Configure approval workflows for HR processes</p>
+          <p className="text-slate-500 text-sm sm:text-base mt-1">Configure approval workflows for HR processes</p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-500 text-sm">Active Workflows</p>
-              <p className="text-3xl font-black text-slate-900 mt-1">{workflows.filter(w => w.is_active).length}</p>
+              <p className="text-slate-500 text-xs sm:text-sm">Active Workflows</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{workflows.filter(w => w.is_active).length}</p>
             </div>
             <div className="bg-indigo-100 rounded-xl p-3">
               <GitBranch size={24} className="text-indigo-600" />
