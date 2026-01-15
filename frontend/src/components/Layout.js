@@ -251,6 +251,7 @@ const Layout = () => {
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'My Documents' }} />
               <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'My Appraisals' }} />
               <NavLink item={{ path: '/payroll', icon: Wallet, label: 'My Payslips' }} />
+              <NavLink item={{ path: '/assets', icon: Package, label: 'My Assets' }} />
               <NavLink item={{ path: '/org-chart', icon: Network, label: 'Org Chart' }} />
             </>
           )}
