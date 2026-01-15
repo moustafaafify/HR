@@ -266,6 +266,43 @@ const EmployeesNew = () => {
     return manager ? manager.full_name : '-';
   };
 
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/employees/${selectedEmpForPassword.id}/reset-password`, {
+        new_password: newPassword
+      });
+      toast.success('Password reset successfully. Employee will be prompted to change it on next login.');
+      setPasswordDialogOpen(false);
+      setNewPassword('');
+      setSelectedEmpForPassword(null);
+    } catch (error) {
+      toast.error('Failed to reset password');
+    }
+  };
+
+  const handleTogglePortalAccess = async (empId, currentStatus) => {
+    try {
+      await axios.put(`${API}/employees/${empId}/portal-access`, {
+        portal_access_enabled: !currentStatus
+      });
+      toast.success(`Portal access ${!currentStatus ? 'enabled' : 'disabled'}`);
+      fetchEmployees();
+    } catch (error) {
+      toast.error('Failed to update portal access');
+    }
+  };
+
+  const openPasswordDialog = (emp) => {
+    setSelectedEmpForPassword(emp);
+    setNewPassword('');
+    setPasswordDialogOpen(true);
+  };
+
   return (
     <div data-testid="employees-page">
       <div className="flex items-center justify-between mb-8">
