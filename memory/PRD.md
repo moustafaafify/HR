@@ -87,6 +87,27 @@ Build a full-stack HR platform with:
   - Visual rating display with star icons
   - Alert banner for pending self-assessments
 
+### Attendance Export & Time Corrections (COMPLETED - Jan 15, 2026)
+- **Export Report Feature:**
+  - Export attendance records to CSV
+  - Filter by date range and employee
+  - New endpoint: `GET /api/attendance/export`
+- **Time Correction Requests:**
+  - New `TimeCorrectionRequest` model with status workflow (pending → approved/rejected)
+  - Employee can request corrections to their attendance records
+  - Admin/Manager can approve (updates attendance) or reject (with reason)
+  - New endpoints:
+    - `POST /api/time-corrections` - Create correction request
+    - `GET /api/time-corrections` - List all corrections
+    - `PUT /api/time-corrections/{id}/approve` - Approve and update attendance
+    - `PUT /api/time-corrections/{id}/reject` - Reject with reason
+- **Enhanced Frontend:**
+  - New "Time Corrections" tab in Attendance page
+  - "Export" button with date range/employee filter dialog
+  - "Request Correction" button for employees on attendance records
+  - Admin view shows pending requests with Approve/Reject buttons
+  - Employee view shows their own request history and status
+
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn/UI, React Router
 - **Backend:** FastAPI, Pydantic, JWT
