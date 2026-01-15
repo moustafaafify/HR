@@ -131,6 +131,7 @@ class Employee(BaseModel):
     probation_end_date: Optional[str] = None
     employment_history: Optional[str] = None
     role_id: Optional[str] = None
+    schedule_id: Optional[str] = None
     
     # Payroll & Benefits
     bank_account_number: Optional[str] = None
