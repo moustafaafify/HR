@@ -157,6 +157,23 @@ const Documents = () => {
   });
   const [assignUploadedFile, setAssignUploadedFile] = useState(null);
   
+  // Template form
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    description: '',
+    document_type_id: '',
+    category_id: '',
+    default_priority: 'normal',
+    document_url: '',
+    instructions: ''
+  });
+  
+  // Type form
+  const [typeForm, setTypeForm] = useState({ name: '', icon: '📄', color: 'bg-slate-100 text-slate-700' });
+  
+  // Category form
+  const [categoryForm, setCategoryForm] = useState({ name: '', color: 'bg-slate-100 text-slate-700' });
+  
   const [rejectReason, setRejectReason] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
   const [resubmitForm, setResubmitForm] = useState({ document_url: '', description: '' });
@@ -168,6 +185,9 @@ const Documents = () => {
     fetchAssignedDocuments();
     fetchEmployees();
     fetchStats();
+    fetchDocumentTypes();
+    fetchDocumentCategories();
+    fetchTemplates();
   }, []);
 
   const fetchDocuments = async () => {
