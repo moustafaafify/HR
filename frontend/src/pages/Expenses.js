@@ -73,7 +73,7 @@ const PAYMENT_METHODS = [
 
 const Expenses = () => {
   const { user } = useAuth();
-  const { currency, formatAmount } = useCurrency();
+  const { currency, formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('all');
   const [expenses, setExpenses] = useState([]);
   const [myExpenses, setMyExpenses] = useState([]);
