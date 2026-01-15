@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { 
   Plus, Clock, LogIn, LogOut, Calendar, Edit2, Filter, Trash2, 
   Users, CalendarDays, TrendingUp, Timer, CheckCircle2, XCircle,
-  Sun, Moon, Coffee, ChevronLeft, ChevronRight, BarChart3
+  Sun, Moon, Coffee, ChevronLeft, ChevronRight, BarChart3,
+  Download, FileText, AlertCircle, Send, Eye, MessageSquare
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
@@ -60,6 +61,31 @@ const Attendance = () => {
     schedule_id: ''
   });
 
+  // Time Correction state
+  const [corrections, setCorrections] = useState([]);
+  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);
+  const [viewCorrectionDialogOpen, setViewCorrectionDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedCorrection, setSelectedCorrection] = useState(null);
+  const [correctionForm, setCorrectionForm] = useState({
+    attendance_id: '',
+    date: '',
+    original_clock_in: '',
+    original_clock_out: '',
+    requested_clock_in: '',
+    requested_clock_out: '',
+    reason: ''
+  });
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // Export state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFilters, setExportFilters] = useState({
+    start_date: new Date(new Date().setDate(1)).toISOString().split('T')[0],
+    end_date: new Date().toISOString().split('T')[0],
+    employee_id: 'all'
+  });
+
   // Role-based access
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
   const isManager = user?.role === 'branch_manager' || isAdmin;
@@ -68,6 +94,7 @@ const Attendance = () => {
     fetchAttendance();
     fetchEmployees();
     fetchSchedules();
+    fetchCorrections();
   }, []);
 
   useEffect(() => {
