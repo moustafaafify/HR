@@ -623,6 +623,47 @@ async def update_attendance(attendance_id: str, data: Dict[str, Any], current_us
         raise HTTPException(status_code=404, detail="Attendance record not found")
     return Attendance(**record)
 
+# ============= SCHEDULE ROUTES =============
+
+@api_router.post("/schedules", response_model=Schedule)
+async def create_schedule(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    schedule = Schedule(**data)
+    await db.schedules.insert_one(schedule.model_dump())
+    return schedule
+
+@api_router.get("/schedules", response_model=List[Schedule])
+async def get_schedules(current_user: User = Depends(get_current_user)):
+    schedules = await db.schedules.find({}, {"_id": 0}).to_list(100)
+    return [Schedule(**s) for s in schedules]
+
+@api_router.get("/schedules/{schedule_id}", response_model=Schedule)
+async def get_schedule(schedule_id: str, current_user: User = Depends(get_current_user)):
+    schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return Schedule(**schedule)
+
+@api_router.put("/schedules/{schedule_id}", response_model=Schedule)
+async def update_schedule(schedule_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    await db.schedules.update_one({"id": schedule_id}, {"$set": data})
+    schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return Schedule(**schedule)
+
+@api_router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.schedules.delete_one({"id": schedule_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Schedule deleted"}
+
+@api_router.post("/employees/{emp_id}/assign-schedule")
+async def assign_schedule_to_employee(emp_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    schedule_id = data.get("schedule_id")
+    await db.employees.update_one({"id": emp_id}, {"$set": {"schedule_id": schedule_id}})
+    return {"message": "Schedule assigned successfully"}
+
 # ============= PERFORMANCE REVIEW ROUTES =============
 
 @api_router.post("/reviews", response_model=PerformanceReview)
