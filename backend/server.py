@@ -359,6 +359,35 @@ class Schedule(BaseModel):
     is_default: bool = False
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+class Job(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    department_id: Optional[str] = None
+    location: Optional[str] = None
+    job_type: str = "full_time"  # full_time, part_time, contract, internship, remote
+    description: Optional[str] = None
+    requirements: Optional[str] = None
+    salary_min: Optional[float] = None
+    salary_max: Optional[float] = None
+    status: str = "draft"  # draft, open, on_hold, closed
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Application(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_id: str
+    candidate_name: str
+    email: str
+    phone: Optional[str] = None
+    resume_url: Optional[str] = None
+    cover_letter: Optional[str] = None
+    status: str = "new"  # new, screening, interview, offer, hired, rejected
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class PerformanceReview(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
