@@ -107,6 +107,37 @@ Build a full-stack HR platform with:
 - Export applications to CSV
 - Referrals tracking
 
+### Onboarding Module (COMPLETED - Jan 15, 2026)
+**Onboarding Templates:**
+- Create reusable templates with customizable tasks
+- Task categories: Documentation, IT Setup, Training, Compliance, Team Introduction, Administrative, Other
+- Set task due days, required flag, and resource URLs
+- Welcome message for new employees
+- Department-specific templates
+
+**Onboarding Instances:**
+- Assign onboarding to employees using templates
+- Tasks copied from template with completion tracking
+- Assign manager, buddy, and HR contact
+- Track progress with percentage completion
+- Auto-complete when all tasks done
+
+**Admin Features:**
+- Stats dashboard (In Progress, Completed, Overdue Tasks, Avg Completion)
+- Active/Completed/Templates tabs
+- View individual onboarding progress
+- Update task status from admin view
+- Delete onboardings and templates
+
+**Employee Features:**
+- "My Onboarding" view with welcome banner
+- Progress bar and quick stats (Completed, Remaining, Overdue, Days Left)
+- Tasks grouped by category with completion checkboxes
+- Task completion dialog with optional notes
+- Overdue task warnings
+- Onboarding team contacts display
+- Feedback submission after completion (star rating + comments)
+
 ### Responsive Design (COMPLETED)
 - Mobile header with hamburger menu
 - Slide-out sidebar on mobile/tablet
