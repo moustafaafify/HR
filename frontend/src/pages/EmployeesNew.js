@@ -533,6 +533,23 @@ const EmployeesNew = () => {
                       />
                     </div>
                     <div>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Reporting Manager</label>
+                      <Select 
+                        value={formData.reporting_manager_id} 
+                        onValueChange={(value) => setFormData({ ...formData, reporting_manager_id: value })}
+                      >
+                        <SelectTrigger data-testid="emp-manager-select">
+                          <SelectValue placeholder="Select Manager" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {employees.filter(emp => emp.id !== editingEmp?.id).map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <label className="text-sm font-medium text-slate-700 mb-1.5 block">Hire Date</label>
                       <input
                         type="date"
