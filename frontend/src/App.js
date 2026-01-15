@@ -23,6 +23,7 @@ import Offboarding from './pages/Offboarding';
 import Expenses from './pages/Expenses';
 import Training from './pages/Training';
 import Documents from './pages/Documents';
+import Appraisals from './pages/Appraisals';
 import Layout from './components/Layout';
 import './App.css';
 
