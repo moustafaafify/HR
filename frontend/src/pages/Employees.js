@@ -71,6 +71,24 @@ const Employees = () => {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(`${API}/departments`);
+      setDepartments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+    }
+  };
+
+  const fetchDivisions = async () => {
+    try {
+      const response = await axios.get(`${API}/divisions`);
+      setDivisions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch divisions:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
