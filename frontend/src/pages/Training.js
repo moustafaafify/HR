@@ -1125,6 +1125,96 @@ const Training = () => {
           </div>
         </TabsContent>
 
+        {/* Requests Tab - Admin view of employee training requests */}
+        <TabsContent value="requests" className="mt-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                <GraduationCap size={18} />
+                Employee Training Requests
+              </h3>
+              <span className="text-sm text-slate-500">
+                {allTrainingRequests.length} total requests
+              </span>
+            </div>
+            {allTrainingRequests.length === 0 ? (
+              <div className="p-12 text-center">
+                <GraduationCap size={48} className="mx-auto mb-4 text-slate-300" />
+                <p className="text-slate-500">No training requests from employees yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {allTrainingRequests.map((request) => {
+                  const statusInfo = getRequestStatusInfo(request.status);
+                  const employee = employees.find(e => e.id === request.employee_id);
+                  return (
+                    <div key={request.id} className="p-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="font-bold text-slate-900">{request.title}</h4>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusInfo.color}`}>
+                              {statusInfo.label}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-500 line-clamp-2 mb-2">
+                            {request.description || 'No description provided'}
+                          </p>
+                          <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400">
+                            <span className="font-medium text-slate-600">
+                              {employee?.full_name || 'Unknown Employee'}
+                            </span>
+                            <span>•</span>
+                            <span>{TRAINING_TYPES_LIST.find(t => t.value === request.training_type)?.label || request.training_type}</span>
+                            <span>•</span>
+                            <span>{TRAINING_CATEGORIES_LIST.find(c => c.value === request.category)?.label || request.category}</span>
+                            {request.provider && <><span>•</span><span>{request.provider}</span></>}
+                            {request.cost > 0 && <><span>•</span><span className="font-medium text-slate-600">${request.cost}</span></>}
+                            {request.start_date && <><span>•</span><span>{new Date(request.start_date).toLocaleDateString()} - {new Date(request.end_date).toLocaleDateString()}</span></>}
+                          </div>
+                          {request.objectives && (
+                            <div className="mt-2 p-2 bg-slate-50 rounded-lg text-xs text-slate-600">
+                              <strong>Objectives:</strong> {request.objectives}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {request.status === 'submitted' && (
+                            <>
+                              <Button 
+                                onClick={() => handleApproveRequest(request.id)} 
+                                size="sm" 
+                                className="rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                <Check size={14} className="mr-1" />
+                                Approve
+                              </Button>
+                              <Button 
+                                onClick={() => handleRejectRequest(request.id)} 
+                                size="sm" 
+                                variant="outline"
+                                className="rounded-lg text-rose-600 border-rose-200 hover:bg-rose-50"
+                              >
+                                <X size={14} className="mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      {request.status === 'rejected' && request.rejection_reason && (
+                        <div className="mt-3 p-3 bg-rose-50 rounded-xl text-sm text-rose-700">
+                          <strong>Rejection reason:</strong> {request.rejection_reason}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
         {/* Settings Tab */}
         <TabsContent value="settings" className="mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
