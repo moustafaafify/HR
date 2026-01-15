@@ -686,43 +686,6 @@ const Documents = () => {
             </div>
           </TabsContent>
         </Tabs>
-                            <strong>Revision notes:</strong> {doc.revision_notes}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button onClick={() => openViewDocument(doc)} size="sm" variant="ghost" className="rounded-lg">
-                          <Eye size={16} />
-                        </Button>
-                        {['draft', 'rejected', 'revision_requested'].includes(doc.status) && (
-                          <>
-                            {doc.status === 'revision_requested' ? (
-                              <Button 
-                                onClick={() => { setSelectedDocument(doc); setResubmitDialogOpen(true); }} 
-                                size="sm" 
-                                className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
-                              >
-                                <RefreshCw size={14} className="mr-1" />
-                                Resubmit
-                              </Button>
-                            ) : (
-                              <Button onClick={() => openEditDocument(doc)} size="sm" variant="ghost" className="rounded-lg">
-                                <Edit2 size={16} />
-                              </Button>
-                            )}
-                            <Button onClick={() => handleDelete(doc.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
-                              <Trash2 size={16} />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
         {/* Create/Edit Dialog */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
