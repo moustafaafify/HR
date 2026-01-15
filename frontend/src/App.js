@@ -36,6 +36,7 @@ import TeamCalendar from './pages/TeamCalendar';
 import SuccessionPlanning from './pages/SuccessionPlanning';
 import Skills from './pages/Skills';
 import Overtime from './pages/Overtime';
+import Timesheets from './pages/Timesheets';
 import Layout from './components/Layout';
 import './App.css';
 
