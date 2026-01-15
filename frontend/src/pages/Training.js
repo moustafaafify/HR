@@ -1212,6 +1212,14 @@ const Training = () => {
                               </Button>
                             </>
                           )}
+                          <Button 
+                            onClick={() => handleDeleteTrainingRequest(request.id)} 
+                            size="sm" 
+                            variant="ghost"
+                            className="rounded-lg text-rose-600 hover:bg-rose-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
                         </div>
                       </div>
                       {request.status === 'rejected' && request.rejection_reason && (
