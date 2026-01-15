@@ -108,7 +108,7 @@ class Employee(BaseModel):
     home_address: Optional[str] = None
     personal_phone: Optional[str] = None
     work_phone: Optional[str] = None
-    personal_email: str
+    personal_email: Optional[str] = None
     work_email: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_relationship: Optional[str] = None
@@ -130,6 +130,7 @@ class Employee(BaseModel):
     employment_status: str = "full-time"
     probation_end_date: Optional[str] = None
     employment_history: Optional[str] = None
+    role_id: Optional[str] = None
     
     # Payroll & Benefits
     bank_account_number: Optional[str] = None
