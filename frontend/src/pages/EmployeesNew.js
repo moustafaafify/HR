@@ -92,6 +92,7 @@ const EmployeesNew = () => {
     fetchBranches();
     fetchDepartments();
     fetchDivisions();
+    fetchRoles();
   }, []);
 
   const fetchEmployees = async () => {
