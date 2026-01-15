@@ -149,6 +149,20 @@ const Documents = () => {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [templateUploadedFile, setTemplateUploadedFile] = useState(null);
+  const [assignUploadedFile, setAssignUploadedFile] = useState(null);
+  
+  // Assignment form
+  const [assignForm, setAssignForm] = useState({
+    title: '',
+    description: '',
+    document_type: 'report',
+    category: 'general',
+    document_url: '',
+    priority: 'normal',
+    due_date: '',
+    tags: '',
+    employee_ids: []
+  });
   
   // Template form
   const [templateForm, setTemplateForm] = useState({
