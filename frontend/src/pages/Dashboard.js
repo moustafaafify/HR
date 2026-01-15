@@ -11,6 +11,8 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     total_corporations: 0,
     total_branches: 0,
+    total_departments: 0,
+    total_divisions: 0,
     total_employees: 0,
     pending_leaves: 0
   });
