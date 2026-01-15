@@ -126,29 +126,32 @@ const Layout = () => {
           
           {/* Employees with collapsible sub-menu */}
           <div>
-            <div
-              onClick={() => {
-                if (location.pathname !== '/employees') {
-                  window.location.href = '/employees';
-                } else {
-                  setEmployeesExpanded(!employeesExpanded);
-                }
-              }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+            <Link
+              to="/employees"
+              data-testid="nav-employees"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 location.pathname === '/employees' || location.pathname === '/departments' || location.pathname === '/divisions'
                   ? 'bg-indigo-950 text-white shadow-lg'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
               }`}
-              data-testid="nav-employees"
             >
               <Users size={20} />
               {sidebarOpen && (
                 <>
                   <span className="font-medium flex-1">{t('employees')}</span>
-                  {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEmployeesExpanded(!employeesExpanded);
+                    }}
+                    className="hover:bg-white/10 rounded p-1 transition-colors"
+                  >
+                    {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
                 </>
               )}
-            </div>
+            </Link>
             
             {/* Employee sub-items */}
             {employeesExpanded && sidebarOpen && (
