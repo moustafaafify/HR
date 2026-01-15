@@ -34,6 +34,7 @@ import Travel from './pages/Travel';
 import Recognition from './pages/Recognition';
 import TeamCalendar from './pages/TeamCalendar';
 import SuccessionPlanning from './pages/SuccessionPlanning';
+import Skills from './pages/Skills';
 import Layout from './components/Layout';
 import './App.css';
 
