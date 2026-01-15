@@ -15,7 +15,9 @@ import {
   Settings as SettingsIcon, 
   LogOut,
   Menu,
-  X
+  X,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 const Layout = () => {
