@@ -145,10 +145,20 @@ const Training = () => {
     fetchStats();
     if (isAdmin) {
       fetchAssignments();
+      fetchAllTrainingRequests();
     } else {
       fetchMyAssignments();
     }
   }, [isAdmin]);
+
+  const fetchAllTrainingRequests = async () => {
+    try {
+      const response = await axios.get(`${API}/training-requests`);
+      setAllTrainingRequests(response.data);
+    } catch (error) {
+      console.error('Failed to fetch training requests:', error);
+    }
+  };
 
   const fetchCourses = async () => {
     try {
