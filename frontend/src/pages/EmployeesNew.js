@@ -753,25 +753,72 @@ const EmployeesNew = () => {
 
                 {/* Time, Attendance & Leave */}
                 <TabsContent value="time" className="space-y-4 mt-4">
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">Leave Allowance</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Holiday Allowance (days)</label>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Annual Leave (days)</label>
                       <input
                         type="number"
-                        value={formData.holiday_allowance}
-                        onChange={(e) => setFormData({ ...formData, holiday_allowance: e.target.value })}
+                        value={formData.annual_leave}
+                        onChange={(e) => setFormData({ ...formData, annual_leave: e.target.value })}
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="20"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Sick Leave Allowance (days)</label>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Sick Leave (days)</label>
                       <input
                         type="number"
-                        value={formData.sick_leave_allowance}
-                        onChange={(e) => setFormData({ ...formData, sick_leave_allowance: e.target.value })}
+                        value={formData.sick_leave}
+                        onChange={(e) => setFormData({ ...formData, sick_leave: e.target.value })}
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="10"
                       />
                     </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Personal Leave (days)</label>
+                      <input
+                        type="number"
+                        value={formData.personal_leave}
+                        onChange={(e) => setFormData({ ...formData, personal_leave: e.target.value })}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="5"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Bereavement Leave (days)</label>
+                      <input
+                        type="number"
+                        value={formData.bereavement_leave}
+                        onChange={(e) => setFormData({ ...formData, bereavement_leave: e.target.value })}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="5"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Maternity Leave (days)</label>
+                      <input
+                        type="number"
+                        value={formData.maternity_leave}
+                        onChange={(e) => setFormData({ ...formData, maternity_leave: e.target.value })}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="90"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Paternity Leave (days)</label>
+                      <input
+                        type="number"
+                        value={formData.paternity_leave}
+                        onChange={(e) => setFormData({ ...formData, paternity_leave: e.target.value })}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="14"
+                      />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-lg font-bold text-slate-900 mt-6 mb-2">Work Schedule</h3>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-1.5 block">Working Hours (per week)</label>
                       <input
@@ -779,13 +826,14 @@ const EmployeesNew = () => {
                         value={formData.working_hours}
                         onChange={(e) => setFormData({ ...formData, working_hours: e.target.value })}
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
+                        placeholder="40"
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-1.5 block">Shift Pattern</label>
                       <Select value={formData.shift_pattern} onValueChange={(value) => setFormData({ ...formData, shift_pattern: value })}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select Shift" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="day">Day Shift</SelectItem>
