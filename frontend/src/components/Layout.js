@@ -35,7 +35,8 @@ import {
   Gavel,
   Plane,
   Award,
-  Target
+  Target,
+  Code
 } from 'lucide-react';
 
 const Layout = () => {
