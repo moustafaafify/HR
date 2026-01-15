@@ -27,7 +27,10 @@ import {
   ChevronRight,
   Send,
   RotateCcw,
-  Users
+  Users,
+  Settings,
+  Copy,
+  Layers
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
