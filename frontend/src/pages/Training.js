@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { useCurrency } from '../contexts/CurrencyContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -17,147 +16,169 @@ import {
   Eye, 
   Edit2, 
   Trash2,
-  Calendar,
-  Building2,
-  User,
-  AlertCircle,
+  Video,
+  FileText,
+  Users,
+  Settings,
+  Play,
+  Star,
+  Award,
+  Target,
+  Upload,
+  Link as LinkIcon,
+  Globe,
+  BarChart3,
+  ChevronRight,
+  UserPlus,
   Check,
   X,
-  Download,
-  Globe,
-  Award,
-  Users,
-  Video,
-  Presentation,
-  Target,
-  TrendingUp,
-  DollarSign,
-  Star,
-  Play,
-  Ban,
-  ExternalLink
+  Layers,
+  Tag
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const TRAINING_TYPES = [
-  { value: 'course', label: 'Course', icon: BookOpen, color: 'bg-blue-100 text-blue-700' },
-  { value: 'certification', label: 'Certification', icon: Award, color: 'bg-emerald-100 text-emerald-700' },
-  { value: 'workshop', label: 'Workshop', icon: Users, color: 'bg-purple-100 text-purple-700' },
-  { value: 'conference', label: 'Conference', icon: Presentation, color: 'bg-amber-100 text-amber-700' },
-  { value: 'online', label: 'Online Course', icon: Video, color: 'bg-cyan-100 text-cyan-700' },
-  { value: 'seminar', label: 'Seminar', icon: GraduationCap, color: 'bg-indigo-100 text-indigo-700' },
-  { value: 'bootcamp', label: 'Bootcamp', icon: Target, color: 'bg-rose-100 text-rose-700' }
+const DIFFICULTY_LEVELS = [
+  { value: 'beginner', label: 'Beginner', color: 'bg-emerald-100 text-emerald-700' },
+  { value: 'intermediate', label: 'Intermediate', color: 'bg-amber-100 text-amber-700' },
+  { value: 'advanced', label: 'Advanced', color: 'bg-rose-100 text-rose-700' }
 ];
 
-const TRAINING_CATEGORIES = [
-  { value: 'professional', label: 'Professional Development' },
-  { value: 'technical', label: 'Technical Skills' },
-  { value: 'leadership', label: 'Leadership & Management' },
-  { value: 'compliance', label: 'Compliance & Regulatory' },
-  { value: 'soft_skills', label: 'Soft Skills' },
-  { value: 'other', label: 'Other' }
+const CONTENT_TYPES = [
+  { value: 'video', label: 'Video', icon: Video },
+  { value: 'document', label: 'Document', icon: FileText },
+  { value: 'link', label: 'External Link', icon: Globe },
+  { value: 'mixed', label: 'Mixed Content', icon: Layers }
 ];
 
-const TRAINING_STATUS = [
-  { value: 'pending', label: 'Pending', color: 'bg-slate-100 text-slate-700' },
-  { value: 'submitted', label: 'Submitted', color: 'bg-blue-100 text-blue-700' },
-  { value: 'under_review', label: 'Under Review', color: 'bg-amber-100 text-amber-700' },
-  { value: 'approved', label: 'Approved', color: 'bg-emerald-100 text-emerald-700' },
-  { value: 'rejected', label: 'Rejected', color: 'bg-rose-100 text-rose-700' },
-  { value: 'in_progress', label: 'In Progress', color: 'bg-indigo-100 text-indigo-700' },
-  { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-700' }
+const DEFAULT_TYPES = [
+  { name: 'Course', icon: 'BookOpen', color: 'bg-blue-100 text-blue-700' },
+  { name: 'Certification', icon: 'Award', color: 'bg-emerald-100 text-emerald-700' },
+  { name: 'Workshop', icon: 'Users', color: 'bg-purple-100 text-purple-700' },
+  { name: 'Webinar', icon: 'Video', color: 'bg-cyan-100 text-cyan-700' },
+  { name: 'Tutorial', icon: 'GraduationCap', color: 'bg-indigo-100 text-indigo-700' }
 ];
 
-const LOCATION_TYPES = [
-  { value: 'online', label: 'Online' },
-  { value: 'onsite', label: 'On-site' },
-  { value: 'offsite', label: 'Off-site' },
-  { value: 'hybrid', label: 'Hybrid' }
+const DEFAULT_CATEGORIES = [
+  { name: 'Professional Development', color: 'bg-blue-100 text-blue-700' },
+  { name: 'Technical Skills', color: 'bg-purple-100 text-purple-700' },
+  { name: 'Leadership', color: 'bg-amber-100 text-amber-700' },
+  { name: 'Compliance', color: 'bg-rose-100 text-rose-700' },
+  { name: 'Soft Skills', color: 'bg-emerald-100 text-emerald-700' },
+  { name: 'Onboarding', color: 'bg-cyan-100 text-cyan-700' }
 ];
 
 const Training = () => {
   const { user } = useAuth();
-  const { formatCurrency } = useCurrency();
-  const [activeTab, setActiveTab] = useState('all');
-  const [requests, setRequests] = useState([]);
-  const [myRequests, setMyRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('courses');
+  
+  // Data
+  const [courses, setCourses] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [myAssignments, setMyAssignments] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState(null);
   
   // Dialogs
-  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [courseDialogOpen, setCourseDialogOpen] = useState(false);
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [viewCourseDialogOpen, setViewCourseDialogOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   
-  // Selected items
-  const [editingRequest, setEditingRequest] = useState(null);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  
-  // Filters
-  const [filterType, setFilterType] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
+  // Selected/Editing
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [editingType, setEditingType] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
   
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
   
-  const [requestForm, setRequestForm] = useState({
+  // Forms
+  const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
-    training_type: 'course',
-    category: 'professional',
-    provider: '',
-    provider_url: '',
-    cost: '',
-    currency: 'USD',
-    start_date: '',
-    end_date: '',
-    duration_hours: '',
-    location: 'online',
+    type_id: '',
+    category_id: '',
+    content_type: 'video',
+    video_url: '',
+    document_url: '',
+    external_link: '',
+    thumbnail_url: '',
+    duration_minutes: '',
+    difficulty_level: 'beginner',
     objectives: '',
-    expected_outcomes: ''
+    prerequisites: '',
+    tags: '',
+    is_mandatory: false,
+    is_published: false
   });
 
-  const [rejectReason, setRejectReason] = useState('');
-  const [completeForm, setCompleteForm] = useState({
-    certificate_url: '',
-    feedback: '',
-    rating: 0
-  });
+  const [typeForm, setTypeForm] = useState({ name: '', description: '', color: 'bg-blue-100 text-blue-700' });
+  const [categoryForm, setCategoryForm] = useState({ name: '', description: '', color: 'bg-blue-100 text-blue-700' });
+  const [assignForm, setAssignForm] = useState({ course_id: '', employee_ids: [], due_date: '' });
+  const [completeForm, setCompleteForm] = useState({ feedback: '', rating: 0 });
 
   useEffect(() => {
-    fetchRequests();
-    fetchMyRequests();
+    fetchCourses();
+    fetchTypes();
+    fetchCategories();
     fetchEmployees();
     fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (isAdmin) {
+      fetchAssignments();
+    } else {
+      fetchMyAssignments();
+    }
+  }, [isAdmin]);
 
-  const fetchRequests = async () => {
+  const fetchCourses = async () => {
     try {
-      const response = await axios.get(`${API}/training-requests`);
-      setRequests(response.data);
+      const response = await axios.get(`${API}/training-courses`);
+      setCourses(response.data);
     } catch (error) {
-      console.error('Failed to fetch training requests:', error);
+      console.error('Failed to fetch courses:', error);
     }
   };
 
-  const fetchMyRequests = async () => {
+  const fetchTypes = async () => {
     try {
-      const response = await axios.get(`${API}/training-requests/my`);
-      setMyRequests(response.data);
+      const response = await axios.get(`${API}/training-types`);
+      setTypes(response.data);
     } catch (error) {
-      console.error('Failed to fetch my training requests:', error);
+      console.error('Failed to fetch types:', error);
     }
   };
 
-  const fetchStats = async () => {
+  const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API}/training-requests/stats`);
-      setStats(response.data);
+      const response = await axios.get(`${API}/training-categories`);
+      setCategories(response.data);
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await axios.get(`${API}/training-assignments`);
+      setAssignments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch assignments:', error);
+    }
+  };
+
+  const fetchMyAssignments = async () => {
+    try {
+      const response = await axios.get(`${API}/training-assignments/my`);
+      setMyAssignments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch my assignments:', error);
     }
   };
 
@@ -170,64 +191,141 @@ const Training = () => {
     }
   };
 
-  const handleRequestSubmit = async (e) => {
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get(`${API}/training-courses/stats`);
+      setStats(response.data);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  // Course handlers
+  const handleCourseSubmit = async (e) => {
     e.preventDefault();
     try {
       const formData = {
-        ...requestForm,
-        cost: parseFloat(requestForm.cost) || 0,
-        duration_hours: parseInt(requestForm.duration_hours) || null,
-        status: 'submitted'
+        ...courseForm,
+        duration_minutes: parseInt(courseForm.duration_minutes) || null,
+        objectives: courseForm.objectives ? courseForm.objectives.split('\n').filter(o => o.trim()) : [],
+        prerequisites: courseForm.prerequisites ? courseForm.prerequisites.split('\n').filter(p => p.trim()) : [],
+        tags: courseForm.tags ? courseForm.tags.split(',').map(t => t.trim()).filter(t => t) : []
       };
       
-      if (editingRequest) {
-        await axios.put(`${API}/training-requests/${editingRequest.id}`, formData);
-        toast.success('Training request updated');
+      if (editingCourse) {
+        await axios.put(`${API}/training-courses/${editingCourse.id}`, formData);
+        toast.success('Course updated');
       } else {
-        await axios.post(`${API}/training-requests`, formData);
-        toast.success('Training request submitted');
+        await axios.post(`${API}/training-courses`, formData);
+        toast.success('Course created');
       }
-      fetchRequests();
-      fetchMyRequests();
+      fetchCourses();
       fetchStats();
-      resetRequestForm();
+      resetCourseForm();
     } catch (error) {
-      toast.error('Failed to save training request');
+      toast.error('Failed to save course');
     }
   };
 
-  const handleApprove = async (requestId) => {
+  const handleDeleteCourse = async (courseId) => {
+    if (!window.confirm('Delete this course? All assignments will also be removed.')) return;
     try {
-      await axios.put(`${API}/training-requests/${requestId}/approve`);
-      toast.success('Training request approved');
-      fetchRequests();
+      await axios.delete(`${API}/training-courses/${courseId}`);
+      toast.success('Course deleted');
+      fetchCourses();
       fetchStats();
     } catch (error) {
-      toast.error('Failed to approve request');
+      toast.error('Failed to delete course');
     }
   };
 
-  const handleReject = async (e) => {
+  const handlePublishCourse = async (courseId, publish) => {
+    try {
+      await axios.put(`${API}/training-courses/${courseId}/${publish ? 'publish' : 'unpublish'}`);
+      toast.success(publish ? 'Course published' : 'Course unpublished');
+      fetchCourses();
+    } catch (error) {
+      toast.error('Failed to update course');
+    }
+  };
+
+  // Type handlers
+  const handleTypeSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API}/training-requests/${selectedRequest.id}/reject`, { reason: rejectReason });
-      toast.success('Training request rejected');
-      setRejectDialogOpen(false);
-      setRejectReason('');
-      fetchRequests();
-      fetchStats();
+      if (editingType) {
+        await axios.put(`${API}/training-types/${editingType.id}`, typeForm);
+        toast.success('Type updated');
+      } else {
+        await axios.post(`${API}/training-types`, typeForm);
+        toast.success('Type created');
+      }
+      fetchTypes();
+      resetTypeForm();
     } catch (error) {
-      toast.error('Failed to reject request');
+      toast.error('Failed to save type');
     }
   };
 
-  const handleStartTraining = async (requestId) => {
+  const handleDeleteType = async (typeId) => {
+    if (!window.confirm('Delete this training type?')) return;
     try {
-      await axios.put(`${API}/training-requests/${requestId}/start`);
-      toast.success('Training marked as in progress');
-      fetchRequests();
-      fetchMyRequests();
-      fetchStats();
+      await axios.delete(`${API}/training-types/${typeId}`);
+      toast.success('Type deleted');
+      fetchTypes();
+    } catch (error) {
+      toast.error('Failed to delete type');
+    }
+  };
+
+  // Category handlers
+  const handleCategorySubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingCategory) {
+        await axios.put(`${API}/training-categories/${editingCategory.id}`, categoryForm);
+        toast.success('Category updated');
+      } else {
+        await axios.post(`${API}/training-categories`, categoryForm);
+        toast.success('Category created');
+      }
+      fetchCategories();
+      resetCategoryForm();
+    } catch (error) {
+      toast.error('Failed to save category');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!window.confirm('Delete this category?')) return;
+    try {
+      await axios.delete(`${API}/training-categories/${categoryId}`);
+      toast.success('Category deleted');
+      fetchCategories();
+    } catch (error) {
+      toast.error('Failed to delete category');
+    }
+  };
+
+  // Assignment handlers
+  const handleAssignSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API}/training-assignments/bulk`, assignForm);
+      toast.success('Training assigned');
+      fetchAssignments();
+      setAssignDialogOpen(false);
+      setAssignForm({ course_id: '', employee_ids: [], due_date: '' });
+    } catch (error) {
+      toast.error('Failed to assign training');
+    }
+  };
+
+  const handleStartTraining = async (assignmentId) => {
+    try {
+      await axios.put(`${API}/training-assignments/${assignmentId}/start`);
+      toast.success('Training started');
+      fetchMyAssignments();
     } catch (error) {
       toast.error('Failed to start training');
     }
@@ -236,516 +334,260 @@ const Training = () => {
   const handleCompleteTraining = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API}/training-requests/${selectedRequest.id}/complete`, completeForm);
+      await axios.put(`${API}/training-assignments/${selectedAssignment.id}/complete`, completeForm);
       toast.success('Training completed!');
       setCompleteDialogOpen(false);
-      setCompleteForm({ certificate_url: '', feedback: '', rating: 0 });
-      fetchRequests();
-      fetchMyRequests();
+      setCompleteForm({ feedback: '', rating: 0 });
+      fetchMyAssignments();
       fetchStats();
     } catch (error) {
       toast.error('Failed to complete training');
     }
   };
 
-  const handleDelete = async (requestId) => {
-    if (!window.confirm('Are you sure you want to delete this training request?')) return;
+  const handleDeleteAssignment = async (assignmentId) => {
+    if (!window.confirm('Remove this assignment?')) return;
     try {
-      await axios.delete(`${API}/training-requests/${requestId}`);
-      toast.success('Training request deleted');
-      fetchRequests();
-      fetchMyRequests();
-      fetchStats();
+      await axios.delete(`${API}/training-assignments/${assignmentId}`);
+      toast.success('Assignment removed');
+      fetchAssignments();
     } catch (error) {
-      toast.error('Failed to delete request');
+      toast.error('Failed to remove assignment');
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const response = await axios.get(`${API}/training-requests/export`);
-      const blob = new Blob([response.data.csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `training_requests_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      toast.success(`Exported ${response.data.count} requests`);
-    } catch (error) {
-      toast.error('Failed to export');
-    }
-  };
-
-  const resetRequestForm = () => {
-    setRequestForm({
-      title: '',
-      description: '',
-      training_type: 'course',
-      category: 'professional',
-      provider: '',
-      provider_url: '',
-      cost: '',
-      currency: 'USD',
-      start_date: '',
-      end_date: '',
-      duration_hours: '',
-      location: 'online',
-      objectives: '',
-      expected_outcomes: ''
+  // Reset forms
+  const resetCourseForm = () => {
+    setCourseForm({
+      title: '', description: '', type_id: '', category_id: '', content_type: 'video',
+      video_url: '', document_url: '', external_link: '', thumbnail_url: '',
+      duration_minutes: '', difficulty_level: 'beginner', objectives: '',
+      prerequisites: '', tags: '', is_mandatory: false, is_published: false
     });
-    setEditingRequest(null);
-    setRequestDialogOpen(false);
+    setEditingCourse(null);
+    setCourseDialogOpen(false);
   };
 
-  const openEditRequest = (request) => {
-    setEditingRequest(request);
-    setRequestForm({
-      title: request.title || '',
-      description: request.description || '',
-      training_type: request.training_type || 'course',
-      category: request.category || 'professional',
-      provider: request.provider || '',
-      provider_url: request.provider_url || '',
-      cost: request.cost?.toString() || '',
-      currency: request.currency || 'USD',
-      start_date: request.start_date || '',
-      end_date: request.end_date || '',
-      duration_hours: request.duration_hours?.toString() || '',
-      location: request.location || 'online',
-      objectives: request.objectives || '',
-      expected_outcomes: request.expected_outcomes || ''
+  const resetTypeForm = () => {
+    setTypeForm({ name: '', description: '', color: 'bg-blue-100 text-blue-700' });
+    setEditingType(null);
+    setTypeDialogOpen(false);
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryForm({ name: '', description: '', color: 'bg-blue-100 text-blue-700' });
+    setEditingCategory(null);
+    setCategoryDialogOpen(false);
+  };
+
+  const openEditCourse = (course) => {
+    setEditingCourse(course);
+    setCourseForm({
+      title: course.title || '',
+      description: course.description || '',
+      type_id: course.type_id || '',
+      category_id: course.category_id || '',
+      content_type: course.content_type || 'video',
+      video_url: course.video_url || '',
+      document_url: course.document_url || '',
+      external_link: course.external_link || '',
+      thumbnail_url: course.thumbnail_url || '',
+      duration_minutes: course.duration_minutes?.toString() || '',
+      difficulty_level: course.difficulty_level || 'beginner',
+      objectives: course.objectives?.join('\n') || '',
+      prerequisites: course.prerequisites?.join('\n') || '',
+      tags: course.tags?.join(', ') || '',
+      is_mandatory: course.is_mandatory || false,
+      is_published: course.is_published || false
     });
-    setRequestDialogOpen(true);
+    setCourseDialogOpen(true);
   };
 
-  const getEmployeeName = (empId) => {
-    const emp = employees.find(e => e.id === empId);
-    return emp ? emp.full_name : '-';
-  };
-
-  const getTypeInfo = (type) => {
-    return TRAINING_TYPES.find(t => t.value === type) || TRAINING_TYPES[0];
-  };
-
-  const getStatusInfo = (status) => {
-    return TRAINING_STATUS.find(s => s.value === status) || TRAINING_STATUS[0];
-  };
-
-  const getCategoryLabel = (category) => {
-    const cat = TRAINING_CATEGORIES.find(c => c.value === category);
-    return cat ? cat.label : category;
-  };
-
-  const filteredRequests = requests.filter(req => {
-    if (filterType !== 'all' && req.training_type !== filterType) return false;
-    if (filterCategory !== 'all' && req.category !== filterCategory) return false;
-    return true;
-  });
-
-  const pendingRequests = requests.filter(r => ['pending', 'submitted', 'under_review'].includes(r.status));
+  // Helper functions
+  const getTypeName = (typeId) => types.find(t => t.id === typeId)?.name || '-';
+  const getCategoryName = (catId) => categories.find(c => c.id === catId)?.name || '-';
+  const getEmployeeName = (empId) => employees.find(e => e.id === empId)?.full_name || '-';
+  const getDifficultyInfo = (level) => DIFFICULTY_LEVELS.find(d => d.value === level) || DIFFICULTY_LEVELS[0];
+  const getContentTypeInfo = (type) => CONTENT_TYPES.find(c => c.value === type) || CONTENT_TYPES[0];
 
   // Employee View
-  const EmployeeTrainingView = () => (
-    <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-slate-700">{myRequests.length}</p>
-          <p className="text-xs text-slate-500">Total Requests</p>
+  if (!isAdmin) {
+    return (
+      <div data-testid="training-page" className="space-y-4 sm:space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            My Training
+          </h1>
+          <p className="text-slate-500 text-sm sm:text-base mt-1">Complete your assigned training courses</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-amber-600">
-            {myRequests.filter(r => ['pending', 'submitted', 'under_review'].includes(r.status)).length}
-          </p>
-          <p className="text-xs text-slate-500">Pending</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-indigo-600">
-            {myRequests.filter(r => r.status === 'in_progress').length}
-          </p>
-          <p className="text-xs text-slate-500">In Progress</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-green-600">
-            {myRequests.filter(r => r.status === 'completed').length}
-          </p>
-          <p className="text-xs text-slate-500">Completed</p>
-        </div>
-      </div>
 
-      {/* My Training Requests */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="font-bold text-slate-900">My Training Requests</h3>
-          <Button 
-            onClick={() => { resetRequestForm(); setRequestDialogOpen(true); }}
-            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2"
-          >
-            <Plus size={18} />
-            Request Training
-          </Button>
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <p className="text-2xl font-bold text-slate-700">{myAssignments.length}</p>
+            <p className="text-xs text-slate-500">Assigned</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <p className="text-2xl font-bold text-indigo-600">
+              {myAssignments.filter(a => a.status === 'in_progress').length}
+            </p>
+            <p className="text-xs text-slate-500">In Progress</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <p className="text-2xl font-bold text-emerald-600">
+              {myAssignments.filter(a => a.status === 'completed').length}
+            </p>
+            <p className="text-xs text-slate-500">Completed</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+            <p className="text-2xl font-bold text-amber-600">
+              {myAssignments.filter(a => a.due_date && new Date(a.due_date) < new Date() && a.status !== 'completed').length}
+            </p>
+            <p className="text-xs text-slate-500">Overdue</p>
+          </div>
         </div>
-        <div className="divide-y divide-slate-100">
-          {myRequests.length === 0 ? (
-            <div className="p-12 text-center">
+
+        {/* Assigned Courses */}
+        <div className="space-y-4">
+          {myAssignments.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
               <GraduationCap size={48} className="mx-auto mb-4 text-slate-300" />
-              <p className="text-slate-500">No training requests yet</p>
-              <Button 
-                onClick={() => setRequestDialogOpen(true)}
-                variant="outline" 
-                className="mt-4 rounded-xl"
-              >
-                <Plus size={16} className="mr-2" />
-                Request Your First Training
-              </Button>
+              <p className="text-slate-500">No training assigned yet</p>
             </div>
           ) : (
-            myRequests.map((request) => {
-              const typeInfo = getTypeInfo(request.training_type);
-              const statusInfo = getStatusInfo(request.status);
-              const TypeIcon = typeInfo.icon;
+            myAssignments.map((assignment) => {
+              const course = assignment.course || {};
+              const difficultyInfo = getDifficultyInfo(course.difficulty_level);
+              const ContentIcon = getContentTypeInfo(course.content_type).icon;
+              const isOverdue = assignment.due_date && new Date(assignment.due_date) < new Date() && assignment.status !== 'completed';
+              
               return (
-                <div key={request.id} className="p-4 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl ${typeInfo.color} flex items-center justify-center`}>
-                      <TypeIcon size={20} />
+                <div key={assignment.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Thumbnail */}
+                    <div className="sm:w-48 h-32 sm:h-auto bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                      {course.thumbnail_url ? (
+                        <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <ContentIcon size={40} className="text-white/80" />
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-slate-900 truncate">{request.title}</p>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </span>
+                    
+                    {/* Content */}
+                    <div className="flex-1 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="font-bold text-slate-900">{course.title}</h3>
+                            {course.is_mandatory && (
+                              <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs font-bold">Required</span>
+                            )}
+                            {isOverdue && (
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">Overdue</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-500 line-clamp-2">{course.description}</p>
+                          <div className="flex items-center gap-3 mt-2 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${difficultyInfo.color}`}>
+                              {difficultyInfo.label}
+                            </span>
+                            {course.duration_minutes && (
+                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                                <Clock size={12} />
+                                {course.duration_minutes} min
+                              </span>
+                            )}
+                            {assignment.due_date && (
+                              <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-amber-600' : 'text-slate-400'}`}>
+                                Due: {new Date(assignment.due_date).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Progress & Actions */}
+                        <div className="text-right flex flex-col items-end gap-2">
+                          {assignment.status === 'completed' ? (
+                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center gap-1">
+                              <CheckCircle2 size={14} />
+                              Completed
+                            </span>
+                          ) : assignment.status === 'in_progress' ? (
+                            <>
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-indigo-600">{assignment.progress || 0}%</p>
+                                <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                  <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${assignment.progress || 0}%` }} />
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => { setSelectedAssignment(assignment); setCompleteDialogOpen(true); }}
+                                size="sm"
+                                className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                <CheckCircle2 size={14} className="mr-1" />
+                                Complete
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              onClick={() => handleStartTraining(assignment.id)}
+                              size="sm"
+                              className="rounded-xl bg-indigo-600 hover:bg-indigo-700"
+                            >
+                              <Play size={14} className="mr-1" />
+                              Start
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-500">
-                        {request.provider || 'No provider'} • {new Date(request.start_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      {request.cost > 0 && (
-                        <p className="font-bold text-slate-900">{formatCurrency(request.cost)}</p>
-                      )}
-                      <p className="text-xs text-slate-400">{typeInfo.label}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        onClick={() => { setSelectedRequest(request); setViewDialogOpen(true); }}
-                        size="sm"
-                        variant="ghost"
-                        className="rounded-lg"
-                      >
-                        <Eye size={16} />
-                      </Button>
-                      {request.status === 'approved' && (
-                        <Button
-                          onClick={() => handleStartTraining(request.id)}
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-lg text-indigo-600"
-                        >
-                          <Play size={16} />
-                        </Button>
-                      )}
-                      {request.status === 'in_progress' && (
-                        <Button
-                          onClick={() => { setSelectedRequest(request); setCompleteDialogOpen(true); }}
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-lg text-green-600"
-                        >
-                          <CheckCircle2 size={16} />
-                        </Button>
-                      )}
-                      {request.status === 'pending' && (
-                        <>
-                          <Button
-                            onClick={() => openEditRequest(request)}
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-lg"
-                          >
-                            <Edit2 size={16} />
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(request.id)}
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-lg text-rose-600"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </>
+                      
+                      {/* Content Links */}
+                      {assignment.status !== 'assigned' && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2 flex-wrap">
+                          {course.video_url && (
+                            <a href={course.video_url} target="_blank" rel="noopener noreferrer" 
+                               className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-indigo-100 transition-colors">
+                              <Video size={14} />
+                              Watch Video
+                            </a>
+                          )}
+                          {course.document_url && (
+                            <a href={course.document_url} target="_blank" rel="noopener noreferrer"
+                               className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-purple-100 transition-colors">
+                              <FileText size={14} />
+                              View Document
+                            </a>
+                          )}
+                          {course.external_link && (
+                            <a href={course.external_link} target="_blank" rel="noopener noreferrer"
+                               className="px-3 py-1.5 bg-slate-50 text-slate-700 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors">
+                              <Globe size={14} />
+                              External Link
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-                  {request.status === 'rejected' && request.rejection_reason && (
-                    <div className="mt-2 p-2 bg-rose-50 rounded-lg text-sm text-rose-700 flex items-start gap-2">
-                      <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                      <span>Rejected: {request.rejection_reason}</span>
-                    </div>
-                  )}
                 </div>
               );
             })
           )}
         </div>
-      </div>
-    </div>
-  );
 
-  // If not admin, show employee view
-  if (!isAdmin) {
-    return (
-      <div data-testid="training-page" className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              My Training
-            </h1>
-            <p className="text-slate-500 text-sm sm:text-base mt-1">Request and track your training programs</p>
-          </div>
-        </div>
-        <EmployeeTrainingView />
-
-        {/* Request Form Dialog */}
-        <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
-          <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl flex items-center gap-2">
-                <GraduationCap className="text-indigo-600" size={24} />
-                {editingRequest ? 'Edit Training Request' : 'Request Training'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleRequestSubmit} className="space-y-4 mt-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Training Title *</label>
-                <Input
-                  value={requestForm.title}
-                  onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })}
-                  className="rounded-xl"
-                  placeholder="e.g. AWS Solutions Architect Certification"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type *</label>
-                  <Select value={requestForm.training_type} onValueChange={(v) => setRequestForm({ ...requestForm, training_type: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRAINING_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category *</label>
-                  <Select value={requestForm.category} onValueChange={(v) => setRequestForm({ ...requestForm, category: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRAINING_CATEGORIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Provider</label>
-                  <Input
-                    value={requestForm.provider}
-                    onChange={(e) => setRequestForm({ ...requestForm, provider: e.target.value })}
-                    className="rounded-xl"
-                    placeholder="e.g. Coursera, Udemy"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Cost</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={requestForm.cost}
-                    onChange={(e) => setRequestForm({ ...requestForm, cost: e.target.value })}
-                    className="rounded-xl"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Start Date *</label>
-                  <Input
-                    type="date"
-                    value={requestForm.start_date}
-                    onChange={(e) => setRequestForm({ ...requestForm, start_date: e.target.value })}
-                    className="rounded-xl"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">End Date *</label>
-                  <Input
-                    type="date"
-                    value={requestForm.end_date}
-                    onChange={(e) => setRequestForm({ ...requestForm, end_date: e.target.value })}
-                    className="rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Location</label>
-                  <Select value={requestForm.location} onValueChange={(v) => setRequestForm({ ...requestForm, location: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LOCATION_TYPES.map((l) => (
-                        <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Duration (hours)</label>
-                  <Input
-                    type="number"
-                    value={requestForm.duration_hours}
-                    onChange={(e) => setRequestForm({ ...requestForm, duration_hours: e.target.value })}
-                    className="rounded-xl"
-                    placeholder="e.g. 40"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
-                <textarea
-                  value={requestForm.description}
-                  onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
-                  rows={2}
-                  placeholder="Describe the training..."
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Learning Objectives</label>
-                <textarea
-                  value={requestForm.objectives}
-                  onChange={(e) => setRequestForm({ ...requestForm, objectives: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
-                  rows={2}
-                  placeholder="What will you learn?"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
-                  {editingRequest ? 'Update Request' : 'Submit Request'}
-                </Button>
-                <Button type="button" onClick={resetRequestForm} variant="outline" className="rounded-xl">
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* View Request Dialog */}
-        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="rounded-2xl max-w-md mx-4">
-            <DialogHeader>
-              <DialogTitle className="text-xl flex items-center gap-2">
-                <GraduationCap className="text-indigo-600" size={24} />
-                Training Details
-              </DialogTitle>
-            </DialogHeader>
-            {selectedRequest && (
-              <div className="space-y-4 mt-4">
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                  <div>
-                    <p className="text-sm text-slate-500">Cost</p>
-                    <p className="text-2xl font-black text-slate-900">{formatCurrency(selectedRequest.cost || 0)}</p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusInfo(selectedRequest.status).color}`}>
-                    {getStatusInfo(selectedRequest.status).label}
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Title</p>
-                    <p className="font-medium text-slate-900">{selectedRequest.title}</p>
-                  </div>
-                  {selectedRequest.description && (
-                    <div>
-                      <p className="text-xs text-slate-500">Description</p>
-                      <p className="text-slate-700">{selectedRequest.description}</p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Type</p>
-                      <p className="font-medium text-slate-900">{getTypeInfo(selectedRequest.training_type).label}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Category</p>
-                      <p className="font-medium text-slate-900">{getCategoryLabel(selectedRequest.category)}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Start Date</p>
-                      <p className="font-medium text-slate-900">{new Date(selectedRequest.start_date).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">End Date</p>
-                      <p className="font-medium text-slate-900">{new Date(selectedRequest.end_date).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  {selectedRequest.provider && (
-                    <div>
-                      <p className="text-xs text-slate-500">Provider</p>
-                      <p className="font-medium text-slate-900">{selectedRequest.provider}</p>
-                    </div>
-                  )}
-                  {selectedRequest.rejection_reason && (
-                    <div className="p-3 bg-rose-50 rounded-xl">
-                      <p className="text-xs text-rose-600 font-medium">Rejection Reason</p>
-                      <p className="text-rose-700">{selectedRequest.rejection_reason}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Complete Training Dialog */}
+        {/* Complete Dialog */}
         <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
           <DialogContent className="rounded-2xl max-w-md mx-4">
             <DialogHeader>
               <DialogTitle className="text-xl flex items-center gap-2">
-                <Award className="text-green-600" size={24} />
+                <Award className="text-emerald-600" size={24} />
                 Complete Training
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCompleteTraining} className="space-y-4 mt-4">
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Certificate URL (optional)</label>
-                <Input
-                  value={completeForm.certificate_url}
-                  onChange={(e) => setCompleteForm({ ...completeForm, certificate_url: e.target.value })}
-                  className="rounded-xl"
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">How was the training?</label>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">How was this training?</label>
                 <div className="flex gap-2 justify-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -754,25 +596,22 @@ const Training = () => {
                       onClick={() => setCompleteForm({ ...completeForm, rating: star })}
                       className="p-1 transition-transform hover:scale-110"
                     >
-                      <Star
-                        size={32}
-                        className={star <= completeForm.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
-                      />
+                      <Star size={32} className={star <= completeForm.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Feedback</label>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Feedback (optional)</label>
                 <textarea
                   value={completeForm.feedback}
                   onChange={(e) => setCompleteForm({ ...completeForm, feedback: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none resize-none"
                   rows={3}
-                  placeholder="Share your experience..."
+                  placeholder="Share your thoughts..."
                 />
               </div>
-              <Button type="submit" className="w-full rounded-xl bg-green-600 hover:bg-green-700">
+              <Button type="submit" className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700">
                 Mark as Completed
               </Button>
             </form>
@@ -789,22 +628,14 @@ const Training = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Training Requests
+            Training Management
           </h1>
-          <p className="text-slate-500 text-sm sm:text-base mt-1">Manage employee training and development</p>
+          <p className="text-slate-500 text-sm sm:text-base mt-1">Create courses, manage categories, and assign training</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleExport} variant="outline" className="rounded-xl gap-2">
-            <Download size={18} />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
-          <Button 
-            onClick={() => { resetRequestForm(); setRequestDialogOpen(true); }}
-            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2"
-            data-testid="new-training-btn"
-          >
+          <Button onClick={() => { resetCourseForm(); setCourseDialogOpen(true); }} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2">
             <Plus size={18} />
-            <span className="hidden sm:inline">New Request</span>
+            <span className="hidden sm:inline">New Course</span>
           </Button>
         </div>
       </div>
@@ -814,44 +645,44 @@ const Training = () => {
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-indigo-100 text-xs sm:text-sm">Total Requests</p>
-              <p className="text-2xl sm:text-3xl font-black mt-1">{stats?.total_requests || 0}</p>
+              <p className="text-indigo-100 text-xs sm:text-sm">Total Courses</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1">{stats?.total_courses || 0}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-2 sm:p-3">
-              <GraduationCap size={20} className="sm:w-6 sm:h-6" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-amber-100 text-xs sm:text-sm">Pending Review</p>
-              <p className="text-2xl sm:text-3xl font-black mt-1">{stats?.pending_count || 0}</p>
-            </div>
-            <div className="bg-white/20 rounded-xl p-2 sm:p-3">
-              <Clock size={20} className="sm:w-6 sm:h-6" />
+              <BookOpen size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-emerald-100 text-xs sm:text-sm">In Progress</p>
-              <p className="text-2xl sm:text-3xl font-black mt-1">{stats?.in_progress_count || 0}</p>
+              <p className="text-emerald-100 text-xs sm:text-sm">Published</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1">{stats?.published_courses || 0}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-2 sm:p-3">
-              <Play size={20} className="sm:w-6 sm:h-6" />
+              <CheckCircle2 size={20} className="sm:w-6 sm:h-6" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-amber-100 text-xs sm:text-sm">Assignments</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1">{stats?.total_assignments || 0}</p>
+            </div>
+            <div className="bg-white/20 rounded-xl p-2 sm:p-3">
+              <Users size={20} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-500 text-xs sm:text-sm">Total Budget</p>
-              <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">{formatCurrency(stats?.total_cost || 0)}</p>
+              <p className="text-slate-500 text-xs sm:text-sm">Completions</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{stats?.completed_assignments || 0}</p>
             </div>
             <div className="bg-slate-100 rounded-xl p-2 sm:p-3">
-              <DollarSign size={20} className="text-slate-600 sm:w-6 sm:h-6" />
+              <Award size={20} className="text-slate-600 sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
@@ -859,480 +690,547 @@ const Training = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <TabsList className="bg-slate-100 p-1 rounded-xl w-full sm:w-auto flex">
-            <TabsTrigger value="all" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
-              <GraduationCap size={14} className="sm:w-4 sm:h-4" />
-              All
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
-              <Clock size={14} className="sm:w-4 sm:h-4" />
-              Pending
-              {pendingRequests.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs rounded-full">
-                  {pendingRequests.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="active" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
-              <Play size={14} className="sm:w-4 sm:h-4" />
-              Active
-            </TabsTrigger>
-          </TabsList>
-          
-          {/* Filters */}
-          <div className="flex gap-2">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-32 rounded-xl">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {TRAINING_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <TabsList className="bg-slate-100 p-1 rounded-xl w-full sm:w-auto flex flex-wrap">
+          <TabsTrigger value="courses" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <BookOpen size={14} />
+            Courses
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <Users size={14} />
+            Assignments
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <Settings size={14} />
+            Types & Categories
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Courses Tab */}
+        <TabsContent value="courses" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.length === 0 ? (
+              <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                <BookOpen size={48} className="mx-auto mb-4 text-slate-300" />
+                <p className="text-slate-500">No courses created yet</p>
+                <Button onClick={() => setCourseDialogOpen(true)} variant="outline" className="mt-4 rounded-xl">
+                  <Plus size={16} className="mr-2" />
+                  Create First Course
+                </Button>
+              </div>
+            ) : (
+              courses.map((course) => {
+                const difficultyInfo = getDifficultyInfo(course.difficulty_level);
+                const ContentIcon = getContentTypeInfo(course.content_type).icon;
+                const courseAssignments = assignments.filter(a => a.course_id === course.id);
+                
+                return (
+                  <div key={course.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    {/* Thumbnail */}
+                    <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+                      {course.thumbnail_url ? (
+                        <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ContentIcon size={40} className="text-white/80" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        {course.is_published ? (
+                          <span className="px-2 py-0.5 bg-emerald-500 text-white rounded text-xs font-bold">Published</span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-slate-500 text-white rounded text-xs font-bold">Draft</span>
+                        )}
+                        {course.is_mandatory && (
+                          <span className="px-2 py-0.5 bg-rose-500 text-white rounded text-xs font-bold">Required</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-slate-900 truncate">{course.title}</h3>
+                      <p className="text-sm text-slate-500 line-clamp-2 mt-1">{course.description || 'No description'}</p>
+                      
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${difficultyInfo.color}`}>
+                          {difficultyInfo.label}
+                        </span>
+                        {course.duration_minutes && (
+                          <span className="text-xs text-slate-400 flex items-center gap-1">
+                            <Clock size={12} />
+                            {course.duration_minutes} min
+                          </span>
+                        )}
+                        {course.avg_rating > 0 && (
+                          <span className="text-xs text-amber-500 flex items-center gap-0.5">
+                            <Star size={12} className="fill-amber-400" />
+                            {course.avg_rating}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <Users size={14} />
+                          {courseAssignments.length} assigned
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            onClick={() => { setSelectedCourse(course); setAssignForm({ ...assignForm, course_id: course.id }); setAssignDialogOpen(true); }}
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-lg text-indigo-600"
+                          >
+                            <UserPlus size={16} />
+                          </Button>
+                          <Button onClick={() => openEditCourse(course)} size="sm" variant="ghost" className="rounded-lg">
+                            <Edit2 size={16} />
+                          </Button>
+                          <Button
+                            onClick={() => handlePublishCourse(course.id, !course.is_published)}
+                            size="sm"
+                            variant="ghost"
+                            className={`rounded-lg ${course.is_published ? 'text-amber-600' : 'text-emerald-600'}`}
+                          >
+                            {course.is_published ? <X size={16} /> : <Check size={16} />}
+                          </Button>
+                          <Button onClick={() => handleDeleteCourse(course.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
-        </div>
-
-        {/* All Requests Tab */}
-        <TabsContent value="all" className="mt-4">
-          <TrainingTable 
-            requests={filteredRequests}
-            employees={employees}
-            onView={(r) => { setSelectedRequest(r); setViewDialogOpen(true); }}
-            onApprove={handleApprove}
-            onReject={(r) => { setSelectedRequest(r); setRejectDialogOpen(true); }}
-            onStart={handleStartTraining}
-            onComplete={(r) => { setSelectedRequest(r); setCompleteDialogOpen(true); }}
-            onEdit={openEditRequest}
-            onDelete={handleDelete}
-            formatCurrency={formatCurrency}
-          />
         </TabsContent>
 
-        {/* Pending Tab */}
-        <TabsContent value="pending" className="mt-4">
-          <TrainingTable 
-            requests={pendingRequests}
-            employees={employees}
-            onView={(r) => { setSelectedRequest(r); setViewDialogOpen(true); }}
-            onApprove={handleApprove}
-            onReject={(r) => { setSelectedRequest(r); setRejectDialogOpen(true); }}
-            onStart={handleStartTraining}
-            onComplete={(r) => { setSelectedRequest(r); setCompleteDialogOpen(true); }}
-            onEdit={openEditRequest}
-            onDelete={handleDelete}
-            formatCurrency={formatCurrency}
-          />
+        {/* Assignments Tab */}
+        <TabsContent value="assignments" className="mt-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 text-start text-xs sm:text-sm font-bold text-slate-700">Employee</th>
+                  <th className="px-4 sm:px-6 py-3 text-start text-xs sm:text-sm font-bold text-slate-700">Course</th>
+                  <th className="px-4 sm:px-6 py-3 text-start text-xs sm:text-sm font-bold text-slate-700 hidden md:table-cell">Due Date</th>
+                  <th className="px-4 sm:px-6 py-3 text-start text-xs sm:text-sm font-bold text-slate-700">Status</th>
+                  <th className="px-4 sm:px-6 py-3 text-start text-xs sm:text-sm font-bold text-slate-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <Users size={40} className="mx-auto mb-4 text-slate-300" />
+                      <p className="text-slate-500">No assignments yet</p>
+                    </td>
+                  </tr>
+                ) : (
+                  assignments.map((assignment) => {
+                    const course = courses.find(c => c.id === assignment.course_id) || {};
+                    const isOverdue = assignment.due_date && new Date(assignment.due_date) < new Date() && assignment.status !== 'completed';
+                    return (
+                      <tr key={assignment.id} className="border-b border-slate-100">
+                        <td className="px-4 sm:px-6 py-3">
+                          <p className="font-medium text-slate-900">{getEmployeeName(assignment.employee_id)}</p>
+                        </td>
+                        <td className="px-4 sm:px-6 py-3">
+                          <p className="font-medium text-slate-900 truncate max-w-[200px]">{course.title || '-'}</p>
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 hidden md:table-cell">
+                          <span className={isOverdue ? 'text-amber-600' : 'text-slate-600'}>
+                            {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            assignment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                            assignment.status === 'in_progress' ? 'bg-indigo-100 text-indigo-700' :
+                            isOverdue ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {assignment.status === 'completed' ? 'Completed' :
+                             assignment.status === 'in_progress' ? `${assignment.progress || 0}%` :
+                             isOverdue ? 'Overdue' : 'Assigned'}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-3">
+                          <Button onClick={() => handleDeleteAssignment(assignment.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                            <Trash2 size={16} />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
 
-        {/* Active Tab */}
-        <TabsContent value="active" className="mt-4">
-          <TrainingTable 
-            requests={requests.filter(r => ['approved', 'in_progress'].includes(r.status))}
-            employees={employees}
-            onView={(r) => { setSelectedRequest(r); setViewDialogOpen(true); }}
-            onApprove={handleApprove}
-            onReject={(r) => { setSelectedRequest(r); setRejectDialogOpen(true); }}
-            onStart={handleStartTraining}
-            onComplete={(r) => { setSelectedRequest(r); setCompleteDialogOpen(true); }}
-            onEdit={openEditRequest}
-            onDelete={handleDelete}
-            formatCurrency={formatCurrency}
-          />
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Types */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Layers size={18} />
+                  Training Types
+                </h3>
+                <Button onClick={() => { resetTypeForm(); setTypeDialogOpen(true); }} size="sm" className="rounded-xl bg-indigo-600 hover:bg-indigo-700">
+                  <Plus size={16} />
+                </Button>
+              </div>
+              <div className="p-4 space-y-2">
+                {types.length === 0 ? (
+                  <p className="text-slate-500 text-center py-4">No types created. Add default types?</p>
+                ) : (
+                  types.map((type) => (
+                    <div key={type.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${type.color || 'bg-slate-100 text-slate-700'}`}>
+                          {type.name}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button onClick={() => { setEditingType(type); setTypeForm({ name: type.name, description: type.description || '', color: type.color || '' }); setTypeDialogOpen(true); }} size="sm" variant="ghost" className="rounded-lg">
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button onClick={() => handleDeleteType(type.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {types.length === 0 && (
+                  <Button
+                    onClick={async () => {
+                      for (const t of DEFAULT_TYPES) {
+                        await axios.post(`${API}/training-types`, t);
+                      }
+                      fetchTypes();
+                      toast.success('Default types added');
+                    }}
+                    variant="outline"
+                    className="w-full rounded-xl mt-2"
+                  >
+                    Add Default Types
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Tag size={18} />
+                  Training Categories
+                </h3>
+                <Button onClick={() => { resetCategoryForm(); setCategoryDialogOpen(true); }} size="sm" className="rounded-xl bg-indigo-600 hover:bg-indigo-700">
+                  <Plus size={16} />
+                </Button>
+              </div>
+              <div className="p-4 space-y-2">
+                {categories.length === 0 ? (
+                  <p className="text-slate-500 text-center py-4">No categories created. Add default categories?</p>
+                ) : (
+                  categories.map((cat) => (
+                    <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${cat.color || 'bg-slate-100 text-slate-700'}`}>
+                          {cat.name}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, description: cat.description || '', color: cat.color || '' }); setCategoryDialogOpen(true); }} size="sm" variant="ghost" className="rounded-lg">
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button onClick={() => handleDeleteCategory(cat.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {categories.length === 0 && (
+                  <Button
+                    onClick={async () => {
+                      for (const c of DEFAULT_CATEGORIES) {
+                        await axios.post(`${API}/training-categories`, c);
+                      }
+                      fetchCategories();
+                      toast.success('Default categories added');
+                    }}
+                    variant="outline"
+                    className="w-full rounded-xl mt-2"
+                  >
+                    Add Default Categories
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      {/* Request Form Dialog - Same as Employee View */}
-      <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      {/* Course Dialog */}
+      <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
-              <GraduationCap className="text-indigo-600" size={24} />
-              {editingRequest ? 'Edit Training Request' : 'New Training Request'}
+              <BookOpen className="text-indigo-600" size={24} />
+              {editingCourse ? 'Edit Course' : 'Create Course'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleRequestSubmit} className="space-y-4 mt-4">
+          <form onSubmit={handleCourseSubmit} className="space-y-4 mt-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Training Title *</label>
-              <Input
-                value={requestForm.title}
-                onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })}
-                className="rounded-xl"
-                placeholder="e.g. AWS Solutions Architect Certification"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type *</label>
-                <Select value={requestForm.training_type} onValueChange={(v) => setRequestForm({ ...requestForm, training_type: v })}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRAINING_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category *</label>
-                <Select value={requestForm.category} onValueChange={(v) => setRequestForm({ ...requestForm, category: v })}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRAINING_CATEGORIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Provider</label>
-                <Input
-                  value={requestForm.provider}
-                  onChange={(e) => setRequestForm({ ...requestForm, provider: e.target.value })}
-                  className="rounded-xl"
-                  placeholder="e.g. Coursera, Udemy"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Cost</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={requestForm.cost}
-                  onChange={(e) => setRequestForm({ ...requestForm, cost: e.target.value })}
-                  className="rounded-xl"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Start Date *</label>
-                <Input
-                  type="date"
-                  value={requestForm.start_date}
-                  onChange={(e) => setRequestForm({ ...requestForm, start_date: e.target.value })}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">End Date *</label>
-                <Input
-                  type="date"
-                  value={requestForm.end_date}
-                  onChange={(e) => setRequestForm({ ...requestForm, end_date: e.target.value })}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Title *</label>
+              <Input value={courseForm.title} onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })} className="rounded-xl" placeholder="Course title" required />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
-              <textarea
-                value={requestForm.description}
-                onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
-                rows={2}
-                placeholder="Describe the training..."
-              />
+              <textarea value={courseForm.description} onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" rows={2} placeholder="Course description..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type</label>
+                <Select value={courseForm.type_id || 'none'} onValueChange={(v) => setCourseForm({ ...courseForm, type_id: v === 'none' ? '' : v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {types.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+                <Select value={courseForm.category_id || 'none'} onValueChange={(v) => setCourseForm({ ...courseForm, category_id: v === 'none' ? '' : v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Content Type *</label>
+                <Select value={courseForm.content_type} onValueChange={(v) => setCourseForm({ ...courseForm, content_type: v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CONTENT_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Difficulty</label>
+                <Select value={courseForm.difficulty_level} onValueChange={(v) => setCourseForm({ ...courseForm, difficulty_level: v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTY_LEVELS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Content URLs */}
+            {(courseForm.content_type === 'video' || courseForm.content_type === 'mixed') && (
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2"><Video size={14} /> Video URL</label>
+                <Input value={courseForm.video_url} onChange={(e) => setCourseForm({ ...courseForm, video_url: e.target.value })} className="rounded-xl" placeholder="https://youtube.com/... or video file URL" />
+              </div>
+            )}
+            {(courseForm.content_type === 'document' || courseForm.content_type === 'mixed') && (
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2"><FileText size={14} /> Document URL</label>
+                <Input value={courseForm.document_url} onChange={(e) => setCourseForm({ ...courseForm, document_url: e.target.value })} className="rounded-xl" placeholder="https://... (PDF, DOC, etc.)" />
+              </div>
+            )}
+            {(courseForm.content_type === 'link' || courseForm.content_type === 'mixed') && (
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block flex items-center gap-2"><Globe size={14} /> External Link</label>
+                <Input value={courseForm.external_link} onChange={(e) => setCourseForm({ ...courseForm, external_link: e.target.value })} className="rounded-xl" placeholder="https://..." />
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Duration (minutes)</label>
+                <Input type="number" value={courseForm.duration_minutes} onChange={(e) => setCourseForm({ ...courseForm, duration_minutes: e.target.value })} className="rounded-xl" placeholder="e.g. 60" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Thumbnail URL</label>
+                <Input value={courseForm.thumbnail_url} onChange={(e) => setCourseForm({ ...courseForm, thumbnail_url: e.target.value })} className="rounded-xl" placeholder="https://..." />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Learning Objectives (one per line)</label>
+              <textarea value={courseForm.objectives} onChange={(e) => setCourseForm({ ...courseForm, objectives: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" rows={2} placeholder="What learners will achieve..." />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tags (comma-separated)</label>
+              <Input value={courseForm.tags} onChange={(e) => setCourseForm({ ...courseForm, tags: e.target.value })} className="rounded-xl" placeholder="e.g. leadership, communication, management" />
+            </div>
+            
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={courseForm.is_mandatory} onChange={(e) => setCourseForm({ ...courseForm, is_mandatory: e.target.checked })} className="rounded" />
+                <span className="text-sm text-slate-700">Mandatory training</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={courseForm.is_published} onChange={(e) => setCourseForm({ ...courseForm, is_published: e.target.checked })} className="rounded" />
+                <span className="text-sm text-slate-700">Publish immediately</span>
+              </label>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                {editingCourse ? 'Update Course' : 'Create Course'}
+              </Button>
+              <Button type="button" onClick={resetCourseForm} variant="outline" className="rounded-xl">Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Type Dialog */}
+      <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Layers className="text-indigo-600" size={24} />
+              {editingType ? 'Edit Type' : 'Add Training Type'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleTypeSubmit} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Name *</label>
+              <Input value={typeForm.name} onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })} className="rounded-xl" placeholder="e.g. Workshop" required />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Color</label>
+              <Select value={typeForm.color} onValueChange={(v) => setTypeForm({ ...typeForm, color: v })}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bg-blue-100 text-blue-700">Blue</SelectItem>
+                  <SelectItem value="bg-emerald-100 text-emerald-700">Green</SelectItem>
+                  <SelectItem value="bg-purple-100 text-purple-700">Purple</SelectItem>
+                  <SelectItem value="bg-amber-100 text-amber-700">Amber</SelectItem>
+                  <SelectItem value="bg-rose-100 text-rose-700">Rose</SelectItem>
+                  <SelectItem value="bg-cyan-100 text-cyan-700">Cyan</SelectItem>
+                  <SelectItem value="bg-indigo-100 text-indigo-700">Indigo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
-                {editingRequest ? 'Update Request' : 'Submit Request'}
+                {editingType ? 'Update' : 'Add Type'}
               </Button>
-              <Button type="button" onClick={resetRequestForm} variant="outline" className="rounded-xl">
-                Cancel
-              </Button>
+              <Button type="button" onClick={resetTypeForm} variant="outline" className="rounded-xl">Cancel</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* View Request Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+      {/* Category Dialog */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
         <DialogContent className="rounded-2xl max-w-md mx-4">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
-              <GraduationCap className="text-indigo-600" size={24} />
-              Training Details
+              <Tag className="text-indigo-600" size={24} />
+              {editingCategory ? 'Edit Category' : 'Add Category'}
             </DialogTitle>
           </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4 mt-4">
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                <div>
-                  <p className="text-sm text-slate-500">Cost</p>
-                  <p className="text-2xl font-black text-slate-900">{formatCurrency(selectedRequest.cost || 0)}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusInfo(selectedRequest.status).color}`}>
-                  {getStatusInfo(selectedRequest.status).label}
-                </span>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-slate-500">Employee</p>
-                  <p className="font-medium text-slate-900">{getEmployeeName(selectedRequest.employee_id)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Title</p>
-                  <p className="font-medium text-slate-900">{selectedRequest.title}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Type</p>
-                    <p className="font-medium text-slate-900">{getTypeInfo(selectedRequest.training_type).label}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Category</p>
-                    <p className="font-medium text-slate-900">{getCategoryLabel(selectedRequest.category)}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Start Date</p>
-                    <p className="font-medium text-slate-900">{new Date(selectedRequest.start_date).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">End Date</p>
-                    <p className="font-medium text-slate-900">{new Date(selectedRequest.end_date).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                {selectedRequest.rejection_reason && (
-                  <div className="p-3 bg-rose-50 rounded-xl">
-                    <p className="text-xs text-rose-600 font-medium">Rejection Reason</p>
-                    <p className="text-rose-700">{selectedRequest.rejection_reason}</p>
-                  </div>
-                )}
-              </div>
-              
-              {/* Admin Actions */}
-              {['pending', 'submitted', 'under_review'].includes(selectedRequest.status) && (
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    onClick={() => { handleApprove(selectedRequest.id); setViewDialogOpen(false); }}
-                    className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    <Check size={16} className="mr-2" />
-                    Approve
-                  </Button>
-                  <Button 
-                    onClick={() => { setViewDialogOpen(false); setRejectDialogOpen(true); }}
-                    variant="outline"
-                    className="flex-1 rounded-xl text-rose-600 hover:bg-rose-50"
-                  >
-                    <X size={16} className="mr-2" />
-                    Reject
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Reject Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-md mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <Ban className="text-rose-600" size={24} />
-              Reject Training Request
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleReject} className="space-y-4 mt-4">
+          <form onSubmit={handleCategorySubmit} className="space-y-4 mt-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Reason for rejection *</label>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all outline-none resize-none"
-                rows={3}
-                placeholder="Please provide a reason..."
-                required
-              />
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Name *</label>
+              <Input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} className="rounded-xl" placeholder="e.g. Leadership" required />
             </div>
-            <div className="flex gap-3">
-              <Button type="submit" className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700">
-                Reject Request
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Color</label>
+              <Select value={categoryForm.color} onValueChange={(v) => setCategoryForm({ ...categoryForm, color: v })}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bg-blue-100 text-blue-700">Blue</SelectItem>
+                  <SelectItem value="bg-emerald-100 text-emerald-700">Green</SelectItem>
+                  <SelectItem value="bg-purple-100 text-purple-700">Purple</SelectItem>
+                  <SelectItem value="bg-amber-100 text-amber-700">Amber</SelectItem>
+                  <SelectItem value="bg-rose-100 text-rose-700">Rose</SelectItem>
+                  <SelectItem value="bg-cyan-100 text-cyan-700">Cyan</SelectItem>
+                  <SelectItem value="bg-indigo-100 text-indigo-700">Indigo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                {editingCategory ? 'Update' : 'Add Category'}
               </Button>
-              <Button type="button" onClick={() => setRejectDialogOpen(false)} variant="outline" className="rounded-xl">
-                Cancel
-              </Button>
+              <Button type="button" onClick={resetCategoryForm} variant="outline" className="rounded-xl">Cancel</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Complete Training Dialog */}
-      <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+      {/* Assign Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent className="rounded-2xl max-w-md mx-4">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
-              <Award className="text-green-600" size={24} />
-              Complete Training
+              <UserPlus className="text-indigo-600" size={24} />
+              Assign Training
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCompleteTraining} className="space-y-4 mt-4">
+          <form onSubmit={handleAssignSubmit} className="space-y-4 mt-4">
+            {selectedCourse && (
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <p className="font-medium text-slate-900">{selectedCourse.title}</p>
+                <p className="text-sm text-slate-500">{selectedCourse.description?.substring(0, 100)}...</p>
+              </div>
+            )}
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Certificate URL (optional)</label>
-              <Input
-                value={completeForm.certificate_url}
-                onChange={(e) => setCompleteForm({ ...completeForm, certificate_url: e.target.value })}
-                className="rounded-xl"
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Rating</label>
-              <div className="flex gap-2 justify-center">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setCompleteForm({ ...completeForm, rating: star })}
-                    className="p-1 transition-transform hover:scale-110"
-                  >
-                    <Star
-                      size={32}
-                      className={star <= completeForm.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Select Employees *</label>
+              <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1">
+                {employees.map((emp) => (
+                  <label key={emp.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={assignForm.employee_ids.includes(emp.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAssignForm({ ...assignForm, employee_ids: [...assignForm.employee_ids, emp.id] });
+                        } else {
+                          setAssignForm({ ...assignForm, employee_ids: assignForm.employee_ids.filter(id => id !== emp.id) });
+                        }
+                      }}
+                      className="rounded"
                     />
-                  </button>
+                    <span className="text-sm text-slate-700">{emp.full_name}</span>
+                  </label>
                 ))}
               </div>
+              <p className="text-xs text-slate-400 mt-1">{assignForm.employee_ids.length} selected</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Feedback</label>
-              <textarea
-                value={completeForm.feedback}
-                onChange={(e) => setCompleteForm({ ...completeForm, feedback: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none resize-none"
-                rows={3}
-                placeholder="How was the training?"
-              />
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Due Date (optional)</label>
+              <Input type="date" value={assignForm.due_date} onChange={(e) => setAssignForm({ ...assignForm, due_date: e.target.value })} className="rounded-xl" />
             </div>
-            <Button type="submit" className="w-full rounded-xl bg-green-600 hover:bg-green-700">
-              Mark as Completed
-            </Button>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1" disabled={assignForm.employee_ids.length === 0}>
+                Assign Training
+              </Button>
+              <Button type="button" onClick={() => setAssignDialogOpen(false)} variant="outline" className="rounded-xl">Cancel</Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
-
-// Training Table Component
-const TrainingTable = ({ requests, employees, onView, onApprove, onReject, onStart, onComplete, onEdit, onDelete, formatCurrency }) => {
-  const getEmployeeName = (empId) => {
-    const emp = employees.find(e => e.id === empId);
-    return emp ? emp.full_name : '-';
-  };
-
-  const getTypeInfo = (type) => {
-    return TRAINING_TYPES.find(t => t.value === type) || TRAINING_TYPES[0];
-  };
-
-  const getStatusInfo = (status) => {
-    return TRAINING_STATUS.find(s => s.value === status) || TRAINING_STATUS[0];
-  };
-
-  if (requests.length === 0) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-        <GraduationCap size={48} className="mx-auto mb-4 text-slate-300" />
-        <p className="text-slate-500">No training requests found</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Employee</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Training</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700 hidden md:table-cell">Type</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Cost</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Status</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((request) => {
-              const typeInfo = getTypeInfo(request.training_type);
-              const statusInfo = getStatusInfo(request.status);
-              const TypeIcon = typeInfo.icon;
-              return (
-                <tr key={request.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <p className="font-medium text-slate-900">{getEmployeeName(request.employee_id)}</p>
-                    <p className="text-xs text-slate-400">{new Date(request.start_date).toLocaleDateString()}</p>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <p className="font-medium text-slate-900 truncate max-w-[200px]">{request.title}</p>
-                    {request.provider && (
-                      <p className="text-xs text-slate-400 truncate">{request.provider}</p>
-                    )}
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${typeInfo.color}`}>
-                      <TypeIcon size={12} />
-                      {typeInfo.label}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <p className="font-bold text-slate-900">{formatCurrency(request.cost || 0)}</p>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusInfo.color}`}>
-                      {statusInfo.label}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <div className="flex gap-1">
-                      <Button onClick={() => onView(request)} size="sm" variant="ghost" className="rounded-lg">
-                        <Eye size={16} />
-                      </Button>
-                      {['pending', 'submitted', 'under_review'].includes(request.status) && (
-                        <>
-                          <Button onClick={() => onApprove(request.id)} size="sm" variant="ghost" className="rounded-lg text-emerald-600">
-                            <Check size={16} />
-                          </Button>
-                          <Button onClick={() => onReject(request)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
-                            <X size={16} />
-                          </Button>
-                        </>
-                      )}
-                      {request.status === 'approved' && (
-                        <Button onClick={() => onStart(request.id)} size="sm" variant="ghost" className="rounded-lg text-indigo-600">
-                          <Play size={16} />
-                        </Button>
-                      )}
-                      {request.status === 'in_progress' && (
-                        <Button onClick={() => onComplete(request)} size="sm" variant="ghost" className="rounded-lg text-green-600">
-                          <CheckCircle2 size={16} />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 };
