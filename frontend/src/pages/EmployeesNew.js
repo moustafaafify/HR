@@ -33,7 +33,9 @@ const EmployeesNew = () => {
   
   // Role-based access
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
-  const isManager = user?.role === 'branch_manager' || isAdmin;  const [formData, setFormData] = useState({
+  const isManager = user?.role === 'branch_manager' || isAdmin;
+  
+  const [formData, setFormData] = useState({
     // Personal & Contact
     full_name: '',
     employee_id: '',
@@ -72,9 +74,13 @@ const EmployeesNew = () => {
     currency: 'USD',
     benefits_enrolled: '',
     
-    // Time & Leave
-    holiday_allowance: '',
-    sick_leave_allowance: '',
+    // Time & Leave - New leave allowance fields
+    annual_leave: '',
+    sick_leave: '',
+    personal_leave: '',
+    bereavement_leave: '',
+    maternity_leave: '',
+    paternity_leave: '',
     working_hours: '40',
     shift_pattern: 'day',
     
@@ -164,18 +170,58 @@ const EmployeesNew = () => {
       if (submitData.salary) {
         submitData.salary = parseFloat(submitData.salary);
       }
-      if (submitData.holiday_allowance) {
-        submitData.holiday_allowance = parseFloat(submitData.holiday_allowance);
-      }
-      if (submitData.sick_leave_allowance) {
-        submitData.sick_leave_allowance = parseFloat(submitData.sick_leave_allowance);
-      }
+      // Parse leave allowance fields as floats
+      const leaveFields = ['annual_leave', 'sick_leave', 'personal_leave', 'bereavement_leave', 'maternity_leave', 'paternity_leave'];
+      leaveFields.forEach(field => {
+        if (submitData[field]) {
+          submitData[field] = parseFloat(submitData[field]);
+        }
+      });
 
       if (editingEmp) {
+        // Update employee
         await axios.put(`${API}/employees/${editingEmp.id}`, submitData);
+        
+        // Also update leave balance for this employee
+        const leaveBalanceData = {
+          employee_id: editingEmp.id,
+          year: new Date().getFullYear(),
+          annual_leave: parseFloat(submitData.annual_leave) || 20,
+          sick_leave: parseFloat(submitData.sick_leave) || 10,
+          personal_leave: parseFloat(submitData.personal_leave) || 5,
+          bereavement_leave: parseFloat(submitData.bereavement_leave) || 5,
+          maternity_leave: parseFloat(submitData.maternity_leave) || 90,
+          paternity_leave: parseFloat(submitData.paternity_leave) || 14
+        };
+        
+        try {
+          // Try to update existing leave balance or create new one
+          await axios.put(`${API}/leave-balances/employee/${editingEmp.id}`, leaveBalanceData);
+        } catch (balanceError) {
+          // If no existing balance, create one
+          if (balanceError.response?.status === 404) {
+            await axios.post(`${API}/leave-balances`, leaveBalanceData);
+          }
+        }
+        
         toast.success('Employee updated successfully');
       } else {
-        await axios.post(`${API}/employees`, submitData);
+        const response = await axios.post(`${API}/employees`, submitData);
+        const newEmployeeId = response.data.id;
+        
+        // Create leave balance for new employee
+        const leaveBalanceData = {
+          employee_id: newEmployeeId,
+          year: new Date().getFullYear(),
+          annual_leave: parseFloat(submitData.annual_leave) || 20,
+          sick_leave: parseFloat(submitData.sick_leave) || 10,
+          personal_leave: parseFloat(submitData.personal_leave) || 5,
+          bereavement_leave: parseFloat(submitData.bereavement_leave) || 5,
+          maternity_leave: parseFloat(submitData.maternity_leave) || 90,
+          paternity_leave: parseFloat(submitData.paternity_leave) || 14
+        };
+        
+        await axios.post(`${API}/leave-balances`, leaveBalanceData);
         toast.success('Employee created successfully');
       }
       setDialogOpen(false);
@@ -183,6 +229,7 @@ const EmployeesNew = () => {
       resetForm();
       fetchEmployees();
     } catch (error) {
+      console.error('Save error:', error);
       toast.error('Failed to save employee');
     }
   };
@@ -209,7 +256,8 @@ const EmployeesNew = () => {
       work_location: '', reporting_manager_id: '', hire_date: '', employment_status: 'full-time',
       probation_end_date: '', role_id: '', bank_account_number: '', bank_name: '', bank_routing_number: '',
       tax_code: '', salary: '', currency: 'USD', benefits_enrolled: '',
-      holiday_allowance: '', sick_leave_allowance: '', working_hours: '40', shift_pattern: 'day',
+      annual_leave: '', sick_leave: '', personal_leave: '', bereavement_leave: '',
+      maternity_leave: '', paternity_leave: '', working_hours: '40', shift_pattern: 'day',
       certifications: '', professional_memberships: '', skills: '', performance_notes: '',
       visa_status: '', passport_number: '', right_to_work_verified: false, dbs_check_status: '',
       user_id: ''
