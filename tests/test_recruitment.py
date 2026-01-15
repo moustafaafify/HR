@@ -287,10 +287,14 @@ class TestRecruitmentModule:
         assert response.status_code == 200, f"Export applications failed: {response.text}"
         
         data = response.json()
-        assert "records" in data
-        assert "total" in data
-        assert isinstance(data["records"], list)
-        print(f"✓ Exported {data['total']} applications")
+        # Export returns a list of formatted records directly
+        assert isinstance(data, list)
+        if len(data) > 0:
+            # Verify export format has expected fields
+            assert "Candidate Name" in data[0]
+            assert "Email" in data[0]
+            assert "Status" in data[0]
+        print(f"✓ Exported {len(data)} applications")
     
     # ============= REFERRAL TESTS =============
     
