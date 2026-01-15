@@ -791,53 +791,65 @@ const Leaves = () => {
         {/* Leave Requests Tab */}
         <TabsContent value="requests" className="mt-6">
           {/* Filters */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-4 py-2">
-              <Filter size={18} className="text-slate-400" />
-              <span className="text-sm text-slate-500">Filters:</span>
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-36 rounded-xl bg-white">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-40 rounded-xl bg-white">
-                <SelectValue placeholder="Leave Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {LEAVE_TYPES.map(type => (
-                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isManager && (
-              <Select value={filterEmployee} onValueChange={setFilterEmployee}>
-                <SelectTrigger className="w-48 rounded-xl bg-white">
-                  <SelectValue placeholder="Employee" />
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-4 py-2">
+                <Filter size={18} className="text-slate-400" />
+                <span className="text-sm text-slate-500">Filters:</span>
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-36 rounded-xl bg-white">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Employees</SelectItem>
-                  {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-40 rounded-xl bg-white">
+                  <SelectValue placeholder="Leave Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {LEAVE_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
-            {(filterStatus !== 'all' || filterType !== 'all' || filterEmployee !== 'all') && (
+              {isManager && (
+                <Select value={filterEmployee} onValueChange={setFilterEmployee}>
+                  <SelectTrigger className="w-48 rounded-xl bg-white">
+                    <SelectValue placeholder="Employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Employees</SelectItem>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {(filterStatus !== 'all' || filterType !== 'all' || filterEmployee !== 'all') && (
+                <Button 
+                  variant="ghost" 
+                  onClick={() => { setFilterStatus('all'); setFilterType('all'); setFilterEmployee('all'); }}
+                  className="text-slate-500"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            {isManager && (
               <Button 
-                variant="ghost" 
-                onClick={() => { setFilterStatus('all'); setFilterType('all'); setFilterEmployee('all'); }}
-                className="text-slate-500"
+                variant="outline" 
+                onClick={() => setExportRequestsDialogOpen(true)}
+                className="rounded-xl"
               >
-                Clear
+                <Download size={18} className="mr-2" />
+                Export
               </Button>
             )}
           </div>
