@@ -1354,6 +1354,8 @@ async def create_time_correction(data: Dict[str, Any], current_user: User = Depe
         correction_dict["status"] = "pending_approval"
     
     await db.time_corrections.insert_one(correction_dict)
+    # Remove _id added by MongoDB to avoid serialization error
+    correction_dict.pop("_id", None)
     return correction_dict
 
 @api_router.get("/time-corrections")
