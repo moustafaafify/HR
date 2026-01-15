@@ -366,6 +366,9 @@ Build a full-stack HR platform with:
 - `frontend/src/pages/Payroll.js` - Payroll UI (NEW)
 - `frontend/src/pages/OrgChart.js` - Organization Chart UI (NEW)
 - `frontend/src/pages/Appraisals.js` - Appraisals UI (NEW)
+- `frontend/src/pages/Assets.js` - Asset Management UI (NEW)
+- `frontend/src/pages/Communications.js` - Announcements, Memos, Surveys UI (NEW)
+- `frontend/src/pages/Complaints.js` - Complaints Management UI (NEW)
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
 - `frontend/src/pages/Offboarding.js` - Offboarding UI
