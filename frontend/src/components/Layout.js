@@ -235,6 +235,7 @@ const Layout = () => {
               <div className="pt-4 pb-2 px-4">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Administration</p>
               </div>
+              <NavLink item={{ path: '/recruitment', icon: UserPlus, label: 'Recruitment' }} />
               <NavLink item={{ path: '/settings/workflows', icon: Workflow, label: 'Workflows' }} />
               <NavLink item={{ path: '/settings', icon: SettingsIcon, label: t('settings') }} />
             </>
