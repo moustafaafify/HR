@@ -10744,6 +10744,661 @@ async def export_timesheets(
         "total_hours": round(total_hours, 2)
     }
 
+# ============= PROJECT MODELS =============
+
+class ProjectStatus(str, Enum):
+    PLANNING = "planning"
+    ACTIVE = "active"
+    ON_HOLD = "on_hold"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+class ProjectPriority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class Project(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    code: str = Field(default_factory=lambda: f"PRJ-{str(uuid.uuid4())[:6].upper()}")
+    name: str
+    description: Optional[str] = None
+    
+    # Client/Category
+    client_name: Optional[str] = None
+    category: Optional[str] = None  # internal, client, r&d, support
+    
+    # Ownership
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    manager_id: Optional[str] = None
+    manager_name: Optional[str] = None
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    
+    # Status & Priority
+    status: str = "planning"
+    priority: str = "medium"
+    
+    # Dates
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    actual_start_date: Optional[str] = None
+    actual_end_date: Optional[str] = None
+    
+    # Budget
+    budget: float = 0
+    budget_spent: float = 0
+    currency: str = "USD"
+    billable: bool = True
+    hourly_rate: Optional[float] = None
+    
+    # Progress
+    progress: float = 0  # 0-100
+    health: str = "on_track"  # on_track, at_risk, off_track
+    
+    # Counts (denormalized for performance)
+    member_count: int = 0
+    task_count: int = 0
+    completed_task_count: int = 0
+    total_hours: float = 0
+    
+    # Tags & Metadata
+    tags: List[str] = Field(default_factory=list)
+    color: str = "#6366f1"  # For UI display
+    
+    is_archived: bool = False
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ProjectMember(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    
+    role: str = "member"  # owner, manager, lead, member, viewer
+    allocation_percentage: int = 100  # 0-100, percentage of time allocated
+    
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    
+    hours_logged: float = 0
+    
+    added_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ProjectTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    
+    title: str
+    description: Optional[str] = None
+    
+    # Assignment
+    assignee_id: Optional[str] = None
+    assignee_name: Optional[str] = None
+    
+    # Status & Priority
+    status: str = "todo"  # todo, in_progress, in_review, completed, blocked
+    priority: str = "medium"
+    
+    # Dates
+    due_date: Optional[str] = None
+    completed_at: Optional[str] = None
+    
+    # Estimates
+    estimated_hours: Optional[float] = None
+    actual_hours: float = 0
+    
+    # Parent task (for subtasks)
+    parent_task_id: Optional[str] = None
+    
+    # Order
+    order: int = 0
+    
+    tags: List[str] = Field(default_factory=list)
+    
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ProjectComment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    task_id: Optional[str] = None
+    
+    author_id: str
+    author_name: Optional[str] = None
+    content: str
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= PROJECT API ENDPOINTS =============
+
+@api_router.get("/projects/stats")
+async def get_project_stats(current_user: User = Depends(get_current_user)):
+    """Get project statistics"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    if is_admin:
+        projects = await db.projects.find({"is_archived": False}, {"_id": 0}).to_list(1000)
+    else:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return {"total_projects": 0}
+        
+        # Get projects where user is a member
+        memberships = await db.project_members.find({"employee_id": employee["id"]}, {"_id": 0}).to_list(100)
+        project_ids = [m["project_id"] for m in memberships]
+        projects = await db.projects.find({"id": {"$in": project_ids}, "is_archived": False}, {"_id": 0}).to_list(100)
+    
+    by_status = {}
+    by_priority = {}
+    total_budget = 0
+    total_spent = 0
+    total_hours = 0
+    
+    for p in projects:
+        status = p.get("status", "planning")
+        priority = p.get("priority", "medium")
+        
+        if status not in by_status:
+            by_status[status] = 0
+        by_status[status] += 1
+        
+        if priority not in by_priority:
+            by_priority[priority] = 0
+        by_priority[priority] += 1
+        
+        total_budget += p.get("budget", 0)
+        total_spent += p.get("budget_spent", 0)
+        total_hours += p.get("total_hours", 0)
+    
+    return {
+        "total_projects": len(projects),
+        "active_projects": by_status.get("active", 0),
+        "completed_projects": by_status.get("completed", 0),
+        "by_status": by_status,
+        "by_priority": by_priority,
+        "total_budget": round(total_budget, 2),
+        "total_spent": round(total_spent, 2),
+        "total_hours": round(total_hours, 2)
+    }
+
+@api_router.get("/projects")
+async def get_projects(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    department_id: Optional[str] = None,
+    include_archived: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Get projects"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {}
+    
+    if not include_archived:
+        query["is_archived"] = False
+    
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+    if department_id:
+        query["department_id"] = department_id
+    
+    if is_admin:
+        projects = await db.projects.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    else:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        
+        # Get projects where user is a member
+        memberships = await db.project_members.find({"employee_id": employee["id"]}, {"_id": 0}).to_list(100)
+        project_ids = [m["project_id"] for m in memberships]
+        query["id"] = {"$in": project_ids}
+        projects = await db.projects.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    return projects
+
+@api_router.get("/projects/all")
+async def get_all_projects_simple(current_user: User = Depends(get_current_user)):
+    """Get all active projects (for dropdowns)"""
+    projects = await db.projects.find(
+        {"is_archived": False, "status": {"$in": ["planning", "active"]}},
+        {"_id": 0, "id": 1, "name": 1, "code": 1, "client_name": 1}
+    ).to_list(500)
+    return projects
+
+@api_router.get("/projects/{project_id}")
+async def get_project(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific project with details"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if employee:
+            membership = await db.project_members.find_one({
+                "project_id": project_id,
+                "employee_id": employee["id"]
+            }, {"_id": 0})
+            if not membership:
+                raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Get members
+    members = await db.project_members.find({"project_id": project_id}, {"_id": 0}).to_list(100)
+    
+    # Get tasks
+    tasks = await db.project_tasks.find({"project_id": project_id}, {"_id": 0}).sort("order", 1).to_list(500)
+    
+    # Get recent comments
+    comments = await db.project_comments.find(
+        {"project_id": project_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    
+    project["members"] = members
+    project["tasks"] = tasks
+    project["comments"] = comments
+    
+    return project
+
+@api_router.post("/projects")
+async def create_project(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new project"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN, UserRole.BRANCH_MANAGER]:
+        raise HTTPException(status_code=403, detail="Only managers can create projects")
+    
+    # Get department name if provided
+    dept_name = None
+    if data.get("department_id"):
+        dept = await db.departments.find_one({"id": data["department_id"]}, {"_id": 0})
+        if dept:
+            dept_name = dept.get("name")
+    
+    # Get manager name if provided
+    manager_name = None
+    if data.get("manager_id"):
+        manager = await db.employees.find_one({"id": data["manager_id"]}, {"_id": 0})
+        if manager:
+            manager_name = manager.get("full_name")
+    
+    project_data = {
+        **data,
+        "department_name": dept_name,
+        "manager_name": manager_name,
+        "owner_id": current_user.id,
+        "owner_name": current_user.full_name,
+        "created_by": current_user.id
+    }
+    
+    project = Project(**project_data)
+    await db.projects.insert_one(project.model_dump())
+    
+    # Add creator as owner member
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if employee:
+        owner_member = ProjectMember(
+            project_id=project.id,
+            employee_id=employee["id"],
+            employee_name=employee.get("full_name"),
+            employee_email=employee.get("work_email") or employee.get("personal_email"),
+            role="owner",
+            added_by=current_user.id
+        )
+        await db.project_members.insert_one(owner_member.model_dump())
+        
+        # Update project member count
+        await db.projects.update_one({"id": project.id}, {"$set": {"member_count": 1}})
+    
+    return project.model_dump()
+
+@api_router.put("/projects/{project_id}")
+async def update_project(project_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a project"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if employee:
+            membership = await db.project_members.find_one({
+                "project_id": project_id,
+                "employee_id": employee["id"],
+                "role": {"$in": ["owner", "manager"]}
+            }, {"_id": 0})
+            if not membership:
+                raise HTTPException(status_code=403, detail="Only project owners/managers can edit")
+    
+    # Update department name if changed
+    if "department_id" in data and data["department_id"] != project.get("department_id"):
+        dept = await db.departments.find_one({"id": data["department_id"]}, {"_id": 0})
+        if dept:
+            data["department_name"] = dept.get("name")
+    
+    # Update manager name if changed
+    if "manager_id" in data and data["manager_id"] != project.get("manager_id"):
+        manager = await db.employees.find_one({"id": data["manager_id"]}, {"_id": 0})
+        if manager:
+            data["manager_name"] = manager.get("full_name")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.projects.update_one({"id": project_id}, {"$set": data})
+    
+    return await db.projects.find_one({"id": project_id}, {"_id": 0})
+
+@api_router.delete("/projects/{project_id}")
+async def delete_project(project_id: str, current_user: User = Depends(get_current_user)):
+    """Archive a project"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete projects")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Archive instead of delete
+    await db.projects.update_one({"id": project_id}, {"$set": {
+        "is_archived": True,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return {"message": "Project archived"}
+
+# ============= PROJECT MEMBERS =============
+
+@api_router.get("/projects/{project_id}/members")
+async def get_project_members(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get project members"""
+    members = await db.project_members.find({"project_id": project_id}, {"_id": 0}).to_list(100)
+    return members
+
+@api_router.post("/projects/{project_id}/members")
+async def add_project_member(project_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a member to project"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    employee = await db.employees.find_one({"id": data["employee_id"]}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Check if already a member
+    existing = await db.project_members.find_one({
+        "project_id": project_id,
+        "employee_id": data["employee_id"]
+    }, {"_id": 0})
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Employee already a member")
+    
+    member = ProjectMember(
+        project_id=project_id,
+        employee_id=data["employee_id"],
+        employee_name=employee.get("full_name"),
+        employee_email=employee.get("work_email") or employee.get("personal_email"),
+        role=data.get("role", "member"),
+        allocation_percentage=data.get("allocation_percentage", 100),
+        start_date=data.get("start_date"),
+        end_date=data.get("end_date"),
+        added_by=current_user.id
+    )
+    
+    await db.project_members.insert_one(member.model_dump())
+    
+    # Update member count
+    count = await db.project_members.count_documents({"project_id": project_id})
+    await db.projects.update_one({"id": project_id}, {"$set": {"member_count": count}})
+    
+    return member.model_dump()
+
+@api_router.put("/projects/{project_id}/members/{member_id}")
+async def update_project_member(project_id: str, member_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a project member"""
+    await db.project_members.update_one({"id": member_id, "project_id": project_id}, {"$set": data})
+    return await db.project_members.find_one({"id": member_id}, {"_id": 0})
+
+@api_router.delete("/projects/{project_id}/members/{member_id}")
+async def remove_project_member(project_id: str, member_id: str, current_user: User = Depends(get_current_user)):
+    """Remove a member from project"""
+    await db.project_members.delete_one({"id": member_id, "project_id": project_id})
+    
+    # Update member count
+    count = await db.project_members.count_documents({"project_id": project_id})
+    await db.projects.update_one({"id": project_id}, {"$set": {"member_count": count}})
+    
+    return {"message": "Member removed"}
+
+# ============= PROJECT TASKS =============
+
+@api_router.get("/projects/{project_id}/tasks")
+async def get_project_tasks(project_id: str, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get project tasks"""
+    query = {"project_id": project_id}
+    if status:
+        query["status"] = status
+    
+    tasks = await db.project_tasks.find(query, {"_id": 0}).sort("order", 1).to_list(500)
+    return tasks
+
+@api_router.post("/projects/{project_id}/tasks")
+async def create_project_task(project_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a project task"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get assignee name
+    assignee_name = None
+    if data.get("assignee_id"):
+        assignee = await db.employees.find_one({"id": data["assignee_id"]}, {"_id": 0})
+        if assignee:
+            assignee_name = assignee.get("full_name")
+    
+    # Get order
+    task_count = await db.project_tasks.count_documents({"project_id": project_id})
+    
+    task_data = {
+        **data,
+        "project_id": project_id,
+        "assignee_name": assignee_name,
+        "order": task_count,
+        "created_by": current_user.id
+    }
+    
+    task = ProjectTask(**task_data)
+    await db.project_tasks.insert_one(task.model_dump())
+    
+    # Update task count
+    await update_project_task_counts(project_id)
+    
+    return task.model_dump()
+
+@api_router.put("/projects/{project_id}/tasks/{task_id}")
+async def update_project_task(project_id: str, task_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a project task"""
+    task = await db.project_tasks.find_one({"id": task_id, "project_id": project_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update assignee name if changed
+    if "assignee_id" in data and data["assignee_id"] != task.get("assignee_id"):
+        assignee = await db.employees.find_one({"id": data["assignee_id"]}, {"_id": 0})
+        if assignee:
+            data["assignee_name"] = assignee.get("full_name")
+    
+    # Set completed_at if status changed to completed
+    if data.get("status") == "completed" and task.get("status") != "completed":
+        data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.project_tasks.update_one({"id": task_id}, {"$set": data})
+    
+    # Update task counts
+    await update_project_task_counts(project_id)
+    
+    return await db.project_tasks.find_one({"id": task_id}, {"_id": 0})
+
+@api_router.delete("/projects/{project_id}/tasks/{task_id}")
+async def delete_project_task(project_id: str, task_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a project task"""
+    await db.project_tasks.delete_one({"id": task_id, "project_id": project_id})
+    await update_project_task_counts(project_id)
+    return {"message": "Task deleted"}
+
+async def update_project_task_counts(project_id: str):
+    """Update project task counts"""
+    total = await db.project_tasks.count_documents({"project_id": project_id})
+    completed = await db.project_tasks.count_documents({"project_id": project_id, "status": "completed"})
+    progress = round((completed / total * 100) if total > 0 else 0)
+    
+    await db.projects.update_one({"id": project_id}, {"$set": {
+        "task_count": total,
+        "completed_task_count": completed,
+        "progress": progress,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+
+# ============= PROJECT COMMENTS =============
+
+@api_router.post("/projects/{project_id}/comments")
+async def add_project_comment(project_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a comment to project or task"""
+    comment = ProjectComment(
+        project_id=project_id,
+        task_id=data.get("task_id"),
+        author_id=current_user.id,
+        author_name=current_user.full_name,
+        content=data["content"]
+    )
+    
+    await db.project_comments.insert_one(comment.model_dump())
+    return comment.model_dump()
+
+# ============= PROJECT TIME TRACKING =============
+
+@api_router.get("/projects/{project_id}/time-entries")
+async def get_project_time_entries(
+    project_id: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get time entries for a project"""
+    query = {"project_id": project_id}
+    
+    if start_date:
+        query["date"] = {"$gte": start_date}
+    if end_date:
+        if "date" in query:
+            query["date"]["$lte"] = end_date
+        else:
+            query["date"] = {"$lte": end_date}
+    
+    entries = await db.time_entries.find(query, {"_id": 0}).sort("date", -1).to_list(500)
+    
+    # Summary
+    total_hours = sum(e.get("hours", 0) for e in entries)
+    billable_hours = sum(e.get("hours", 0) for e in entries if e.get("is_billable", True))
+    
+    return {
+        "entries": entries,
+        "total_hours": round(total_hours, 2),
+        "billable_hours": round(billable_hours, 2)
+    }
+
+@api_router.get("/projects/{project_id}/expenses")
+async def get_project_expenses(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get expenses linked to a project"""
+    expenses = await db.expense_claims.find({"project_id": project_id}, {"_id": 0}).to_list(500)
+    total = sum(e.get("amount", 0) for e in expenses)
+    return {
+        "expenses": expenses,
+        "total": round(total, 2)
+    }
+
+# ============= PROJECT ANALYTICS =============
+
+@api_router.get("/projects/{project_id}/analytics")
+async def get_project_analytics(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get project analytics"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Time entries
+    time_entries = await db.time_entries.find({"project_id": project_id}, {"_id": 0}).to_list(1000)
+    total_hours = sum(e.get("hours", 0) for e in time_entries)
+    
+    # Hours by member
+    hours_by_member = {}
+    for entry in time_entries:
+        emp_name = entry.get("employee_name", "Unknown")
+        if emp_name not in hours_by_member:
+            hours_by_member[emp_name] = 0
+        hours_by_member[emp_name] += entry.get("hours", 0)
+    
+    # Hours by week
+    hours_by_week = {}
+    for entry in time_entries:
+        date = datetime.fromisoformat(entry["date"].replace("Z", "+00:00") if "Z" in entry.get("date", "") else entry.get("date", "2000-01-01"))
+        week_key = f"{date.year}-W{date.isocalendar()[1]:02d}"
+        if week_key not in hours_by_week:
+            hours_by_week[week_key] = 0
+        hours_by_week[week_key] += entry.get("hours", 0)
+    
+    # Tasks
+    tasks = await db.project_tasks.find({"project_id": project_id}, {"_id": 0}).to_list(500)
+    tasks_by_status = {}
+    for task in tasks:
+        status = task.get("status", "todo")
+        if status not in tasks_by_status:
+            tasks_by_status[status] = 0
+        tasks_by_status[status] += 1
+    
+    # Budget
+    expenses = await db.expense_claims.find({"project_id": project_id, "status": "approved"}, {"_id": 0}).to_list(500)
+    expense_total = sum(e.get("amount", 0) for e in expenses)
+    
+    # Calculate labor cost if hourly rate set
+    labor_cost = 0
+    if project.get("hourly_rate"):
+        labor_cost = total_hours * project["hourly_rate"]
+    
+    total_spent = expense_total + labor_cost
+    
+    return {
+        "total_hours": round(total_hours, 2),
+        "hours_by_member": [{"name": k, "hours": round(v, 2)} for k, v in sorted(hours_by_member.items(), key=lambda x: x[1], reverse=True)],
+        "hours_by_week": [{"week": k, "hours": round(v, 2)} for k, v in sorted(hours_by_week.items())[-12:]],
+        "tasks_by_status": tasks_by_status,
+        "task_completion_rate": round((project.get("completed_task_count", 0) / project.get("task_count", 1) * 100) if project.get("task_count") else 0),
+        "budget": project.get("budget", 0),
+        "expense_total": round(expense_total, 2),
+        "labor_cost": round(labor_cost, 2),
+        "total_spent": round(total_spent, 2),
+        "budget_remaining": round(project.get("budget", 0) - total_spent, 2),
+        "budget_utilization": round((total_spent / project.get("budget", 1) * 100) if project.get("budget") else 0)
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
