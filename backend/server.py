@@ -4341,6 +4341,213 @@ async def get_appraisal_stats(current_user: User = Depends(get_current_user)):
         "average_rating": avg_rating
     }
 
+# ============= ORGANIZATION CHART =============
+
+@api_router.get("/org-chart")
+async def get_org_chart(current_user: User = Depends(get_current_user)):
+    """Get organization chart data with hierarchy"""
+    
+    # Fetch all required data
+    employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+    departments = await db.departments.find({}, {"_id": 0}).to_list(100)
+    divisions = await db.divisions.find({}, {"_id": 0}).to_list(100)
+    branches = await db.branches.find({}, {"_id": 0}).to_list(100)
+    corporations = await db.corporations.find({}, {"_id": 0}).to_list(100)
+    
+    # Create lookup maps
+    dept_map = {d.get("id"): d for d in departments}
+    div_map = {d.get("id"): d for d in divisions}
+    branch_map = {b.get("id"): b for b in branches}
+    corp_map = {c.get("id"): c for c in corporations}
+    emp_map = {e.get("id"): e for e in employees}
+    
+    # Build employee nodes with hierarchy info
+    def get_employee_name(emp):
+        if not emp:
+            return "Unknown"
+        first = emp.get("first_name") or emp.get("full_name", "").split()[0] if emp.get("full_name") else ""
+        last = emp.get("last_name") or ""
+        name = f"{first} {last}".strip()
+        if not name:
+            email = emp.get("work_email") or emp.get("personal_email") or ""
+            name = email.split("@")[0].replace(".", " ").replace("_", " ").title() if email else "Unknown"
+        return name
+    
+    def build_employee_node(emp):
+        dept = dept_map.get(emp.get("department_id"), {})
+        div = div_map.get(emp.get("division_id"), {})
+        branch = branch_map.get(emp.get("branch_id"), {})
+        manager = emp_map.get(emp.get("reporting_manager_id"))
+        
+        return {
+            "id": emp.get("id"),
+            "name": get_employee_name(emp),
+            "email": emp.get("work_email") or emp.get("personal_email"),
+            "job_title": emp.get("job_title") or "Employee",
+            "department": dept.get("name", ""),
+            "department_id": emp.get("department_id"),
+            "division": div.get("name", ""),
+            "division_id": emp.get("division_id"),
+            "branch": branch.get("name", ""),
+            "branch_id": emp.get("branch_id"),
+            "corporation_id": emp.get("corporation_id"),
+            "manager_id": emp.get("reporting_manager_id"),
+            "manager_name": get_employee_name(manager) if manager else None,
+            "profile_picture": emp.get("profile_picture"),
+            "status": emp.get("status", "active"),
+            "hire_date": emp.get("hire_date"),
+        }
+    
+    # Build nodes list
+    nodes = [build_employee_node(emp) for emp in employees if emp.get("status") != "inactive"]
+    
+    # Calculate direct reports for each employee
+    reports_count = {}
+    for emp in employees:
+        manager_id = emp.get("reporting_manager_id")
+        if manager_id:
+            reports_count[manager_id] = reports_count.get(manager_id, 0) + 1
+    
+    for node in nodes:
+        node["direct_reports_count"] = reports_count.get(node["id"], 0)
+    
+    # Build hierarchy tree
+    def build_tree(parent_id=None):
+        children = []
+        for node in nodes:
+            if node.get("manager_id") == parent_id:
+                child = {**node, "children": build_tree(node["id"])}
+                children.append(child)
+        return children
+    
+    # Get root nodes (employees without managers)
+    root_nodes = [n for n in nodes if not n.get("manager_id")]
+    tree = []
+    for root in root_nodes:
+        tree.append({**root, "children": build_tree(root["id"])})
+    
+    return {
+        "nodes": nodes,
+        "tree": tree,
+        "departments": [{"id": d.get("id"), "name": d.get("name")} for d in departments],
+        "divisions": [{"id": d.get("id"), "name": d.get("name")} for d in divisions],
+        "branches": [{"id": b.get("id"), "name": b.get("name")} for b in branches],
+        "corporations": [{"id": c.get("id"), "name": c.get("name")} for c in corporations],
+        "stats": {
+            "total_employees": len(nodes),
+            "departments_count": len(departments),
+            "branches_count": len(branches),
+        }
+    }
+
+@api_router.get("/org-chart/employee/{employee_id}")
+async def get_employee_org_position(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get specific employee's position in org chart with manager and direct reports"""
+    
+    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    employees = await db.employees.find({}, {"_id": 0}).to_list(1000)
+    emp_map = {e.get("id"): e for e in employees}
+    
+    def get_employee_name(emp):
+        if not emp:
+            return "Unknown"
+        first = emp.get("first_name") or emp.get("full_name", "").split()[0] if emp.get("full_name") else ""
+        last = emp.get("last_name") or ""
+        name = f"{first} {last}".strip()
+        if not name:
+            email = emp.get("work_email") or emp.get("personal_email") or ""
+            name = email.split("@")[0].replace(".", " ").replace("_", " ").title() if email else "Unknown"
+        return name
+    
+    def build_node(emp):
+        if not emp:
+            return None
+        return {
+            "id": emp.get("id"),
+            "name": get_employee_name(emp),
+            "email": emp.get("work_email") or emp.get("personal_email"),
+            "job_title": emp.get("job_title") or "Employee",
+            "department_id": emp.get("department_id"),
+            "profile_picture": emp.get("profile_picture"),
+        }
+    
+    # Get manager chain (up to 5 levels)
+    manager_chain = []
+    current_manager_id = employee.get("reporting_manager_id")
+    for _ in range(5):
+        if not current_manager_id:
+            break
+        manager = emp_map.get(current_manager_id)
+        if manager:
+            manager_chain.append(build_node(manager))
+            current_manager_id = manager.get("reporting_manager_id")
+        else:
+            break
+    
+    # Get direct reports
+    direct_reports = [
+        build_node(emp) for emp in employees 
+        if emp.get("reporting_manager_id") == employee_id
+    ]
+    
+    # Get peers (same manager)
+    peers = []
+    if employee.get("reporting_manager_id"):
+        peers = [
+            build_node(emp) for emp in employees 
+            if emp.get("reporting_manager_id") == employee.get("reporting_manager_id") 
+            and emp.get("id") != employee_id
+        ]
+    
+    return {
+        "employee": build_node(employee),
+        "manager_chain": manager_chain,
+        "direct_reports": direct_reports,
+        "peers": peers,
+    }
+
+@api_router.get("/org-chart/department/{department_id}")
+async def get_department_org_chart(department_id: str, current_user: User = Depends(get_current_user)):
+    """Get org chart for a specific department"""
+    
+    department = await db.departments.find_one({"id": department_id}, {"_id": 0})
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+    
+    employees = await db.employees.find({"department_id": department_id}, {"_id": 0}).to_list(500)
+    emp_map = {e.get("id"): e for e in employees}
+    
+    def get_employee_name(emp):
+        if not emp:
+            return "Unknown"
+        first = emp.get("first_name") or emp.get("full_name", "").split()[0] if emp.get("full_name") else ""
+        last = emp.get("last_name") or ""
+        name = f"{first} {last}".strip()
+        if not name:
+            email = emp.get("work_email") or emp.get("personal_email") or ""
+            name = email.split("@")[0].replace(".", " ").replace("_", " ").title() if email else "Unknown"
+        return name
+    
+    nodes = []
+    for emp in employees:
+        nodes.append({
+            "id": emp.get("id"),
+            "name": get_employee_name(emp),
+            "email": emp.get("work_email") or emp.get("personal_email"),
+            "job_title": emp.get("job_title") or "Employee",
+            "manager_id": emp.get("reporting_manager_id"),
+            "profile_picture": emp.get("profile_picture"),
+        })
+    
+    return {
+        "department": department,
+        "nodes": nodes,
+        "count": len(nodes)
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
