@@ -6,6 +6,8 @@ import {
   LayoutDashboard, 
   Building2, 
   GitBranch, 
+  FolderTree,
+  Layers,
   Users, 
   Calendar, 
   Clock, 
