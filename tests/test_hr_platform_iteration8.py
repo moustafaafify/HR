@@ -261,16 +261,16 @@ class TestAppraisalsModule:
         
     def test_get_appraisal_stats(self, admin_headers):
         """Test appraisal stats endpoint"""
-        response = requests.get(f"{API}/appraisals/stats", headers=admin_headers)
+        response = requests.get(f"{API}/appraisals/stats/summary", headers=admin_headers)
         assert response.status_code == 200
 
 
 class TestDocumentsModule:
     """Documents module tests"""
     
-    def test_get_documents(self, admin_headers):
-        """Test getting documents"""
-        response = requests.get(f"{API}/documents", headers=admin_headers)
+    def test_get_document_approvals(self, admin_headers):
+        """Test getting document approvals"""
+        response = requests.get(f"{API}/document-approvals", headers=admin_headers)
         assert response.status_code == 200
         
     def test_get_document_types(self, admin_headers):
