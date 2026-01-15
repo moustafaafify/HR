@@ -275,10 +275,10 @@ class TestOffboardings:
         if len(employees) < 2:
             pytest.skip("Not enough employees")
         
-        # Find another employee
+        # Find another employee (created_offboarding_ids contains string IDs)
         test_employee = None
         for emp in employees:
-            if emp["id"] not in [SARAH_EMPLOYEE_ID] and emp["id"] not in [o.get("employee_id") for o in created_offboarding_ids]:
+            if emp["id"] != SARAH_EMPLOYEE_ID:
                 test_employee = emp
                 break
         
