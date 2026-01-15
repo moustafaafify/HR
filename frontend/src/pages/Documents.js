@@ -1394,6 +1394,120 @@ const Documents = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Create/Edit Document Dialog (Admin) */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <FileText className="text-indigo-600" size={24} />
+              {editingDocument ? 'Edit Document' : 'Create Document'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateDocument} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Document Title *</label>
+              <Input 
+                value={documentForm.title} 
+                onChange={(e) => setDocumentForm({ ...documentForm, title: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="e.g. Q4 Financial Report" 
+                required 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type *</label>
+                <Select value={documentForm.document_type} onValueChange={(v) => setDocumentForm({ ...documentForm, document_type: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.icon} {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category *</label>
+                <Select value={documentForm.category} onValueChange={(v) => setDocumentForm({ ...documentForm, category: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Priority</label>
+                <Select value={documentForm.priority} onValueChange={(v) => setDocumentForm({ ...documentForm, priority: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Due Date</label>
+                <Input 
+                  type="date" 
+                  value={documentForm.due_date} 
+                  onChange={(e) => setDocumentForm({ ...documentForm, due_date: e.target.value })} 
+                  className="rounded-xl" 
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Document URL</label>
+              <Input 
+                value={documentForm.document_url} 
+                onChange={(e) => setDocumentForm({ ...documentForm, document_url: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="https://drive.google.com/..." 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
+              <textarea 
+                value={documentForm.description} 
+                onChange={(e) => setDocumentForm({ ...documentForm, description: e.target.value })} 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" 
+                rows={3} 
+                placeholder="Describe the document..." 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tags</label>
+              <Input 
+                value={documentForm.tags} 
+                onChange={(e) => setDocumentForm({ ...documentForm, tags: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="budget, quarterly, 2026 (comma separated)" 
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                {editingDocument ? 'Update Document' : 'Create Document'}
+              </Button>
+              <Button type="button" onClick={() => setCreateDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* View Document Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="rounded-2xl max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
