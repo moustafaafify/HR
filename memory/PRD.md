@@ -8,6 +8,7 @@ Build a full-stack HR platform with:
 - Comprehensive Employee Profiles with 6 categories of information
 - Admin controls for password reset and portal access
 - Role-based access control with Roles & Permissions
+- Workflow system for approval processes
 
 ## What's Been Implemented
 
@@ -37,7 +38,7 @@ Build a full-stack HR platform with:
    - Password reset for employees
    - Portal access enable/disable toggle
 
-5. **Role Assignment Feature** (COMPLETED - Jan 15, 2026)
+5. **Role Assignment Feature**
    - `role_id` field added to Employee model
    - Role dropdown in Employment tab of employee form
    - Role column in employee list table
@@ -47,103 +48,69 @@ Build a full-stack HR platform with:
    - Multi-language configuration
    - Multi-currency configuration
 
-### Data Model Fixes (COMPLETED - Jan 15, 2026)
-- Made `personal_email` field optional in Employee model to fix data consistency issues
+### Leave Module (COMPLETED)
+- Leave request creation with multiple leave types
+- Leave balance management per employee
+- Leave approval/rejection flow
+- CSV export for leave requests and balances
 
-### Leave Balance Fix (COMPLETED - Jan 15, 2026)
-- **Bug:** Admin could not save leave balance changes in employee edit form
-- **Root Cause:** 
-  1. Form fields for new leave types (annual_leave, sick_leave, personal_leave, bereavement_leave, maternity_leave, paternity_leave) were in JSX but not connected to form state
-  2. `openDialog` function was not fetching leave balance data when editing employee
-  3. `handleSubmit` was not updating the leave_balances collection
-- **Fix Applied:**
-  1. Updated `formData` initial state with all new leave fields
-  2. Updated `resetForm` function with new leave fields  
-  3. Modified `openDialog` to fetch leave balance from API when editing
-  4. Modified `handleSubmit` to update leave_balances collection after saving employee
-  5. Added POST endpoint `/api/leave-balances` for creating new leave balances
+### Attendance Module (COMPLETED)
+- Clock in/out functionality
+- Attendance records management
+- CSV export for attendance records
+- **Time Correction Requests** - Employees can request corrections, admins approve/reject
 
-### ResizeObserver Error Fix (COMPLETED - Jan 15, 2026)
-- **Bug:** Error screen "ResizeObserver loop completed" appeared when selecting employees in dropdowns
-- **Fix:** Added ResizeObserver patch in `public/index.html` and `src/index.js` to suppress benign Radix UI errors
+### Performance Reviews Module (COMPLETED)
+- Multiple review types (annual, quarterly, probation, project, 360)
+- Category ratings (communication, teamwork, technical_skills, etc.)
+- Self-assessment by employees
+- Manager assessment and completion flow
+- Review statistics dashboard
 
-### Performance Reviews Enhancement (COMPLETED - Jan 15, 2026)
-- **Expanded PerformanceReview Model** with:
-  - Multiple review types (annual, quarterly, probation, project, 360)
-  - Status workflow (draft → pending_self_assessment → pending_review → completed)
-  - Category ratings (communication, teamwork, technical_skills, problem_solving, leadership, punctuality)
-  - Self-assessment fields (self_assessment, self_rating, achievements, challenges)
-  - Manager assessment fields (strengths, areas_for_improvement, feedback, recommendations)
-  - Goals tracking
-- **New Backend Endpoints:**
-  - `PUT /api/reviews/{id}` - Update review
-  - `DELETE /api/reviews/{id}` - Delete review  
-  - `POST /api/reviews/{id}/submit-self-assessment` - Employee self-assessment
-  - `POST /api/reviews/{id}/complete` - Manager completes review
-  - `GET /api/reviews/stats/summary` - Dashboard statistics
-- **Enhanced Frontend:**
-  - Admin view: Stats dashboard, filters, create/edit/delete reviews, complete review dialog
-  - Employee view: See own reviews, submit self-assessment, view completed reviews
-  - Visual rating display with star icons
-  - Alert banner for pending self-assessments
+### Workflow System (COMPLETED - Jan 15, 2026)
+**Backend:**
+- `Workflow` model for defining approval templates (name, module, steps, is_active)
+- `WorkflowInstance` model for tracking active approval requests
+- `trigger_workflow_for_module()` helper function - automatically creates workflow instances
+- Leave requests trigger workflow when active workflow exists → status changes to `pending_approval`
+- Time correction requests trigger workflow when active workflow exists → status changes to `pending_approval`
+- Workflow action endpoint (approve/reject) updates both instance and original request status
+- Special handling for time corrections - approving updates the attendance record
+- Instance details endpoint returns enriched data with reference document and requester info
+- Collection mapping for modules: `leave`, `time_correction`, `expense`, `training`, `document`
 
-### Attendance Export & Time Corrections (COMPLETED - Jan 15, 2026)
-- **Export Report Feature:**
-  - Export attendance records to CSV
-  - Filter by date range and employee
-  - New endpoint: `GET /api/attendance/export`
-- **Time Correction Requests:**
-  - New `TimeCorrectionRequest` model with status workflow (pending → approved/rejected)
-  - Employee can request corrections to their attendance records
-  - Admin/Manager can approve (updates attendance) or reject (with reason)
-  - New endpoints:
-    - `POST /api/time-corrections` - Create correction request
-    - `GET /api/time-corrections` - List all corrections
-    - `PUT /api/time-corrections/{id}/approve` - Approve and update attendance
-    - `PUT /api/time-corrections/{id}/reject` - Reject with reason
-- **Enhanced Frontend:**
-  - New "Time Corrections" tab in Attendance page
-  - "Export" button with date range/employee filter dialog
-  - "Request Correction" button for employees on attendance records
-  - Admin view shows pending requests with Approve/Reject buttons
-  - Employee view shows their own request history and status
+**Frontend (Workflows.js):**
+- **Workflow Templates Tab:**
+  - Create, edit, delete workflow templates
+  - Visual step builder with approver types (manager, department_head, role, specific_user)
+  - Activate/deactivate workflows
+  - Expandable workflow cards showing approval flow
+- **Active Requests Tab:**
+  - Filter by module (Leave, Time Corrections, etc.)
+  - Filter by status (Pending, In Progress, Approved, Rejected)
+  - Clear filters button
+  - Table with workflow name, module, requester, current step, status, actions
+  - Eye icon to view details
+  - Approve (green) and Reject (red) action buttons
+- **Instance Details Dialog:**
+  - Shows status and submission date
+  - Request details section (Leave Type, Duration, Reason for leaves; Date, Original/Requested times for time corrections)
+  - Requester information
+  - Approval history with timestamps
+  - Approve/Reject action buttons
+- **Rejection Dialog:**
+  - Textarea for rejection reason
+  - Required field before submission
+- **Responsive Design:**
+  - Stats cards 2-column on mobile, 4-column on desktop
+  - Table columns hide on smaller screens (Module, Current Step)
+  - Compact tabs on mobile
 
-### Leave Export Features (COMPLETED - Jan 15, 2026)
-- **Export Leave Requests:**
-  - Filter by date range, employee, status, and leave type
-  - Downloads CSV with: Employee, Leave Type, Start Date, End Date, Days, Status, Reason, Submitted
-  - New endpoint: `GET /api/leaves/export`
-- **Export Leave Balances:**
-  - Filter by year
-  - Downloads CSV with: Employee, Department, and all leave types (Total/Used)
-  - New endpoint: `GET /api/leave-balances/export`
-- **Enhanced Frontend:**
-  - "Export" button on Leave Requests tab with filter dialog
-  - "Export Balances" button on Leave Balances tab with year selector
-
-### Responsive Design Implementation (COMPLETED - Jan 15, 2026)
-- **Layout Component:** 
-  - Mobile header with hamburger menu toggle
-  - Slide-out sidebar with overlay on mobile/tablet (<1024px)
-  - Close button on mobile sidebar
-  - Auto-close sidebar on navigation (mobile)
-  - Full sidebar visible on desktop (>=1024px)
-- **All Pages Updated:**
-  - Dashboard: 2-column grid on mobile, 3-column on desktop
-  - Attendance: Responsive stats cards (2x2 mobile, 4-column desktop), horizontally scrollable table
-  - Leaves: Responsive stats, full-width request button on mobile
-  - Performance: Responsive layout with stacked elements on mobile
-  - Employees: Responsive form tabs, full-width buttons on mobile
-  - Login: Centered card, responsive padding
-- **Breakpoints Used:**
-  - Mobile: default (<640px)
-  - Tablet: sm: (640px+)
-  - Desktop: lg: (1024px+)
-- **Key Responsive Patterns:**
-  - Text sizes scale: text-2xl → text-3xl → text-4xl
-  - Padding adjusts: p-4 → p-5 → p-6
-  - Buttons: full-width on mobile, auto-width on desktop
-  - Dialogs: mx-4 margin on mobile
+### Responsive Design Implementation (COMPLETED)
+- Mobile header with hamburger menu toggle
+- Slide-out sidebar on mobile/tablet
+- All pages responsive (Dashboard, Attendance, Leaves, Performance, Workflows)
+- Breakpoints: Mobile (default), Tablet (sm: 640px+), Desktop (lg: 1024px+)
 
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn/UI, React Router
@@ -152,23 +119,33 @@ Build a full-stack HR platform with:
 
 ## Key Files
 - `backend/server.py` - All API endpoints and models
+- `frontend/src/pages/Workflows.js` - Workflow management UI
 - `frontend/src/pages/EmployeesNew.js` - Employee management UI
-- `frontend/src/components/Layout.js` - Sidebar navigation
-- `frontend/src/pages/RolesPermissions.js` - Roles management
+- `frontend/src/pages/Leaves.js` - Leave management
+- `frontend/src/pages/Attendance.js` - Attendance with time corrections
+- `frontend/src/pages/Performance.js` - Performance reviews
+- `frontend/src/components/Layout.js` - Responsive layout
 
 ## Credentials
-- Email: `admin@hrplatform.com`
-- Password: `admin123`
+- Admin Email: `admin@hrplatform.com`
+- Admin Password: `admin123`
+- Employee Email: `sarah.johnson@lojyn.com`
+- Employee Password: `sarah123`
 
 ## Upcoming Tasks (P1)
-1. **Enhance Roles & Permissions** - Build full CRUD for roles with granular permission enforcement
+1. **Implement New Workflow-driven Modules** - Build frontend/backend for Expense Claims, Training Requests, Document Approvals, Onboarding/Offboarding
 
 ## Future/Backlog (P2+)
 - Budget allocation per department/division
-- Reporting and analytics features
+- Reporting and analytics dashboard
 - Bulk employee import via CSV
 - Employment history timeline view
-- Refactor `EmployeesNew.js` into smaller components
+- Refactor large components (`EmployeesNew.js`, `Leaves.js`, `Attendance.js`)
+- Enhance Roles & Permissions with granular permission enforcement
 
 ## Test Reports
-- `/app/test_reports/iteration_2.json` - Role assignment feature tests (90% backend, 100% frontend)
+- `/app/test_reports/iteration_3.json` - Workflow system tests (94.7% backend, 100% frontend)
+
+## Known Issues
+- ResizeObserver error workaround in `index.js` and `index.html` - may need revisiting if similar UI errors appear
+- Large frontend components need refactoring for maintainability
