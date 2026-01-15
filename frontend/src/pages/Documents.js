@@ -187,6 +187,54 @@ const Documents = () => {
     }
   };
 
+  // Handle file upload
+  const handleFileUpload = async (e, formType = 'document') => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds 10MB limit');
+      return;
+    }
+    
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await axios.post(`${API}/documents/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      const fileData = {
+        file_url: response.data.file_url,
+        file_name: response.data.file_name,
+        file_size: response.data.file_size
+      };
+      
+      if (formType === 'document') {
+        setUploadedFile(fileData);
+        setDocumentForm(prev => ({ ...prev, document_url: response.data.file_url }));
+      } else if (formType === 'assign') {
+        setAssignUploadedFile(fileData);
+        setAssignForm(prev => ({ ...prev, document_url: response.data.file_url }));
+      }
+      
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload file');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   const handleCreateDocument = async (e) => {
     e.preventDefault();
     try {
