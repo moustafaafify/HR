@@ -852,26 +852,50 @@ const Leaves = () => {
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Employee</th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">
-                        <div className="flex items-center justify-center gap-1">
+                      <th className="px-4 py-4 text-start text-sm font-bold text-slate-700">Employee</th>
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
                           <Palmtree size={14} className="text-emerald-600" />
                           Annual
                         </div>
                       </th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">
-                        <div className="flex items-center justify-center gap-1">
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
                           <Heart size={14} className="text-rose-600" />
                           Sick
                         </div>
                       </th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">
-                        <div className="flex items-center justify-center gap-1">
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
                           <Briefcase size={14} className="text-blue-600" />
                           Personal
                         </div>
                       </th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">Actions</th>
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
+                          <Heart size={14} className="text-pink-600" />
+                          Maternity
+                        </div>
+                      </th>
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
+                          <Heart size={14} className="text-indigo-600" />
+                          Paternity
+                        </div>
+                      </th>
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
+                          <Heart size={14} className="text-slate-600" />
+                          Bereav.
+                        </div>
+                      </th>
+                      <th className="px-2 py-4 text-center text-xs font-bold text-slate-700">
+                        <div className="flex flex-col items-center gap-1">
+                          <AlertCircle size={14} className="text-amber-600" />
+                          Unpaid
+                        </div>
+                      </th>
+                      <th className="px-4 py-4 text-center text-sm font-bold text-slate-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -879,7 +903,7 @@ const Leaves = () => {
                       const balance = leaveBalances.find(b => b.employee_id === emp.id) || {};
                       return (
                         <tr key={emp.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
                                 {emp.full_name?.charAt(0)}
@@ -887,32 +911,55 @@ const Leaves = () => {
                               <span className="font-medium text-slate-900">{emp.full_name}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-2 py-4 text-center">
                             <span className="font-bold text-emerald-600">
                               {(balance.annual_leave || 20) - (balance.annual_used || 0)}
                             </span>
-                            <span className="text-slate-400">/{balance.annual_leave || 20}</span>
+                            <span className="text-slate-400 text-xs">/{balance.annual_leave || 20}</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-2 py-4 text-center">
                             <span className="font-bold text-rose-600">
                               {(balance.sick_leave || 10) - (balance.sick_used || 0)}
                             </span>
-                            <span className="text-slate-400">/{balance.sick_leave || 10}</span>
+                            <span className="text-slate-400 text-xs">/{balance.sick_leave || 10}</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-2 py-4 text-center">
                             <span className="font-bold text-blue-600">
                               {(balance.personal_leave || 5) - (balance.personal_used || 0)}
                             </span>
-                            <span className="text-slate-400">/{balance.personal_leave || 5}</span>
+                            <span className="text-slate-400 text-xs">/{balance.personal_leave || 5}</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-2 py-4 text-center">
+                            <span className="font-bold text-pink-600">
+                              {(balance.maternity_leave || 90) - (balance.maternity_used || 0)}
+                            </span>
+                            <span className="text-slate-400 text-xs">/{balance.maternity_leave || 90}</span>
+                          </td>
+                          <td className="px-2 py-4 text-center">
+                            <span className="font-bold text-indigo-600">
+                              {(balance.paternity_leave || 14) - (balance.paternity_used || 0)}
+                            </span>
+                            <span className="text-slate-400 text-xs">/{balance.paternity_leave || 14}</span>
+                          </td>
+                          <td className="px-2 py-4 text-center">
+                            <span className="font-bold text-slate-600">
+                              {(balance.bereavement_leave || 5) - (balance.bereavement_used || 0)}
+                            </span>
+                            <span className="text-slate-400 text-xs">/{balance.bereavement_leave || 5}</span>
+                          </td>
+                          <td className="px-2 py-4 text-center">
+                            <span className="font-bold text-amber-600">
+                              {balance.unpaid_used || 0}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
                             <Button
                               onClick={() => openBalanceDialog(emp)}
                               size="sm"
                               variant="outline"
                               className="rounded-xl"
                             >
-                              Edit Balance
+                              Edit
                             </Button>
                           </td>
                         </tr>
