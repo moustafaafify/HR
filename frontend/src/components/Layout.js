@@ -262,6 +262,7 @@ const Layout = () => {
               <NavLink item={{ path: '/travel', icon: Plane, label: 'My Travel' }} />
               <NavLink item={{ path: '/overtime', icon: Timer, label: 'My Overtime' }} />
               <NavLink item={{ path: '/timesheets', icon: Sheet, label: 'My Timesheets' }} />
+              <NavLink item={{ path: '/projects', icon: FolderKanban, label: 'My Projects' }} />
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'My Training' }} />
               <NavLink item={{ path: '/skills', icon: Code, label: 'My Skills' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'My Documents' }} />
@@ -289,6 +290,7 @@ const Layout = () => {
               <NavLink item={{ path: '/travel', icon: Plane, label: 'Travel' }} />
               <NavLink item={{ path: '/overtime', icon: Timer, label: 'Overtime' }} />
               <NavLink item={{ path: '/timesheets', icon: Sheet, label: 'Timesheets' }} />
+              <NavLink item={{ path: '/projects', icon: FolderKanban, label: 'Projects' }} />
               <NavLink item={{ path: '/training', icon: GraduationCap, label: 'Training' }} />
               <NavLink item={{ path: '/skills', icon: Code, label: 'Skills' }} />
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'Documents' }} />
