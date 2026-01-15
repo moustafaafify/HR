@@ -243,14 +243,27 @@ Build a full-stack HR platform with:
 - View progress percentage
 - Remove assignments
 
+**Admin - Employee Training Requests (NEW - Jan 15, 2026):**
+- View all employee training requests in "Requests" tab
+- Badge counter showing pending requests needing review
+- Approve or reject training requests
+- Rejection reason input for rejected requests
+- View request details: employee name, type, category, provider, cost, dates
+
 **Employee - Learning Portal:**
-- View assigned training courses
-- Quick stats (Assigned, In Progress, Completed, Overdue)
+- View assigned training courses in "Assigned Courses" tab
+- Quick stats (Assigned, In Progress, Completed, Requests Pending, Approved)
 - Start assigned training
 - Access video, document, and external links
 - Track progress
 - Complete training with rating and feedback
 - Overdue task highlighting
+
+**Employee - Training Requests (NEW - Jan 15, 2026):**
+- "My Requests" tab to view and manage training requests
+- Submit new training request form with all details
+- View request status and rejection reasons
+- Edit/Delete pending requests
 
 ### Responsive Design (COMPLETED)
 - Mobile header with hamburger menu
