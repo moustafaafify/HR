@@ -32,6 +32,7 @@ import Complaints from './pages/Complaints';
 import Disciplinary from './pages/Disciplinary';
 import Travel from './pages/Travel';
 import Recognition from './pages/Recognition';
+import TeamCalendar from './pages/TeamCalendar';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -79,6 +80,7 @@ function AppRoutes() {
         <Route path="disciplinary" element={<Disciplinary />} />
         <Route path="travel" element={<Travel />} />
         <Route path="recognition" element={<Recognition />} />
+        <Route path="team-calendar" element={<TeamCalendar />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
