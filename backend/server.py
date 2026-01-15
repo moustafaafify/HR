@@ -2255,28 +2255,224 @@ async def delete_training_assignment(assignment_id: str, current_user: User = De
 
 @api_router.post("/document-approvals")
 async def create_document_approval(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new document approval request"""
+    # Get employee ID from current user
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee and current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Employee profile not found")
+    
+    data["employee_id"] = employee["id"] if employee else current_user.id
+    data["status"] = data.get("status", "submitted")
     doc = DocumentApproval(**data)
     await db.document_approvals.insert_one(doc.model_dump())
     return doc.model_dump()
 
 @api_router.get("/document-approvals")
-async def get_document_approvals(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+async def get_document_approvals(
+    employee_id: Optional[str] = None, 
+    status: Optional[str] = None,
+    document_type: Optional[str] = None,
+    category: Optional[str] = None,
+    priority: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all document approvals (admin) with optional filters"""
     query = {}
     if employee_id:
         query["employee_id"] = employee_id
     if status:
         query["status"] = status
-    docs = await db.document_approvals.find(query, {"_id": 0}).to_list(1000)
+    if document_type:
+        query["document_type"] = document_type
+    if category:
+        query["category"] = category
+    if priority:
+        query["priority"] = priority
+    docs = await db.document_approvals.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return docs
+
+@api_router.get("/document-approvals/my")
+async def get_my_document_approvals(current_user: User = Depends(get_current_user)):
+    """Get current user's document approval requests"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        return []
+    docs = await db.document_approvals.find({"employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return docs
+
+@api_router.get("/document-approvals/stats")
+async def get_document_approval_stats(current_user: User = Depends(get_current_user)):
+    """Get document approval statistics"""
+    docs = await db.document_approvals.find({}, {"_id": 0}).to_list(1000)
+    
+    total = len(docs)
+    pending = len([d for d in docs if d.get("status") in ["submitted", "under_review"]])
+    approved = len([d for d in docs if d.get("status") == "approved"])
+    rejected = len([d for d in docs if d.get("status") == "rejected"])
+    revision_requested = len([d for d in docs if d.get("status") == "revision_requested"])
+    
+    # Count by type
+    by_type = {}
+    for doc in docs:
+        doc_type = doc.get("document_type", "other")
+        by_type[doc_type] = by_type.get(doc_type, 0) + 1
+    
+    # Count by category
+    by_category = {}
+    for doc in docs:
+        cat = doc.get("category", "general")
+        by_category[cat] = by_category.get(cat, 0) + 1
+    
+    # Urgent/high priority pending
+    urgent_pending = len([d for d in docs if d.get("status") in ["submitted", "under_review"] and d.get("priority") in ["high", "urgent"]])
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "approved": approved,
+        "rejected": rejected,
+        "revision_requested": revision_requested,
+        "urgent_pending": urgent_pending,
+        "by_type": by_type,
+        "by_category": by_category
+    }
+
+@api_router.get("/document-approvals/{doc_id}")
+async def get_document_approval(doc_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific document approval"""
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return doc
 
 @api_router.put("/document-approvals/{doc_id}")
 async def update_document_approval(doc_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a document approval"""
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
     if data.get("status") == "approved":
         data["approved_by"] = current_user.id
         data["approved_at"] = datetime.now(timezone.utc).isoformat()
     await db.document_approvals.update_one({"id": doc_id}, {"$set": data})
     doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
     return doc
+
+@api_router.put("/document-approvals/{doc_id}/review")
+async def start_review_document(doc_id: str, current_user: User = Depends(get_current_user)):
+    """Mark document as under review"""
+    update_data = {
+        "status": "under_review",
+        "reviewer_id": current_user.id,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": update_data})
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return doc
+
+@api_router.put("/document-approvals/{doc_id}/approve")
+async def approve_document(doc_id: str, current_user: User = Depends(get_current_user)):
+    """Approve a document"""
+    update_data = {
+        "status": "approved",
+        "approved_by": current_user.id,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": update_data})
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return doc
+
+@api_router.put("/document-approvals/{doc_id}/reject")
+async def reject_document(doc_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject a document"""
+    update_data = {
+        "status": "rejected",
+        "rejection_reason": data.get("rejection_reason", ""),
+        "approved_by": current_user.id,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": update_data})
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return doc
+
+@api_router.put("/document-approvals/{doc_id}/request-revision")
+async def request_revision_document(doc_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Request revision on a document"""
+    update_data = {
+        "status": "revision_requested",
+        "revision_notes": data.get("revision_notes", ""),
+        "reviewer_id": current_user.id,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": update_data})
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return doc
+
+@api_router.put("/document-approvals/{doc_id}/resubmit")
+async def resubmit_document(doc_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Resubmit a document after revision"""
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    update_data = {
+        "status": "submitted",
+        "version": doc.get("version", 1) + 1,
+        "revision_notes": None,
+        "rejection_reason": None,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    # Allow updating document URL and description on resubmit
+    if data.get("document_url"):
+        update_data["document_url"] = data["document_url"]
+    if data.get("description"):
+        update_data["description"] = data["description"]
+    
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": update_data})
+    updated_doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return updated_doc
+
+@api_router.post("/document-approvals/{doc_id}/comment")
+async def add_document_comment(doc_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a comment to a document"""
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    comment = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user.id,
+        "user_name": current_user.full_name,
+        "text": data.get("text", ""),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    comments = doc.get("comments") or []
+    comments.append(comment)
+    
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": {"comments": comments, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    updated_doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return updated_doc
+
+@api_router.delete("/document-approvals/{doc_id}")
+async def delete_document_approval(doc_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a document approval request"""
+    doc = await db.document_approvals.find_one({"id": doc_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Only allow deletion of own documents or by admin
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        if not employee or doc.get("employee_id") != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this document")
+        # Employees can only delete draft or rejected documents
+        if doc.get("status") not in ["draft", "rejected", "revision_requested"]:
+            raise HTTPException(status_code=400, detail="Cannot delete document in current status")
+    
+    await db.document_approvals.delete_one({"id": doc_id})
+    return {"message": "Document deleted successfully"}
 
 # ============= ONBOARDING ROUTES =============
 
