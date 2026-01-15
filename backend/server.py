@@ -6590,6 +6590,443 @@ async def delete_complaint(complaint_id: str, current_user: User = Depends(get_c
     
     return {"message": "Complaint deleted"}
 
+# ============= DISCIPLINARY ACTIONS MODELS =============
+
+class DisciplinaryAction(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    reference_number: str = Field(default_factory=lambda: f"DA-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}")
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_department: Optional[str] = None
+    action_type: str  # verbal_warning, written_warning, final_warning, suspension, probation, demotion, termination
+    severity: str = "minor"  # minor, moderate, major, severe
+    reason: str
+    description: str
+    incident_date: Optional[str] = None
+    action_date: str = Field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    issued_by_id: Optional[str] = None
+    issued_by_name: Optional[str] = None
+    related_complaint_id: Optional[str] = None
+    witnesses: List[str] = []
+    evidence: List[str] = []
+    follow_up_date: Optional[str] = None
+    review_period_end: Optional[str] = None
+    suspension_start: Optional[str] = None
+    suspension_end: Optional[str] = None
+    probation_end: Optional[str] = None
+    status: str = "pending_acknowledgment"  # pending_acknowledgment, acknowledged, appealed, under_review, closed
+    acknowledged_at: Optional[str] = None
+    employee_response: Optional[str] = None
+    is_confidential: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class DisciplinaryAppeal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    disciplinary_action_id: str
+    employee_id: str
+    employee_name: Optional[str] = None
+    reason: str
+    supporting_details: Optional[str] = None
+    status: str = "pending"  # pending, under_review, approved, rejected, modified
+    reviewed_by_id: Optional[str] = None
+    reviewed_by_name: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    decision: Optional[str] = None
+    decision_notes: Optional[str] = None
+    modified_action: Optional[str] = None  # New action type if modified
+    submitted_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class DisciplinaryNote(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    disciplinary_action_id: str
+    author_id: str
+    author_name: str
+    content: str
+    is_internal: bool = True  # Only visible to admins
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= DISCIPLINARY ACTIONS ROUTES =============
+
+DISCIPLINARY_ACTION_TYPES = [
+    {"value": "verbal_warning", "label": "Verbal Warning", "severity": "minor"},
+    {"value": "written_warning", "label": "Written Warning", "severity": "moderate"},
+    {"value": "final_warning", "label": "Final Warning", "severity": "major"},
+    {"value": "suspension", "label": "Suspension", "severity": "major"},
+    {"value": "probation", "label": "Probation", "severity": "major"},
+    {"value": "demotion", "label": "Demotion", "severity": "severe"},
+    {"value": "termination", "label": "Termination", "severity": "severe"},
+]
+
+@api_router.get("/disciplinary/action-types")
+async def get_disciplinary_action_types(current_user: User = Depends(get_current_user)):
+    return DISCIPLINARY_ACTION_TYPES
+
+@api_router.get("/disciplinary/actions")
+async def get_disciplinary_actions(
+    status: Optional[str] = None,
+    action_type: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    
+    # Non-admins can only see their own records
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee:
+            employee = await db.employees.find_one({"work_email": current_user.email})
+        if employee:
+            query["employee_id"] = employee["id"]
+        else:
+            return []
+    else:
+        if employee_id:
+            query["employee_id"] = employee_id
+    
+    if status:
+        query["status"] = status
+    if action_type:
+        query["action_type"] = action_type
+    
+    actions = await db.disciplinary_actions.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return actions
+
+@api_router.get("/disciplinary/actions/my")
+async def get_my_disciplinary_actions(current_user: User = Depends(get_current_user)):
+    """Get disciplinary actions for current employee"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        return []
+    
+    actions = await db.disciplinary_actions.find(
+        {"employee_id": employee["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return actions
+
+@api_router.get("/disciplinary/stats")
+async def get_disciplinary_stats(current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view stats")
+    
+    total = await db.disciplinary_actions.count_documents({})
+    pending_ack = await db.disciplinary_actions.count_documents({"status": "pending_acknowledgment"})
+    appealed = await db.disciplinary_actions.count_documents({"status": "appealed"})
+    active = await db.disciplinary_actions.count_documents({"status": {"$nin": ["closed"]}})
+    
+    # By type
+    verbal_warnings = await db.disciplinary_actions.count_documents({"action_type": "verbal_warning"})
+    written_warnings = await db.disciplinary_actions.count_documents({"action_type": "written_warning"})
+    final_warnings = await db.disciplinary_actions.count_documents({"action_type": "final_warning"})
+    suspensions = await db.disciplinary_actions.count_documents({"action_type": "suspension"})
+    terminations = await db.disciplinary_actions.count_documents({"action_type": "termination"})
+    
+    # Pending appeals
+    pending_appeals = await db.disciplinary_appeals.count_documents({"status": "pending"})
+    
+    return {
+        "total": total,
+        "pending_acknowledgment": pending_ack,
+        "appealed": appealed,
+        "active": active,
+        "pending_appeals": pending_appeals,
+        "verbal_warnings": verbal_warnings,
+        "written_warnings": written_warnings,
+        "final_warnings": final_warnings,
+        "suspensions": suspensions,
+        "terminations": terminations
+    }
+
+@api_router.get("/disciplinary/actions/{action_id}")
+async def get_disciplinary_action(action_id: str, current_user: User = Depends(get_current_user)):
+    action = await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+    if not action:
+        raise HTTPException(status_code=404, detail="Disciplinary action not found")
+    
+    # Check access
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee or action.get("employee_id") != employee["id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return action
+
+@api_router.get("/disciplinary/actions/{action_id}/notes")
+async def get_disciplinary_notes(action_id: str, current_user: User = Depends(get_current_user)):
+    query = {"disciplinary_action_id": action_id}
+    
+    # Non-admins don't see internal notes
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        query["is_internal"] = False
+    
+    notes = await db.disciplinary_notes.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
+    return notes
+
+@api_router.get("/disciplinary/actions/{action_id}/appeal")
+async def get_disciplinary_appeal(action_id: str, current_user: User = Depends(get_current_user)):
+    appeal = await db.disciplinary_appeals.find_one(
+        {"disciplinary_action_id": action_id},
+        {"_id": 0}
+    )
+    return appeal
+
+@api_router.get("/disciplinary/employee/{employee_id}/history")
+async def get_employee_disciplinary_history(employee_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view employee history")
+    
+    actions = await db.disciplinary_actions.find(
+        {"employee_id": employee_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return actions
+
+@api_router.post("/disciplinary/actions")
+async def create_disciplinary_action(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can create disciplinary actions")
+    
+    employee_id = data.get("employee_id")
+    if not employee_id:
+        raise HTTPException(status_code=400, detail="Employee ID required")
+    
+    # Get employee details
+    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    data["employee_name"] = employee.get("full_name", "Unknown")
+    
+    # Get department name
+    if employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]})
+        if dept:
+            data["employee_department"] = dept.get("name")
+    
+    data["issued_by_id"] = current_user.id
+    data["issued_by_name"] = current_user.full_name
+    
+    action = DisciplinaryAction(**data)
+    await db.disciplinary_actions.insert_one(action.model_dump())
+    
+    return action.model_dump()
+
+@api_router.put("/disciplinary/actions/{action_id}")
+async def update_disciplinary_action(action_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update disciplinary actions")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.disciplinary_actions.update_one({"id": action_id}, {"$set": data})
+    
+    action = await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+    if not action:
+        raise HTTPException(status_code=404, detail="Disciplinary action not found")
+    
+    return action
+
+@api_router.post("/disciplinary/actions/{action_id}/acknowledge")
+async def acknowledge_disciplinary_action(action_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Employee acknowledges receipt of disciplinary action"""
+    action = await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+    if not action:
+        raise HTTPException(status_code=404, detail="Disciplinary action not found")
+    
+    # Verify employee is acknowledging their own action
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee or employee["id"] != action.get("employee_id"):
+        raise HTTPException(status_code=403, detail="You can only acknowledge your own disciplinary actions")
+    
+    await db.disciplinary_actions.update_one({"id": action_id}, {"$set": {
+        "status": "acknowledged",
+        "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+        "employee_response": data.get("response", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+
+@api_router.post("/disciplinary/actions/{action_id}/notes")
+async def add_disciplinary_note(action_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    action = await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+    if not action:
+        raise HTTPException(status_code=404, detail="Disciplinary action not found")
+    
+    # Only admins can add internal notes
+    is_internal = data.get("is_internal", False) and current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    note = DisciplinaryNote(
+        disciplinary_action_id=action_id,
+        author_id=current_user.id,
+        author_name=current_user.full_name,
+        content=data.get("content", ""),
+        is_internal=is_internal
+    )
+    
+    await db.disciplinary_notes.insert_one(note.model_dump())
+    
+    # Update action's updated_at
+    await db.disciplinary_actions.update_one(
+        {"id": action_id},
+        {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return note.model_dump()
+
+@api_router.post("/disciplinary/actions/{action_id}/appeal")
+async def submit_disciplinary_appeal(action_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Employee submits an appeal"""
+    action = await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+    if not action:
+        raise HTTPException(status_code=404, detail="Disciplinary action not found")
+    
+    # Verify employee is appealing their own action
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee or employee["id"] != action.get("employee_id"):
+        raise HTTPException(status_code=403, detail="You can only appeal your own disciplinary actions")
+    
+    # Check if appeal already exists
+    existing_appeal = await db.disciplinary_appeals.find_one({"disciplinary_action_id": action_id})
+    if existing_appeal:
+        raise HTTPException(status_code=400, detail="An appeal has already been submitted for this action")
+    
+    appeal = DisciplinaryAppeal(
+        disciplinary_action_id=action_id,
+        employee_id=employee["id"],
+        employee_name=employee.get("full_name", "Unknown"),
+        reason=data.get("reason", ""),
+        supporting_details=data.get("supporting_details", "")
+    )
+    
+    await db.disciplinary_appeals.insert_one(appeal.model_dump())
+    
+    # Update action status
+    await db.disciplinary_actions.update_one({"id": action_id}, {"$set": {
+        "status": "appealed",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return appeal.model_dump()
+
+@api_router.get("/disciplinary/appeals")
+async def get_all_appeals(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view all appeals")
+    
+    query = {}
+    if status:
+        query["status"] = status
+    
+    appeals = await db.disciplinary_appeals.find(query, {"_id": 0}).sort("submitted_at", -1).to_list(500)
+    return appeals
+
+@api_router.put("/disciplinary/appeals/{appeal_id}")
+async def review_disciplinary_appeal(appeal_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can review appeals")
+    
+    appeal = await db.disciplinary_appeals.find_one({"id": appeal_id}, {"_id": 0})
+    if not appeal:
+        raise HTTPException(status_code=404, detail="Appeal not found")
+    
+    new_status = data.get("status")
+    
+    update_data = {
+        "status": new_status,
+        "reviewed_by_id": current_user.id,
+        "reviewed_by_name": current_user.full_name,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+        "decision": data.get("decision", ""),
+        "decision_notes": data.get("decision_notes", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if new_status == "modified":
+        update_data["modified_action"] = data.get("modified_action")
+    
+    await db.disciplinary_appeals.update_one({"id": appeal_id}, {"$set": update_data})
+    
+    # Update disciplinary action status
+    action_status = "closed" if new_status in ["approved", "rejected"] else "under_review"
+    if new_status == "modified":
+        # Update the action type if modified
+        await db.disciplinary_actions.update_one(
+            {"id": appeal["disciplinary_action_id"]},
+            {"$set": {
+                "action_type": data.get("modified_action", appeal.get("action_type")),
+                "status": "acknowledged",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    else:
+        await db.disciplinary_actions.update_one(
+            {"id": appeal["disciplinary_action_id"]},
+            {"$set": {
+                "status": action_status,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return await db.disciplinary_appeals.find_one({"id": appeal_id}, {"_id": 0})
+
+@api_router.post("/disciplinary/actions/{action_id}/close")
+async def close_disciplinary_action(action_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can close disciplinary actions")
+    
+    await db.disciplinary_actions.update_one({"id": action_id}, {"$set": {
+        "status": "closed",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    # Add closing note if provided
+    if data.get("closing_notes"):
+        note = DisciplinaryNote(
+            disciplinary_action_id=action_id,
+            author_id=current_user.id,
+            author_name=current_user.full_name,
+            content=f"Action closed: {data.get('closing_notes')}",
+            is_internal=True
+        )
+        await db.disciplinary_notes.insert_one(note.model_dump())
+    
+    return await db.disciplinary_actions.find_one({"id": action_id}, {"_id": 0})
+
+@api_router.delete("/disciplinary/actions/{action_id}")
+async def delete_disciplinary_action(action_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete disciplinary actions")
+    
+    result = await db.disciplinary_actions.delete_one({"id": action_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Disciplinary action not found")
+    
+    # Delete associated notes and appeals
+    await db.disciplinary_notes.delete_many({"disciplinary_action_id": action_id})
+    await db.disciplinary_appeals.delete_many({"disciplinary_action_id": action_id})
+    
+    return {"message": "Disciplinary action deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
