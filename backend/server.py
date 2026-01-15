@@ -8923,6 +8923,532 @@ async def get_my_succession_status(current_user: User = Depends(get_current_user
         ]
     }
 
+# ============= SKILLS MODULE MODELS =============
+
+class SkillCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    color: str = "#6366f1"
+    icon: str = "code"
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Skill(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    category_id: str
+    category_name: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class EmployeeSkill(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Employee
+    employee_id: str
+    employee_name: Optional[str] = None
+    
+    # Skill
+    skill_id: str
+    skill_name: Optional[str] = None
+    category_id: Optional[str] = None
+    category_name: Optional[str] = None
+    
+    # Proficiency
+    proficiency_level: int = 3  # 1-5 scale
+    years_experience: Optional[float] = None
+    
+    # Verification
+    is_verified: bool = False
+    verified_by: Optional[str] = None
+    verified_at: Optional[str] = None
+    
+    # Endorsements
+    endorsement_count: int = 0
+    
+    # Notes
+    notes: Optional[str] = None
+    certifications: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class SkillEndorsement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    employee_skill_id: str
+    employee_id: str  # skill owner
+    employee_name: Optional[str] = None
+    skill_name: Optional[str] = None
+    
+    endorser_id: str
+    endorser_name: Optional[str] = None
+    
+    comment: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= SKILLS API ENDPOINTS =============
+
+@api_router.get("/skills/categories")
+async def get_skill_categories(current_user: User = Depends(get_current_user)):
+    """Get all skill categories"""
+    categories = await db.skill_categories.find({"is_active": True}, {"_id": 0}).to_list(100)
+    
+    # Seed default categories if none exist
+    if not categories:
+        default_categories = [
+            {"id": str(uuid.uuid4()), "name": "Technical Skills", "description": "Programming, tools, and technical expertise", "color": "#3b82f6", "icon": "code", "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Soft Skills", "description": "Communication, teamwork, and interpersonal skills", "color": "#10b981", "icon": "users", "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Leadership", "description": "Management and leadership capabilities", "color": "#8b5cf6", "icon": "crown", "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Industry Knowledge", "description": "Domain expertise and industry knowledge", "color": "#f59e0b", "icon": "briefcase", "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Languages", "description": "Spoken and written languages", "color": "#ec4899", "icon": "globe", "is_active": True},
+            {"id": str(uuid.uuid4()), "name": "Certifications", "description": "Professional certifications and qualifications", "color": "#14b8a6", "icon": "award", "is_active": True},
+        ]
+        for cat in default_categories:
+            cat["created_at"] = datetime.now(timezone.utc).isoformat()
+        await db.skill_categories.insert_many(default_categories)
+        categories = await db.skill_categories.find({"is_active": True}, {"_id": 0}).to_list(100)
+    
+    return categories
+
+@api_router.post("/skills/categories")
+async def create_skill_category(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new skill category (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage skill categories")
+    
+    category = SkillCategory(**data)
+    await db.skill_categories.insert_one(category.model_dump())
+    return category.model_dump()
+
+@api_router.put("/skills/categories/{category_id}")
+async def update_skill_category(category_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a skill category (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage skill categories")
+    
+    await db.skill_categories.update_one({"id": category_id}, {"$set": data})
+    return await db.skill_categories.find_one({"id": category_id}, {"_id": 0})
+
+@api_router.delete("/skills/categories/{category_id}")
+async def delete_skill_category(category_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a skill category (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage skill categories")
+    
+    await db.skill_categories.update_one({"id": category_id}, {"$set": {"is_active": False}})
+    return {"message": "Category deactivated"}
+
+@api_router.get("/skills/library")
+async def get_skills_library(
+    category_id: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get skills library"""
+    query = {"is_active": True}
+    if category_id:
+        query["category_id"] = category_id
+    
+    skills = await db.skills.find(query, {"_id": 0}).to_list(500)
+    
+    # Seed default skills if none exist
+    if not skills and not category_id:
+        categories = await db.skill_categories.find({"is_active": True}, {"_id": 0}).to_list(10)
+        cat_map = {c["name"]: c["id"] for c in categories}
+        
+        default_skills = [
+            # Technical
+            {"name": "Python", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            {"name": "JavaScript", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            {"name": "React", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            {"name": "SQL", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            {"name": "AWS", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            {"name": "Data Analysis", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            {"name": "Machine Learning", "category_id": cat_map.get("Technical Skills", ""), "category_name": "Technical Skills"},
+            # Soft Skills
+            {"name": "Communication", "category_id": cat_map.get("Soft Skills", ""), "category_name": "Soft Skills"},
+            {"name": "Problem Solving", "category_id": cat_map.get("Soft Skills", ""), "category_name": "Soft Skills"},
+            {"name": "Teamwork", "category_id": cat_map.get("Soft Skills", ""), "category_name": "Soft Skills"},
+            {"name": "Time Management", "category_id": cat_map.get("Soft Skills", ""), "category_name": "Soft Skills"},
+            {"name": "Critical Thinking", "category_id": cat_map.get("Soft Skills", ""), "category_name": "Soft Skills"},
+            # Leadership
+            {"name": "Team Management", "category_id": cat_map.get("Leadership", ""), "category_name": "Leadership"},
+            {"name": "Strategic Planning", "category_id": cat_map.get("Leadership", ""), "category_name": "Leadership"},
+            {"name": "Decision Making", "category_id": cat_map.get("Leadership", ""), "category_name": "Leadership"},
+            {"name": "Mentoring", "category_id": cat_map.get("Leadership", ""), "category_name": "Leadership"},
+            # Languages
+            {"name": "English", "category_id": cat_map.get("Languages", ""), "category_name": "Languages"},
+            {"name": "Spanish", "category_id": cat_map.get("Languages", ""), "category_name": "Languages"},
+            {"name": "Mandarin", "category_id": cat_map.get("Languages", ""), "category_name": "Languages"},
+            {"name": "French", "category_id": cat_map.get("Languages", ""), "category_name": "Languages"},
+        ]
+        
+        for skill in default_skills:
+            skill["id"] = str(uuid.uuid4())
+            skill["is_active"] = True
+            skill["created_at"] = datetime.now(timezone.utc).isoformat()
+        
+        if default_skills:
+            await db.skills.insert_many(default_skills)
+            skills = await db.skills.find(query, {"_id": 0}).to_list(500)
+    
+    if search:
+        search_lower = search.lower()
+        skills = [s for s in skills if search_lower in s.get("name", "").lower()]
+    
+    return skills
+
+@api_router.post("/skills/library")
+async def create_skill(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new skill in the library (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage skills library")
+    
+    # Get category name
+    if data.get("category_id"):
+        category = await db.skill_categories.find_one({"id": data["category_id"]}, {"_id": 0})
+        if category:
+            data["category_name"] = category.get("name")
+    
+    skill = Skill(**data)
+    await db.skills.insert_one(skill.model_dump())
+    return skill.model_dump()
+
+@api_router.put("/skills/library/{skill_id}")
+async def update_skill(skill_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a skill in the library (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage skills library")
+    
+    await db.skills.update_one({"id": skill_id}, {"$set": data})
+    return await db.skills.find_one({"id": skill_id}, {"_id": 0})
+
+@api_router.delete("/skills/library/{skill_id}")
+async def delete_skill(skill_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a skill from the library (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage skills library")
+    
+    await db.skills.update_one({"id": skill_id}, {"$set": {"is_active": False}})
+    return {"message": "Skill deactivated"}
+
+@api_router.get("/skills/stats")
+async def get_skills_stats(current_user: User = Depends(get_current_user)):
+    """Get skills statistics"""
+    total_skills = await db.skills.count_documents({"is_active": True})
+    total_categories = await db.skill_categories.count_documents({"is_active": True})
+    total_employee_skills = await db.employee_skills.count_documents({})
+    total_endorsements = await db.skill_endorsements.count_documents({})
+    
+    # Top skills by employee count
+    pipeline = [
+        {"$group": {"_id": "$skill_name", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    top_skills = await db.employee_skills.aggregate(pipeline).to_list(10)
+    
+    # Skills by category
+    cat_pipeline = [
+        {"$group": {"_id": "$category_name", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    skills_by_category = await db.employee_skills.aggregate(cat_pipeline).to_list(20)
+    
+    return {
+        "total_skills": total_skills,
+        "total_categories": total_categories,
+        "total_employee_skills": total_employee_skills,
+        "total_endorsements": total_endorsements,
+        "top_skills": top_skills,
+        "skills_by_category": skills_by_category
+    }
+
+@api_router.get("/skills/my")
+async def get_my_skills(current_user: User = Depends(get_current_user)):
+    """Get current user's skills"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    
+    skills = await db.employee_skills.find(
+        {"employee_id": employee["id"]},
+        {"_id": 0}
+    ).sort("proficiency_level", -1).to_list(100)
+    
+    # Get endorsements for each skill
+    for skill in skills:
+        endorsements = await db.skill_endorsements.find(
+            {"employee_skill_id": skill["id"]},
+            {"_id": 0}
+        ).to_list(50)
+        skill["endorsements"] = endorsements
+    
+    return skills
+
+@api_router.post("/skills/my")
+async def add_my_skill(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a skill to current user's profile"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    # Get skill info
+    skill = await db.skills.find_one({"id": data.get("skill_id")}, {"_id": 0})
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    
+    # Check if already has this skill
+    existing = await db.employee_skills.find_one({
+        "employee_id": employee["id"],
+        "skill_id": skill["id"]
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="You already have this skill")
+    
+    employee_skill_data = {
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "skill_id": skill["id"],
+        "skill_name": skill.get("name"),
+        "category_id": skill.get("category_id"),
+        "category_name": skill.get("category_name"),
+        "proficiency_level": data.get("proficiency_level", 3),
+        "years_experience": data.get("years_experience"),
+        "notes": data.get("notes"),
+        "certifications": data.get("certifications")
+    }
+    
+    emp_skill = EmployeeSkill(**employee_skill_data)
+    await db.employee_skills.insert_one(emp_skill.model_dump())
+    
+    return emp_skill.model_dump()
+
+@api_router.put("/skills/my/{skill_id}")
+async def update_my_skill(skill_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update own skill"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    emp_skill = await db.employee_skills.find_one({"id": skill_id}, {"_id": 0})
+    if not emp_skill or emp_skill["employee_id"] != employee["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.employee_skills.update_one({"id": skill_id}, {"$set": data})
+    
+    return await db.employee_skills.find_one({"id": skill_id}, {"_id": 0})
+
+@api_router.delete("/skills/my/{skill_id}")
+async def delete_my_skill(skill_id: str, current_user: User = Depends(get_current_user)):
+    """Remove a skill from own profile"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    emp_skill = await db.employee_skills.find_one({"id": skill_id}, {"_id": 0})
+    if not emp_skill or emp_skill["employee_id"] != employee["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.employee_skills.delete_one({"id": skill_id})
+    await db.skill_endorsements.delete_many({"employee_skill_id": skill_id})
+    
+    return {"message": "Skill removed"}
+
+@api_router.get("/skills/employee/{employee_id}")
+async def get_employee_skills(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get skills for a specific employee"""
+    skills = await db.employee_skills.find(
+        {"employee_id": employee_id},
+        {"_id": 0}
+    ).sort("proficiency_level", -1).to_list(100)
+    
+    # Get endorsements
+    for skill in skills:
+        endorsements = await db.skill_endorsements.find(
+            {"employee_skill_id": skill["id"]},
+            {"_id": 0}
+        ).to_list(50)
+        skill["endorsements"] = endorsements
+        skill["endorsement_count"] = len(endorsements)
+    
+    return skills
+
+@api_router.post("/skills/endorse/{employee_skill_id}")
+async def endorse_skill(employee_skill_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Endorse someone's skill"""
+    emp_skill = await db.employee_skills.find_one({"id": employee_skill_id}, {"_id": 0})
+    if not emp_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    
+    # Get endorser info
+    endorser = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    endorser_id = endorser["id"] if endorser else current_user.id
+    endorser_name = endorser.get("full_name") if endorser else current_user.full_name
+    
+    # Can't endorse own skill
+    if emp_skill["employee_id"] == endorser_id:
+        raise HTTPException(status_code=400, detail="Cannot endorse your own skill")
+    
+    # Check if already endorsed
+    existing = await db.skill_endorsements.find_one({
+        "employee_skill_id": employee_skill_id,
+        "endorser_id": endorser_id
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="You already endorsed this skill")
+    
+    endorsement = SkillEndorsement(
+        employee_skill_id=employee_skill_id,
+        employee_id=emp_skill["employee_id"],
+        employee_name=emp_skill.get("employee_name"),
+        skill_name=emp_skill.get("skill_name"),
+        endorser_id=endorser_id,
+        endorser_name=endorser_name,
+        comment=data.get("comment")
+    )
+    
+    await db.skill_endorsements.insert_one(endorsement.model_dump())
+    
+    # Update endorsement count
+    count = await db.skill_endorsements.count_documents({"employee_skill_id": employee_skill_id})
+    await db.employee_skills.update_one(
+        {"id": employee_skill_id},
+        {"$set": {"endorsement_count": count}}
+    )
+    
+    return endorsement.model_dump()
+
+@api_router.delete("/skills/endorse/{endorsement_id}")
+async def remove_endorsement(endorsement_id: str, current_user: User = Depends(get_current_user)):
+    """Remove own endorsement"""
+    endorser = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    endorser_id = endorser["id"] if endorser else current_user.id
+    
+    endorsement = await db.skill_endorsements.find_one({"id": endorsement_id}, {"_id": 0})
+    if not endorsement or endorsement["endorser_id"] != endorser_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    employee_skill_id = endorsement["employee_skill_id"]
+    await db.skill_endorsements.delete_one({"id": endorsement_id})
+    
+    # Update count
+    count = await db.skill_endorsements.count_documents({"employee_skill_id": employee_skill_id})
+    await db.employee_skills.update_one(
+        {"id": employee_skill_id},
+        {"$set": {"endorsement_count": count}}
+    )
+    
+    return {"message": "Endorsement removed"}
+
+@api_router.get("/skills/search")
+async def search_employees_by_skills(
+    skill_ids: str = "",  # Comma-separated skill IDs
+    skill_names: str = "",  # Comma-separated skill names
+    min_proficiency: int = 1,
+    current_user: User = Depends(get_current_user)
+):
+    """Search employees by skills"""
+    query = {"proficiency_level": {"$gte": min_proficiency}}
+    
+    if skill_ids:
+        ids = [s.strip() for s in skill_ids.split(",") if s.strip()]
+        if ids:
+            query["skill_id"] = {"$in": ids}
+    
+    if skill_names:
+        names = [s.strip() for s in skill_names.split(",") if s.strip()]
+        if names:
+            query["skill_name"] = {"$in": names}
+    
+    employee_skills = await db.employee_skills.find(query, {"_id": 0}).to_list(500)
+    
+    # Group by employee
+    employees_map = {}
+    for es in employee_skills:
+        emp_id = es["employee_id"]
+        if emp_id not in employees_map:
+            employees_map[emp_id] = {
+                "employee_id": emp_id,
+                "employee_name": es.get("employee_name"),
+                "skills": []
+            }
+        employees_map[emp_id]["skills"].append({
+            "skill_name": es.get("skill_name"),
+            "proficiency_level": es.get("proficiency_level"),
+            "endorsement_count": es.get("endorsement_count", 0)
+        })
+    
+    return list(employees_map.values())
+
+@api_router.get("/skills/all-employees")
+async def get_all_employee_skills(
+    department_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get skills for all employees (admin view)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view all employee skills")
+    
+    # Get employees
+    emp_query = {}
+    if department_id:
+        emp_query["department_id"] = department_id
+    
+    employees = await db.employees.find(emp_query, {"_id": 0, "id": 1, "full_name": 1, "job_title": 1, "department_id": 1}).to_list(500)
+    
+    # Get skills for each
+    result = []
+    for emp in employees:
+        skills = await db.employee_skills.find(
+            {"employee_id": emp["id"]},
+            {"_id": 0}
+        ).to_list(50)
+        
+        if skills:
+            dept_name = None
+            if emp.get("department_id"):
+                dept = await db.departments.find_one({"id": emp["department_id"]}, {"_id": 0})
+                dept_name = dept.get("name") if dept else None
+            
+            result.append({
+                "employee_id": emp["id"],
+                "employee_name": emp.get("full_name"),
+                "job_title": emp.get("job_title"),
+                "department": dept_name,
+                "skills": skills,
+                "skill_count": len(skills),
+                "avg_proficiency": sum(s.get("proficiency_level", 0) for s in skills) / len(skills) if skills else 0
+            })
+    
+    return result
+
+@api_router.post("/skills/verify/{employee_skill_id}")
+async def verify_skill(employee_skill_id: str, current_user: User = Depends(get_current_user)):
+    """Verify an employee's skill (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can verify skills")
+    
+    await db.employee_skills.update_one(
+        {"id": employee_skill_id},
+        {"$set": {
+            "is_verified": True,
+            "verified_by": current_user.full_name,
+            "verified_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return await db.employee_skills.find_one({"id": employee_skill_id}, {"_id": 0})
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
