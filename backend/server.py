@@ -2098,6 +2098,124 @@ async def get_recruitment_stats(current_user: User = Depends(get_current_user)):
         }
     }
 
+# ============= ONBOARDING ROUTES =============
+
+@api_router.get("/onboarding-templates")
+async def get_onboarding_templates(department_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if department_id:
+        query["department_id"] = department_id
+    templates = await db.onboarding_templates.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return templates
+
+@api_router.get("/onboarding-templates/{template_id}")
+async def get_onboarding_template(template_id: str, current_user: User = Depends(get_current_user)):
+    template = await db.onboarding_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+@api_router.post("/onboarding-templates")
+async def create_onboarding_template(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    template = OnboardingTemplate(**data)
+    await db.onboarding_templates.insert_one(template.model_dump())
+    return template.model_dump()
+
+@api_router.put("/onboarding-templates/{template_id}")
+async def update_onboarding_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    result = await db.onboarding_templates.update_one({"id": template_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return await db.onboarding_templates.find_one({"id": template_id}, {"_id": 0})
+
+@api_router.delete("/onboarding-templates/{template_id}")
+async def delete_onboarding_template(template_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.onboarding_templates.delete_one({"id": template_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"message": "Template deleted"}
+
+@api_router.get("/onboardings")
+async def get_onboardings(status: Optional[str] = None, employee_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if status:
+        query["status"] = status
+    if employee_id:
+        query["employee_id"] = employee_id
+    onboardings = await db.onboardings.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return onboardings
+
+@api_router.get("/onboardings/{onboarding_id}")
+async def get_onboarding(onboarding_id: str, current_user: User = Depends(get_current_user)):
+    onboarding = await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
+    if not onboarding:
+        raise HTTPException(status_code=404, detail="Onboarding not found")
+    return onboarding
+
+@api_router.post("/onboardings")
+async def create_onboarding(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # Get template to copy tasks
+    template_id = data.get("template_id")
+    if template_id:
+        template = await db.onboarding_templates.find_one({"id": template_id}, {"_id": 0})
+        if template:
+            data["tasks"] = template.get("tasks", [])
+            data["duration_days"] = template.get("duration_days", 30)
+            data["department_id"] = data.get("department_id") or template.get("department_id")
+    
+    # Mark tasks as not completed
+    for task in data.get("tasks", []):
+        task["completed"] = False
+        task["completed_at"] = None
+    
+    onboarding = Onboarding(**data)
+    await db.onboardings.insert_one(onboarding.model_dump())
+    return onboarding.model_dump()
+
+@api_router.put("/onboardings/{onboarding_id}")
+async def update_onboarding(onboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # Check if completing
+    if data.get("status") == "completed":
+        data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.onboardings.update_one({"id": onboarding_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Onboarding not found")
+    return await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
+
+@api_router.put("/onboardings/{onboarding_id}/tasks/{task_index}")
+async def update_onboarding_task(onboarding_id: str, task_index: int, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    onboarding = await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
+    if not onboarding:
+        raise HTTPException(status_code=404, detail="Onboarding not found")
+    
+    tasks = onboarding.get("tasks", [])
+    if task_index < 0 or task_index >= len(tasks):
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update task
+    tasks[task_index]["completed"] = data.get("completed", tasks[task_index].get("completed", False))
+    if tasks[task_index]["completed"]:
+        tasks[task_index]["completed_at"] = datetime.now(timezone.utc).isoformat()
+    else:
+        tasks[task_index]["completed_at"] = None
+    
+    # Check if all tasks completed to auto-complete onboarding
+    all_completed = all(t.get("completed", False) for t in tasks)
+    update_data = {"tasks": tasks}
+    if all_completed:
+        update_data["status"] = "completed"
+        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.onboardings.update_one({"id": onboarding_id}, {"$set": update_data})
+    return await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
+
+@api_router.delete("/onboardings/{onboarding_id}")
+async def delete_onboarding(onboarding_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.onboardings.delete_one({"id": onboarding_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Onboarding not found")
+    return {"message": "Onboarding deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
