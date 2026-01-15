@@ -28,7 +28,8 @@ import {
   ClipboardList,
   Network,
   Wallet,
-  Package
+  Package,
+  Megaphone
 } from 'lucide-react';
 
 const Layout = () => {
