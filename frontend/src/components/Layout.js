@@ -25,7 +25,8 @@ import {
   Receipt,
   GraduationCap,
   FileCheck,
-  ClipboardList
+  ClipboardList,
+  Network
 } from 'lucide-react';
 
 const Layout = () => {
