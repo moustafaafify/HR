@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Workflow
 } from 'lucide-react';
 
 const Layout = () => {
