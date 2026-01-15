@@ -17,6 +17,7 @@ import Performance from './pages/Performance';
 import Settings from './pages/Settings';
 import RolesPermissions from './pages/RolesPermissions';
 import Workflows from './pages/Workflows';
+import Recruitment from './pages/Recruitment';
 import Layout from './components/Layout';
 import './App.css';
 
