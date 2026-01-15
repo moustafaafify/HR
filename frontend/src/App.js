@@ -31,6 +31,7 @@ import Communications from './pages/Communications';
 import Complaints from './pages/Complaints';
 import Disciplinary from './pages/Disciplinary';
 import Travel from './pages/Travel';
+import Recognition from './pages/Recognition';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -77,6 +78,7 @@ function AppRoutes() {
         <Route path="complaints" element={<Complaints />} />
         <Route path="disciplinary" element={<Disciplinary />} />
         <Route path="travel" element={<Travel />} />
+        <Route path="recognition" element={<Recognition />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
