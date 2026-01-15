@@ -1526,7 +1526,7 @@ const Recruitment = () => {
               Refer a Candidate
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); handleApplicationSubmit(e); setReferralDialogOpen(false); }} className="space-y-4 mt-4">
+          <form onSubmit={handleApplicationSubmit} className="space-y-4 mt-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Position *</label>
               <Select value={applicationForm.job_id} onValueChange={(v) => setApplicationForm({ ...applicationForm, job_id: v })} required>
