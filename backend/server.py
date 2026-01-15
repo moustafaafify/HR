@@ -10005,6 +10005,745 @@ async def export_overtime(
         "approved_hours": round(approved_hours, 2)
     }
 
+# ============= TIMESHEET MODELS =============
+
+class TimeEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timesheet_id: Optional[str] = None
+    employee_id: str
+    employee_name: Optional[str] = None
+    
+    # Date & Time
+    date: str  # YYYY-MM-DD
+    start_time: Optional[str] = None  # HH:MM
+    end_time: Optional[str] = None  # HH:MM
+    break_minutes: int = 0
+    hours: float = 0  # Total hours worked
+    
+    # Work details
+    project_id: Optional[str] = None
+    project_name: Optional[str] = None
+    task_description: Optional[str] = None
+    work_type: str = "regular"  # regular, overtime, remote, on_site, training
+    
+    # Location/Notes
+    location: Optional[str] = None
+    notes: Optional[str] = None
+    
+    # Status
+    is_billable: bool = True
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Timesheet(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    employee_name: Optional[str] = None
+    department: Optional[str] = None
+    department_id: Optional[str] = None
+    
+    # Period
+    period_type: str = "weekly"  # weekly, biweekly, monthly
+    period_start: str  # YYYY-MM-DD
+    period_end: str  # YYYY-MM-DD
+    week_number: Optional[int] = None
+    year: int
+    month: int
+    
+    # Hours Summary
+    total_hours: float = 0
+    regular_hours: float = 0
+    overtime_hours: float = 0
+    billable_hours: float = 0
+    
+    # Status & Approval
+    status: str = "draft"  # draft, submitted, approved, rejected, revision_requested
+    submitted_at: Optional[str] = None
+    approved_by: Optional[str] = None
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    
+    # Manager
+    manager_id: Optional[str] = None
+    manager_name: Optional[str] = None
+    
+    notes: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TimesheetSettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Work schedule
+    standard_hours_per_day: float = 8
+    standard_hours_per_week: float = 40
+    overtime_threshold_daily: float = 8
+    overtime_threshold_weekly: float = 40
+    
+    # Period settings
+    default_period_type: str = "weekly"  # weekly, biweekly, monthly
+    week_start_day: str = "monday"  # monday, sunday
+    
+    # Submission rules
+    submission_deadline_day: int = 1  # Day of week (0=Mon) or day of month
+    auto_submit_enabled: bool = False
+    require_daily_entries: bool = False
+    require_project_assignment: bool = False
+    
+    # Break settings
+    auto_deduct_break: bool = True
+    default_break_minutes: int = 60
+    
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= TIMESHEET API ENDPOINTS =============
+
+def get_week_dates(date_str: str = None):
+    """Get the start and end dates of the week for a given date"""
+    if date_str:
+        date = datetime.strptime(date_str, "%Y-%m-%d")
+    else:
+        date = datetime.now()
+    
+    # Find Monday of the week
+    start = date - timedelta(days=date.weekday())
+    end = start + timedelta(days=6)
+    
+    return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+
+@api_router.get("/timesheets/stats")
+async def get_timesheet_stats(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get timesheet statistics"""
+    if year is None:
+        year = datetime.now().year
+    if month is None:
+        month = datetime.now().month
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {"year": year, "month": month}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return {"total_timesheets": 0, "total_hours": 0}
+        query["employee_id"] = employee["id"]
+    
+    timesheets = await db.timesheets.find(query, {"_id": 0}).to_list(1000)
+    
+    total_hours = sum(t.get("total_hours", 0) for t in timesheets)
+    regular_hours = sum(t.get("regular_hours", 0) for t in timesheets)
+    overtime_hours = sum(t.get("overtime_hours", 0) for t in timesheets)
+    billable_hours = sum(t.get("billable_hours", 0) for t in timesheets)
+    
+    by_status = {}
+    for t in timesheets:
+        status = t.get("status", "draft")
+        if status not in by_status:
+            by_status[status] = {"count": 0, "hours": 0}
+        by_status[status]["count"] += 1
+        by_status[status]["hours"] += t.get("total_hours", 0)
+    
+    stats = {
+        "year": year,
+        "month": month,
+        "total_timesheets": len(timesheets),
+        "total_hours": round(total_hours, 2),
+        "regular_hours": round(regular_hours, 2),
+        "overtime_hours": round(overtime_hours, 2),
+        "billable_hours": round(billable_hours, 2),
+        "by_status": by_status
+    }
+    
+    if is_admin:
+        # Pending approvals
+        pending = await db.timesheets.count_documents({"status": "submitted"})
+        stats["pending_approvals"] = pending
+        
+        # By department
+        by_department = {}
+        for t in timesheets:
+            dept = t.get("department") or "Unknown"
+            if dept not in by_department:
+                by_department[dept] = {"count": 0, "hours": 0}
+            by_department[dept]["count"] += 1
+            by_department[dept]["hours"] += t.get("total_hours", 0)
+        stats["by_department"] = by_department
+    
+    return stats
+
+@api_router.get("/timesheets/settings")
+async def get_timesheet_settings(current_user: User = Depends(get_current_user)):
+    """Get timesheet settings"""
+    settings = await db.timesheet_settings.find_one({}, {"_id": 0})
+    
+    if not settings:
+        default_settings = TimesheetSettings()
+        await db.timesheet_settings.insert_one(default_settings.model_dump())
+        settings = default_settings.model_dump()
+    
+    return settings
+
+@api_router.put("/timesheets/settings")
+async def update_timesheet_settings(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update timesheet settings (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update settings")
+    
+    settings = await db.timesheet_settings.find_one({}, {"_id": 0})
+    if not settings:
+        new_settings = TimesheetSettings(**data)
+        await db.timesheet_settings.insert_one(new_settings.model_dump())
+        return new_settings.model_dump()
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.timesheet_settings.update_one({}, {"$set": data})
+    return await db.timesheet_settings.find_one({}, {"_id": 0})
+
+@api_router.get("/timesheets")
+async def get_timesheets(
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get timesheets"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        query["employee_id"] = employee["id"]
+    else:
+        if employee_id:
+            query["employee_id"] = employee_id
+    
+    if status:
+        query["status"] = status
+    if year:
+        query["year"] = year
+    if month:
+        query["month"] = month
+    
+    timesheets = await db.timesheets.find(query, {"_id": 0}).sort("period_start", -1).to_list(500)
+    return timesheets
+
+@api_router.get("/timesheets/current")
+async def get_current_timesheet(current_user: User = Depends(get_current_user)):
+    """Get or create current week's timesheet for the user"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    # Get current week dates
+    today = datetime.now()
+    week_start, week_end = get_week_dates(today.strftime("%Y-%m-%d"))
+    
+    # Check if timesheet exists
+    timesheet = await db.timesheets.find_one({
+        "employee_id": employee["id"],
+        "period_start": week_start
+    }, {"_id": 0})
+    
+    if not timesheet:
+        # Get department name
+        dept_name = None
+        if employee.get("department_id"):
+            dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+            if dept:
+                dept_name = dept.get("name")
+        
+        # Get manager info
+        manager_name = None
+        if employee.get("reporting_manager_id"):
+            manager = await db.employees.find_one({"id": employee["reporting_manager_id"]}, {"_id": 0})
+            if manager:
+                manager_name = manager.get("full_name")
+        
+        # Create new timesheet
+        new_timesheet = Timesheet(
+            employee_id=employee["id"],
+            employee_name=employee.get("full_name"),
+            department=dept_name,
+            department_id=employee.get("department_id"),
+            period_start=week_start,
+            period_end=week_end,
+            week_number=today.isocalendar()[1],
+            year=today.year,
+            month=today.month,
+            manager_id=employee.get("reporting_manager_id"),
+            manager_name=manager_name
+        )
+        await db.timesheets.insert_one(new_timesheet.model_dump())
+        timesheet = new_timesheet.model_dump()
+    
+    # Get time entries for this timesheet
+    entries = await db.time_entries.find({
+        "timesheet_id": timesheet["id"]
+    }, {"_id": 0}).sort("date", 1).to_list(100)
+    
+    timesheet["entries"] = entries
+    return timesheet
+
+@api_router.get("/timesheets/{timesheet_id}")
+async def get_timesheet(timesheet_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific timesheet with entries"""
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != timesheet["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Get entries
+    entries = await db.time_entries.find({
+        "timesheet_id": timesheet_id
+    }, {"_id": 0}).sort("date", 1).to_list(100)
+    
+    timesheet["entries"] = entries
+    return timesheet
+
+@api_router.post("/timesheets")
+async def create_timesheet(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new timesheet"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    # Get department name
+    dept_name = None
+    if employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+        if dept:
+            dept_name = dept.get("name")
+    
+    # Check for existing timesheet in the same period
+    existing = await db.timesheets.find_one({
+        "employee_id": employee["id"],
+        "period_start": data.get("period_start")
+    }, {"_id": 0})
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Timesheet already exists for this period")
+    
+    # Calculate week number
+    period_start = datetime.strptime(data["period_start"], "%Y-%m-%d")
+    
+    timesheet_data = {
+        **data,
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "department": dept_name,
+        "department_id": employee.get("department_id"),
+        "week_number": period_start.isocalendar()[1],
+        "year": period_start.year,
+        "month": period_start.month,
+        "status": "draft"
+    }
+    
+    timesheet = Timesheet(**timesheet_data)
+    await db.timesheets.insert_one(timesheet.model_dump())
+    
+    return timesheet.model_dump()
+
+@api_router.put("/timesheets/{timesheet_id}")
+async def update_timesheet(timesheet_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a timesheet"""
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != timesheet["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if timesheet["status"] not in ["draft", "revision_requested"]:
+            raise HTTPException(status_code=400, detail="Cannot edit submitted timesheet")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.timesheets.update_one({"id": timesheet_id}, {"$set": data})
+    
+    return await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+
+@api_router.delete("/timesheets/{timesheet_id}")
+async def delete_timesheet(timesheet_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a timesheet"""
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != timesheet["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if timesheet["status"] != "draft":
+            raise HTTPException(status_code=400, detail="Cannot delete submitted timesheet")
+    
+    # Delete associated entries
+    await db.time_entries.delete_many({"timesheet_id": timesheet_id})
+    await db.timesheets.delete_one({"id": timesheet_id})
+    
+    return {"message": "Timesheet deleted"}
+
+@api_router.put("/timesheets/{timesheet_id}/submit")
+async def submit_timesheet(timesheet_id: str, current_user: User = Depends(get_current_user)):
+    """Submit a timesheet for approval"""
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee or employee["id"] != timesheet["employee_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if timesheet["status"] not in ["draft", "revision_requested"]:
+        raise HTTPException(status_code=400, detail="Timesheet already submitted")
+    
+    # Calculate totals from entries
+    entries = await db.time_entries.find({"timesheet_id": timesheet_id}, {"_id": 0}).to_list(100)
+    
+    total_hours = sum(e.get("hours", 0) for e in entries)
+    regular_hours = sum(e.get("hours", 0) for e in entries if e.get("work_type") != "overtime")
+    overtime_hours = sum(e.get("hours", 0) for e in entries if e.get("work_type") == "overtime")
+    billable_hours = sum(e.get("hours", 0) for e in entries if e.get("is_billable", True))
+    
+    await db.timesheets.update_one({"id": timesheet_id}, {"$set": {
+        "status": "submitted",
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "total_hours": round(total_hours, 2),
+        "regular_hours": round(regular_hours, 2),
+        "overtime_hours": round(overtime_hours, 2),
+        "billable_hours": round(billable_hours, 2),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+
+@api_router.put("/timesheets/{timesheet_id}/approve")
+async def approve_timesheet(timesheet_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Approve a timesheet (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN, UserRole.BRANCH_MANAGER]:
+        raise HTTPException(status_code=403, detail="Only managers can approve timesheets")
+    
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    if timesheet["status"] != "submitted":
+        raise HTTPException(status_code=400, detail="Only submitted timesheets can be approved")
+    
+    await db.timesheets.update_one({"id": timesheet_id}, {"$set": {
+        "status": "approved",
+        "approved_by": current_user.id,
+        "approved_by_name": current_user.full_name,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "notes": data.get("notes", timesheet.get("notes")),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+
+@api_router.put("/timesheets/{timesheet_id}/reject")
+async def reject_timesheet(timesheet_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject a timesheet (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN, UserRole.BRANCH_MANAGER]:
+        raise HTTPException(status_code=403, detail="Only managers can reject timesheets")
+    
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    if timesheet["status"] != "submitted":
+        raise HTTPException(status_code=400, detail="Only submitted timesheets can be rejected")
+    
+    await db.timesheets.update_one({"id": timesheet_id}, {"$set": {
+        "status": "rejected",
+        "approved_by": current_user.id,
+        "approved_by_name": current_user.full_name,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "rejection_reason": data.get("reason", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+
+@api_router.put("/timesheets/{timesheet_id}/request-revision")
+async def request_timesheet_revision(timesheet_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Request revision on a timesheet (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN, UserRole.BRANCH_MANAGER]:
+        raise HTTPException(status_code=403, detail="Only managers can request revisions")
+    
+    timesheet = await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+    if not timesheet:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+    
+    await db.timesheets.update_one({"id": timesheet_id}, {"$set": {
+        "status": "revision_requested",
+        "rejection_reason": data.get("reason", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.timesheets.find_one({"id": timesheet_id}, {"_id": 0})
+
+# ============= TIME ENTRY ENDPOINTS =============
+
+@api_router.get("/time-entries")
+async def get_time_entries(
+    timesheet_id: Optional[str] = None,
+    date: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get time entries"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        query["employee_id"] = employee["id"]
+    
+    if timesheet_id:
+        query["timesheet_id"] = timesheet_id
+    if date:
+        query["date"] = date
+    if start_date:
+        query["date"] = {"$gte": start_date}
+    if end_date:
+        if "date" in query and isinstance(query["date"], dict):
+            query["date"]["$lte"] = end_date
+        else:
+            query["date"] = {"$lte": end_date}
+    
+    entries = await db.time_entries.find(query, {"_id": 0}).sort("date", -1).to_list(500)
+    return entries
+
+@api_router.post("/time-entries")
+async def create_time_entry(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new time entry"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    # Calculate hours if start/end time provided
+    hours = data.get("hours", 0)
+    if not hours and data.get("start_time") and data.get("end_time"):
+        try:
+            start = datetime.strptime(data["start_time"], "%H:%M")
+            end = datetime.strptime(data["end_time"], "%H:%M")
+            if end < start:
+                hours = (24 - start.hour - start.minute/60) + (end.hour + end.minute/60)
+            else:
+                hours = (end - start).seconds / 3600
+            # Subtract break
+            break_mins = data.get("break_minutes", 0)
+            hours = max(0, hours - break_mins / 60)
+        except:
+            hours = 0
+    
+    # Find or create timesheet for this date
+    entry_date = data.get("date", datetime.now().strftime("%Y-%m-%d"))
+    week_start, week_end = get_week_dates(entry_date)
+    
+    timesheet = await db.timesheets.find_one({
+        "employee_id": employee["id"],
+        "period_start": week_start
+    }, {"_id": 0})
+    
+    if not timesheet:
+        # Create timesheet
+        dept_name = None
+        if employee.get("department_id"):
+            dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+            if dept:
+                dept_name = dept.get("name")
+        
+        period_date = datetime.strptime(week_start, "%Y-%m-%d")
+        new_timesheet = Timesheet(
+            employee_id=employee["id"],
+            employee_name=employee.get("full_name"),
+            department=dept_name,
+            department_id=employee.get("department_id"),
+            period_start=week_start,
+            period_end=week_end,
+            week_number=period_date.isocalendar()[1],
+            year=period_date.year,
+            month=period_date.month
+        )
+        await db.timesheets.insert_one(new_timesheet.model_dump())
+        timesheet = new_timesheet.model_dump()
+    
+    # Check if timesheet is editable
+    if timesheet.get("status") not in [None, "draft", "revision_requested"]:
+        raise HTTPException(status_code=400, detail="Cannot add entries to submitted timesheet")
+    
+    entry_data = {
+        **data,
+        "timesheet_id": timesheet["id"],
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "hours": round(hours, 2)
+    }
+    
+    entry = TimeEntry(**entry_data)
+    await db.time_entries.insert_one(entry.model_dump())
+    
+    # Update timesheet totals
+    await update_timesheet_totals(timesheet["id"])
+    
+    return entry.model_dump()
+
+@api_router.put("/time-entries/{entry_id}")
+async def update_time_entry(entry_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a time entry"""
+    entry = await db.time_entries.find_one({"id": entry_id}, {"_id": 0})
+    if not entry:
+        raise HTTPException(status_code=404, detail="Time entry not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != entry["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if timesheet is editable
+    if entry.get("timesheet_id"):
+        timesheet = await db.timesheets.find_one({"id": entry["timesheet_id"]}, {"_id": 0})
+        if timesheet and timesheet.get("status") not in [None, "draft", "revision_requested"]:
+            raise HTTPException(status_code=400, detail="Cannot edit entries on submitted timesheet")
+    
+    # Recalculate hours if time changed
+    if "start_time" in data or "end_time" in data:
+        start_time = data.get("start_time", entry.get("start_time"))
+        end_time = data.get("end_time", entry.get("end_time"))
+        break_mins = data.get("break_minutes", entry.get("break_minutes", 0))
+        
+        if start_time and end_time:
+            try:
+                start = datetime.strptime(start_time, "%H:%M")
+                end = datetime.strptime(end_time, "%H:%M")
+                if end < start:
+                    hours = (24 - start.hour - start.minute/60) + (end.hour + end.minute/60)
+                else:
+                    hours = (end - start).seconds / 3600
+                hours = max(0, hours - break_mins / 60)
+                data["hours"] = round(hours, 2)
+            except:
+                pass
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.time_entries.update_one({"id": entry_id}, {"$set": data})
+    
+    # Update timesheet totals
+    if entry.get("timesheet_id"):
+        await update_timesheet_totals(entry["timesheet_id"])
+    
+    return await db.time_entries.find_one({"id": entry_id}, {"_id": 0})
+
+@api_router.delete("/time-entries/{entry_id}")
+async def delete_time_entry(entry_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a time entry"""
+    entry = await db.time_entries.find_one({"id": entry_id}, {"_id": 0})
+    if not entry:
+        raise HTTPException(status_code=404, detail="Time entry not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != entry["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if timesheet is editable
+    if entry.get("timesheet_id"):
+        timesheet = await db.timesheets.find_one({"id": entry["timesheet_id"]}, {"_id": 0})
+        if timesheet and timesheet.get("status") not in [None, "draft", "revision_requested"]:
+            raise HTTPException(status_code=400, detail="Cannot delete entries on submitted timesheet")
+    
+    timesheet_id = entry.get("timesheet_id")
+    await db.time_entries.delete_one({"id": entry_id})
+    
+    # Update timesheet totals
+    if timesheet_id:
+        await update_timesheet_totals(timesheet_id)
+    
+    return {"message": "Time entry deleted"}
+
+async def update_timesheet_totals(timesheet_id: str):
+    """Update timesheet hour totals from entries"""
+    entries = await db.time_entries.find({"timesheet_id": timesheet_id}, {"_id": 0}).to_list(100)
+    
+    total_hours = sum(e.get("hours", 0) for e in entries)
+    regular_hours = sum(e.get("hours", 0) for e in entries if e.get("work_type") != "overtime")
+    overtime_hours = sum(e.get("hours", 0) for e in entries if e.get("work_type") == "overtime")
+    billable_hours = sum(e.get("hours", 0) for e in entries if e.get("is_billable", True))
+    
+    await db.timesheets.update_one({"id": timesheet_id}, {"$set": {
+        "total_hours": round(total_hours, 2),
+        "regular_hours": round(regular_hours, 2),
+        "overtime_hours": round(overtime_hours, 2),
+        "billable_hours": round(billable_hours, 2),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+
+@api_router.get("/timesheets/export")
+async def export_timesheets(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    status: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export timesheet data (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can export data")
+    
+    query = {}
+    if year:
+        query["year"] = year
+    if month:
+        query["month"] = month
+    if status:
+        query["status"] = status
+    if employee_id:
+        query["employee_id"] = employee_id
+    
+    timesheets = await db.timesheets.find(query, {"_id": 0}).sort("period_start", -1).to_list(10000)
+    
+    total_hours = sum(t.get("total_hours", 0) for t in timesheets)
+    
+    return {
+        "timesheets": timesheets,
+        "total": len(timesheets),
+        "total_hours": round(total_hours, 2)
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
