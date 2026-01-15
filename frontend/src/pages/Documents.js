@@ -1712,6 +1712,33 @@ const Documents = () => {
                           >
                             <Edit2 size={16} />
                           </Button>
+                          <Button 
+                            onClick={() => { 
+                              // Pre-fill the template form with this template's data and open for assignment
+                              setEditingTemplate(null); 
+                              setTemplateForm({
+                                name: template.name,
+                                description: template.description || '',
+                                document_type_id: template.document_type_id || '',
+                                category_id: template.category_id || '',
+                                default_priority: template.default_priority || 'normal',
+                                document_url: template.document_url || '',
+                                instructions: template.instructions || '',
+                                assign_to_employees: true,
+                                employee_ids: []
+                              });
+                              if (template.document_url) {
+                                setTemplateUploadedFile({ file_name: 'Template file', file_url: template.document_url, file_size: 0 });
+                              }
+                              setTemplateDialogOpen(true); 
+                            }} 
+                            size="sm" 
+                            variant="ghost" 
+                            className="rounded-lg text-indigo-600"
+                            title="Assign to Employees"
+                          >
+                            <UserPlus size={16} />
+                          </Button>
                           <Button onClick={() => handleDeleteTemplate(template.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
                             <Trash2 size={16} />
                           </Button>
