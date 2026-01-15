@@ -34,7 +34,8 @@ import {
   AlertOctagon,
   Gavel,
   Plane,
-  Award
+  Award,
+  Target
 } from 'lucide-react';
 
 const Layout = () => {
