@@ -849,6 +849,127 @@ class Appraisal(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+# ============= PAYROLL MODELS =============
+
+class SalaryStructure(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    department: Optional[str] = None
+    
+    # Basic Salary
+    basic_salary: float = 0
+    currency: str = "USD"
+    pay_frequency: str = "monthly"  # monthly, bi_weekly, weekly
+    
+    # Allowances
+    housing_allowance: float = 0
+    transport_allowance: float = 0
+    meal_allowance: float = 0
+    phone_allowance: float = 0
+    other_allowances: float = 0
+    allowance_details: Optional[str] = None
+    
+    # Deductions
+    tax_rate: float = 0  # Percentage
+    social_security: float = 0
+    health_insurance: float = 0
+    pension_contribution: float = 0
+    other_deductions: float = 0
+    deduction_details: Optional[str] = None
+    
+    # Bank Details
+    bank_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_routing_number: Optional[str] = None
+    payment_method: str = "bank_transfer"  # bank_transfer, check, cash
+    
+    effective_date: str = Field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    status: str = "active"  # active, inactive
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Payslip(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    department: Optional[str] = None
+    
+    # Pay Period
+    pay_period: str  # e.g., "2025-01", "2025-W02"
+    pay_period_start: str
+    pay_period_end: str
+    payment_date: str
+    
+    # Earnings
+    basic_salary: float = 0
+    housing_allowance: float = 0
+    transport_allowance: float = 0
+    meal_allowance: float = 0
+    phone_allowance: float = 0
+    other_allowances: float = 0
+    overtime_hours: float = 0
+    overtime_rate: float = 0
+    overtime_pay: float = 0
+    bonus: float = 0
+    commission: float = 0
+    gross_salary: float = 0
+    
+    # Deductions
+    tax_amount: float = 0
+    social_security: float = 0
+    health_insurance: float = 0
+    pension_contribution: float = 0
+    loan_deduction: float = 0
+    other_deductions: float = 0
+    total_deductions: float = 0
+    
+    # Net Pay
+    net_salary: float = 0
+    currency: str = "USD"
+    
+    # Status
+    status: str = "draft"  # draft, approved, paid, cancelled
+    payment_method: Optional[str] = None
+    payment_reference: Optional[str] = None
+    notes: Optional[str] = None
+    
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    paid_at: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PayrollRun(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # e.g., "January 2025 Payroll"
+    pay_period: str
+    pay_period_start: str
+    pay_period_end: str
+    payment_date: str
+    
+    total_employees: int = 0
+    total_gross: float = 0
+    total_deductions: float = 0
+    total_net: float = 0
+    currency: str = "USD"
+    
+    status: str = "draft"  # draft, processing, approved, paid, cancelled
+    
+    created_by: Optional[str] = None
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    processed_at: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 # ============= AUTHENTICATION =============
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
