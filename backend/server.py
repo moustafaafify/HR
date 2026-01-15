@@ -2269,6 +2269,44 @@ async def delete_training_assignment(assignment_id: str, current_user: User = De
 
 # ============= DOCUMENT APPROVAL ROUTES =============
 
+@api_router.post("/documents/upload")
+async def upload_document_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a document file and return the URL"""
+    # Validate file type
+    allowed_extensions = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf', '.odt', '.ods', '.odp', '.png', '.jpg', '.jpeg', '.gif', '.csv'}
+    file_ext = Path(file.filename).suffix.lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"File type {file_ext} not allowed. Allowed types: {', '.join(allowed_extensions)}")
+    
+    # Check file size (max 10MB)
+    max_size = 10 * 1024 * 1024  # 10MB
+    content = await file.read()
+    if len(content) > max_size:
+        raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+    
+    # Generate unique filename
+    unique_id = str(uuid.uuid4())[:8]
+    safe_filename = f"{unique_id}_{file.filename.replace(' ', '_')}"
+    file_path = UPLOADS_DIR / safe_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Return the URL
+    file_url = f"/uploads/documents/{safe_filename}"
+    
+    return {
+        "file_url": file_url,
+        "file_name": file.filename,
+        "file_size": len(content),
+        "content_type": file.content_type
+    }
+
 @api_router.post("/document-approvals")
 async def create_document_approval(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     """Create a new document approval request"""
