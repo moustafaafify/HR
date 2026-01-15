@@ -2327,9 +2327,59 @@ const Documents = () => {
                 placeholder="budget, quarterly, 2026 (comma separated)" 
               />
             </div>
+            
+            {/* Assign to Employees Section (Admin only, new documents only) */}
+            {!editingDocument && (
+              <div className="border-t border-slate-200 pt-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={documentForm.assign_to_employees}
+                    onChange={(e) => setDocumentForm({ ...documentForm, assign_to_employees: e.target.checked, employee_ids: [] })}
+                    className="rounded border-slate-300 w-5 h-5"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-slate-700">Assign to Employees</span>
+                    <p className="text-xs text-slate-500">Assign this document to employees for acknowledgment</p>
+                  </div>
+                </label>
+                
+                {documentForm.assign_to_employees && (
+                  <div className="mt-3">
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">Select Employees *</label>
+                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1">
+                      {employees.length === 0 ? (
+                        <p className="text-sm text-slate-500 p-2">No employees found</p>
+                      ) : (
+                        employees.map((emp) => (
+                          <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                            <input 
+                              type="checkbox"
+                              checked={documentForm.employee_ids.includes(emp.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setDocumentForm({ ...documentForm, employee_ids: [...documentForm.employee_ids, emp.id] });
+                                } else {
+                                  setDocumentForm({ ...documentForm, employee_ids: documentForm.employee_ids.filter(id => id !== emp.id) });
+                                }
+                              }}
+                              className="rounded border-slate-300"
+                            />
+                            <span className="text-sm font-medium text-slate-700">{emp.full_name}</span>
+                            <span className="text-xs text-slate-400">{emp.email || emp.personal_email}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{documentForm.employee_ids.length} employee(s) selected</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
-                {editingDocument ? 'Update Document' : 'Create Document'}
+                {editingDocument ? 'Update Document' : documentForm.assign_to_employees ? 'Create & Assign' : 'Create Document'}
               </Button>
               <Button type="button" onClick={() => setCreateDialogOpen(false)} variant="outline" className="rounded-xl">
                 Cancel
