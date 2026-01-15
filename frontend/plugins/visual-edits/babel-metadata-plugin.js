@@ -184,45 +184,59 @@ function fileExportHasPortals({
   }
 
   let found = false;
+  const visitedPaths = new Set();
+  const MAX_SUBTREE_DEPTH = 10;
 
-  function subtreeHasPortals(nodePath) {
+  function subtreeHasPortals(nodePath, currentDepth = 0) {
+    if (currentDepth > MAX_SUBTREE_DEPTH) return false;
+    
+    // Create a unique key for this path to avoid cycles
+    const pathKey = nodePath.node?.start + ':' + nodePath.node?.end;
+    if (visitedPaths.has(pathKey)) return false;
+    visitedPaths.add(pathKey);
+    
     let hit = false;
-    nodePath.traverse({
-      JSXOpeningElement(op) {
-        if (hit) return;
-        const name = jsxNameOf(op.node, t);
-        if (isPortalishName(name, RADIX_ROOTS)) {
-          hit = true;
-          return;
-        }
-        if (/^[A-Z]/.test(name || "")) {
-          // capitalized child: may itself be portalish
-          const binding = op.scope.getBinding(name);
-          if (binding && binding.path) {
-            const childHas = subtreeHasPortals(binding.path);
-            if (childHas) {
-              hit = true;
-              return;
-            }
-          } else if (importMap.has(name)) {
-            const { absPath: childPath, importName } = importMap.get(name);
-            const childHas = fileExportHasPortals({
-              absPath: childPath,
-              exportName: importName,
-              t,
-              traverse,
-              parser,
-              RADIX_ROOTS,
-              depth: depth + 1,
-            });
-            if (childHas) {
-              hit = true;
-              return;
+    try {
+      nodePath.traverse({
+        JSXOpeningElement(op) {
+          if (hit) return;
+          const name = jsxNameOf(op.node, t);
+          if (isPortalishName(name, RADIX_ROOTS)) {
+            hit = true;
+            return;
+          }
+          if (/^[A-Z]/.test(name || "")) {
+            // capitalized child: may itself be portalish
+            const binding = op.scope.getBinding(name);
+            if (binding && binding.path) {
+              const childHas = subtreeHasPortals(binding.path, currentDepth + 1);
+              if (childHas) {
+                hit = true;
+                return;
+              }
+            } else if (importMap.has(name)) {
+              const { absPath: childPath, importName } = importMap.get(name);
+              const childHas = fileExportHasPortals({
+                absPath: childPath,
+                exportName: importName,
+                t,
+                traverse,
+                parser,
+                RADIX_ROOTS,
+                depth: depth + 1,
+              });
+              if (childHas) {
+                hit = true;
+                return;
+              }
             }
           }
-        }
-      },
-    });
+        },
+      });
+    } catch (e) {
+      // Catch any traversal errors and return false
+      return false;
+    }
     return hit;
   }
 
