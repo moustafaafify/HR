@@ -77,6 +77,27 @@ const Settings = () => {
       </h1>
 
       <div className="grid gap-6">
+        {/* Roles & Permissions Card */}
+        <div 
+          onClick={() => navigate('/settings/roles')}
+          className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 cursor-pointer hover:shadow-md transition-all duration-300 card-hover"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Shield className="text-purple-600" size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Roles & Permissions</h2>
+                <p className="text-sm text-slate-600 mt-1">
+                  Manage user roles and access control permissions
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="text-slate-400" size={24} />
+          </div>
+        </div>
+
         {/* Language Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('languageSettings')}</h2>
