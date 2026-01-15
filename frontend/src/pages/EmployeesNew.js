@@ -279,6 +279,12 @@ const EmployeesNew = () => {
     return manager ? manager.full_name : '-';
   };
 
+  const getRoleName = (roleId) => {
+    if (!roleId || roleId === 'none') return '-';
+    const role = roles.find(r => r.id === roleId);
+    return role ? (role.display_name || role.name) : '-';
+  };
+
   const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
@@ -900,6 +906,7 @@ const EmployeesNew = () => {
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Employee ID</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('name')}</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Job Title</th>
+                <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Role</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Manager</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('email')}</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Portal Access</th>
@@ -913,6 +920,7 @@ const EmployeesNew = () => {
                   <td className="px-6 py-4 text-slate-600">{emp.employee_id || '-'}</td>
                   <td className="px-6 py-4 text-slate-900 font-medium">{emp.full_name}</td>
                   <td className="px-6 py-4 text-slate-600">{emp.job_title || '-'}</td>
+                  <td className="px-6 py-4 text-slate-600">{getRoleName(emp.role_id)}</td>
                   <td className="px-6 py-4 text-slate-600">{getManagerName(emp.reporting_manager_id)}</td>
                   <td className="px-6 py-4 text-slate-600">{emp.personal_email}</td>
                   <td className="px-6 py-4">
