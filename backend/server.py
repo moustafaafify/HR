@@ -2356,6 +2356,25 @@ async def get_document_approval_stats(current_user: User = Depends(get_current_u
         "by_category": by_category
     }
 
+@api_router.get("/document-approvals/assigned")
+async def get_assigned_documents(current_user: User = Depends(get_current_user)):
+    """Get documents assigned to current employee for acknowledgment"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"email": current_user.email})
+    
+    if employee:
+        docs = await db.document_approvals.find(
+            {"employee_id": employee["id"], "is_assigned": True}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
+    else:
+        docs = await db.document_approvals.find(
+            {"employee_id": current_user.id, "is_assigned": True}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
+    return docs
+
 @api_router.get("/document-approvals/{doc_id}")
 async def get_document_approval(doc_id: str, current_user: User = Depends(get_current_user)):
     """Get a specific document approval"""
