@@ -264,9 +264,20 @@ const EmployeesNew = () => {
     });
   };
 
-  const openDialog = (emp = null) => {
+  const openDialog = async (emp = null) => {
     if (emp) {
       setEditingEmp(emp);
+      
+      // Fetch leave balance for this employee
+      let leaveBalance = null;
+      try {
+        const balanceResponse = await axios.get(`${API}/leave-balances/employee/${emp.id}`);
+        leaveBalance = balanceResponse.data;
+      } catch (error) {
+        // No leave balance found, will use defaults
+        console.log('No leave balance found, using defaults');
+      }
+      
       setFormData({
         full_name: emp.full_name || '',
         employee_id: emp.employee_id || '',
@@ -300,8 +311,13 @@ const EmployeesNew = () => {
         salary: emp.salary?.toString() || '',
         currency: emp.currency || 'USD',
         benefits_enrolled: emp.benefits_enrolled || '',
-        holiday_allowance: emp.holiday_allowance?.toString() || '',
-        sick_leave_allowance: emp.sick_leave_allowance?.toString() || '',
+        // Load leave allowances from leave balance
+        annual_leave: leaveBalance?.annual_leave?.toString() || '20',
+        sick_leave: leaveBalance?.sick_leave?.toString() || '10',
+        personal_leave: leaveBalance?.personal_leave?.toString() || '5',
+        bereavement_leave: leaveBalance?.bereavement_leave?.toString() || '5',
+        maternity_leave: leaveBalance?.maternity_leave?.toString() || '90',
+        paternity_leave: leaveBalance?.paternity_leave?.toString() || '14',
         working_hours: emp.working_hours || '40',
         shift_pattern: emp.shift_pattern || 'day',
         certifications: emp.certifications || '',
