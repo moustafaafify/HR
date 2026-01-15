@@ -15,6 +15,7 @@ import Leaves from './pages/Leaves';
 import Attendance from './pages/Attendance';
 import Performance from './pages/Performance';
 import Settings from './pages/Settings';
+import RolesPermissions from './pages/RolesPermissions';
 import Layout from './components/Layout';
 import './App.css';
 
