@@ -1699,8 +1699,11 @@ const Documents = () => {
                                 category_id: template.category_id || '',
                                 default_priority: template.default_priority || 'normal',
                                 document_url: template.document_url || '',
-                                instructions: template.instructions || ''
+                                instructions: template.instructions || '',
+                                assign_to_employees: false,
+                                employee_ids: []
                               });
+                              setTemplateUploadedFile(null);
                               setTemplateDialogOpen(true); 
                             }} 
                             size="sm" 
