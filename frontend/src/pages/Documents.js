@@ -1440,11 +1440,61 @@ const Documents = () => {
                 />
               </div>
             </div>
+            
+            {/* File Upload Section */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-slate-700 block">Upload Document</label>
+              <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors">
+                <input 
+                  type="file" 
+                  id="assign-document-file-upload"
+                  className="hidden" 
+                  onChange={(e) => handleFileUpload(e, 'assign')}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.png,.jpg,.jpeg,.gif,.csv"
+                />
+                {uploadingFile ? (
+                  <div className="py-2">
+                    <RefreshCw size={24} className="mx-auto mb-2 text-indigo-500 animate-spin" />
+                    <p className="text-sm text-slate-600">Uploading...</p>
+                  </div>
+                ) : assignUploadedFile ? (
+                  <div className="py-2">
+                    <FileCheck size={24} className="mx-auto mb-2 text-emerald-500" />
+                    <p className="text-sm font-medium text-slate-700">{assignUploadedFile.file_name}</p>
+                    <p className="text-xs text-slate-500">{formatFileSize(assignUploadedFile.file_size)}</p>
+                    <button 
+                      type="button"
+                      onClick={() => { setAssignUploadedFile(null); setAssignForm(prev => ({ ...prev, document_url: '' })); }}
+                      className="text-xs text-rose-500 hover:text-rose-600 mt-1"
+                    >
+                      Remove file
+                    </button>
+                  </div>
+                ) : (
+                  <label htmlFor="assign-document-file-upload" className="cursor-pointer py-2 block">
+                    <Upload size={24} className="mx-auto mb-2 text-slate-400" />
+                    <p className="text-sm text-slate-600">Click to upload</p>
+                    <p className="text-xs text-slate-400">PDF, DOC, XLS, PPT, images (max 10MB)</p>
+                  </label>
+                )}
+              </div>
+            </div>
+            
+            {/* OR Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-slate-400">Or paste a link</span>
+              </div>
+            </div>
+            
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Document URL</label>
               <Input 
                 value={assignForm.document_url} 
-                onChange={(e) => setAssignForm({ ...assignForm, document_url: e.target.value })} 
+                onChange={(e) => { setAssignForm({ ...assignForm, document_url: e.target.value }); setAssignUploadedFile(null); }} 
                 className="rounded-xl" 
                 placeholder="https://drive.google.com/..." 
               />
