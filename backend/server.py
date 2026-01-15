@@ -8361,6 +8361,568 @@ async def get_upcoming_events(
     
     return events[:20]  # Limit to 20 events
 
+# ============= SUCCESSION PLANNING MODELS =============
+
+class KeyPosition(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Position details
+    title: str
+    description: Optional[str] = None
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    division_id: Optional[str] = None
+    division_name: Optional[str] = None
+    
+    # Current holder
+    current_holder_id: Optional[str] = None
+    current_holder_name: Optional[str] = None
+    current_holder_tenure: Optional[int] = None  # years in role
+    
+    # Risk assessment
+    criticality: str = "high"  # critical, high, medium, low
+    vacancy_risk: str = "medium"  # high, medium, low
+    flight_risk: str = "medium"  # high, medium, low
+    
+    # Succession pipeline
+    succession_strength: str = "developing"  # strong, adequate, developing, weak
+    target_successors: int = 2  # target number of successors
+    
+    # Status
+    is_active: bool = True
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class SuccessionCandidate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Links
+    position_id: str
+    position_title: Optional[str] = None
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_department: Optional[str] = None
+    employee_current_role: Optional[str] = None
+    
+    # Assessment
+    readiness: str = "1-2_years"  # ready_now, 1-2_years, 3-5_years, development_needed
+    potential: str = "high"  # exceptional, high, medium, limited
+    performance: str = "exceeds"  # exceptional, exceeds, meets, below
+    
+    # 9-Box position (calculated from potential + performance)
+    nine_box_position: Optional[str] = None
+    
+    # Development
+    development_areas: List[str] = Field(default_factory=list)
+    development_plan: Optional[str] = None
+    mentor_id: Optional[str] = None
+    mentor_name: Optional[str] = None
+    
+    # Progress
+    progress_notes: List[Dict[str, Any]] = Field(default_factory=list)
+    last_review_date: Optional[str] = None
+    
+    # Status
+    status: str = "active"  # active, on_hold, promoted, withdrawn
+    ranking: int = 1  # 1 = primary successor, 2 = secondary, etc.
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TalentPoolEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Employee
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_department: Optional[str] = None
+    employee_current_role: Optional[str] = None
+    
+    # Classification
+    category: str = "high_potential"  # high_potential, emerging_leader, key_contributor, specialist
+    
+    # Assessment scores (1-5)
+    leadership_potential: int = 3
+    technical_expertise: int = 3
+    business_acumen: int = 3
+    adaptability: int = 3
+    collaboration: int = 3
+    
+    # Career interests
+    career_aspirations: Optional[str] = None
+    mobility: str = "flexible"  # flexible, limited, not_mobile
+    
+    # Notes
+    strengths: Optional[str] = None
+    development_needs: Optional[str] = None
+    notes: Optional[str] = None
+    
+    # Status
+    status: str = "active"  # active, inactive, promoted, departed
+    added_by: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= SUCCESSION PLANNING API ENDPOINTS =============
+
+@api_router.get("/succession/stats")
+async def get_succession_stats(current_user: User = Depends(get_current_user)):
+    """Get succession planning statistics"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view succession planning")
+    
+    total_positions = await db.key_positions.count_documents({"is_active": True})
+    critical_positions = await db.key_positions.count_documents({"is_active": True, "criticality": "critical"})
+    high_risk = await db.key_positions.count_documents({"is_active": True, "vacancy_risk": "high"})
+    
+    total_candidates = await db.succession_candidates.count_documents({"status": "active"})
+    ready_now = await db.succession_candidates.count_documents({"status": "active", "readiness": "ready_now"})
+    
+    talent_pool_count = await db.talent_pool.count_documents({"status": "active"})
+    high_potentials = await db.talent_pool.count_documents({"status": "active", "category": "high_potential"})
+    
+    # Succession strength breakdown
+    strength_pipeline = [
+        {"$match": {"is_active": True}},
+        {"$group": {"_id": "$succession_strength", "count": {"$sum": 1}}}
+    ]
+    strength_data = await db.key_positions.aggregate(strength_pipeline).to_list(10)
+    strength_breakdown = {item["_id"]: item["count"] for item in strength_data}
+    
+    return {
+        "total_positions": total_positions,
+        "critical_positions": critical_positions,
+        "high_risk_positions": high_risk,
+        "total_candidates": total_candidates,
+        "ready_now_candidates": ready_now,
+        "talent_pool_count": talent_pool_count,
+        "high_potentials": high_potentials,
+        "strength_breakdown": strength_breakdown
+    }
+
+@api_router.get("/succession/positions")
+async def get_key_positions(
+    criticality: Optional[str] = None,
+    department_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all key positions"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view succession planning")
+    
+    query = {"is_active": True}
+    if criticality:
+        query["criticality"] = criticality
+    if department_id:
+        query["department_id"] = department_id
+    
+    positions = await db.key_positions.find(query, {"_id": 0}).sort("criticality", 1).to_list(200)
+    
+    # Add candidate count for each position
+    for pos in positions:
+        candidates = await db.succession_candidates.count_documents({
+            "position_id": pos["id"],
+            "status": "active"
+        })
+        pos["candidate_count"] = candidates
+    
+    return positions
+
+@api_router.post("/succession/positions")
+async def create_key_position(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new key position"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    # Get department name
+    if data.get("department_id"):
+        dept = await db.departments.find_one({"id": data["department_id"]}, {"_id": 0})
+        if dept:
+            data["department_name"] = dept.get("name")
+    
+    # Get current holder info
+    if data.get("current_holder_id"):
+        holder = await db.employees.find_one({"id": data["current_holder_id"]}, {"_id": 0})
+        if holder:
+            data["current_holder_name"] = holder.get("full_name")
+            if holder.get("date_of_joining"):
+                try:
+                    joined = datetime.fromisoformat(holder["date_of_joining"].replace('Z', '+00:00'))
+                    tenure = (datetime.now(timezone.utc) - joined).days // 365
+                    data["current_holder_tenure"] = tenure
+                except:
+                    pass
+    
+    position = KeyPosition(**data)
+    await db.key_positions.insert_one(position.model_dump())
+    
+    return position.model_dump()
+
+@api_router.get("/succession/positions/{position_id}")
+async def get_key_position(position_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific key position with candidates"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view succession planning")
+    
+    position = await db.key_positions.find_one({"id": position_id}, {"_id": 0})
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    
+    # Get candidates
+    candidates = await db.succession_candidates.find(
+        {"position_id": position_id, "status": "active"},
+        {"_id": 0}
+    ).sort("ranking", 1).to_list(20)
+    
+    position["candidates"] = candidates
+    
+    return position
+
+@api_router.put("/succession/positions/{position_id}")
+async def update_key_position(position_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a key position"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    position = await db.key_positions.find_one({"id": position_id}, {"_id": 0})
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    
+    # Update holder info if changed
+    if data.get("current_holder_id") and data["current_holder_id"] != position.get("current_holder_id"):
+        holder = await db.employees.find_one({"id": data["current_holder_id"]}, {"_id": 0})
+        if holder:
+            data["current_holder_name"] = holder.get("full_name")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.key_positions.update_one({"id": position_id}, {"$set": data})
+    
+    return await db.key_positions.find_one({"id": position_id}, {"_id": 0})
+
+@api_router.delete("/succession/positions/{position_id}")
+async def delete_key_position(position_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a key position"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    await db.key_positions.delete_one({"id": position_id})
+    # Also delete associated candidates
+    await db.succession_candidates.delete_many({"position_id": position_id})
+    
+    return {"message": "Position and candidates deleted"}
+
+@api_router.get("/succession/candidates")
+async def get_succession_candidates(
+    position_id: Optional[str] = None,
+    readiness: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all succession candidates"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view succession planning")
+    
+    query = {"status": "active"}
+    if position_id:
+        query["position_id"] = position_id
+    if readiness:
+        query["readiness"] = readiness
+    
+    candidates = await db.succession_candidates.find(query, {"_id": 0}).sort("ranking", 1).to_list(500)
+    return candidates
+
+@api_router.post("/succession/candidates")
+async def create_succession_candidate(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a succession candidate"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    # Get position info
+    position = await db.key_positions.find_one({"id": data.get("position_id")}, {"_id": 0})
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    data["position_title"] = position.get("title")
+    
+    # Get employee info
+    employee = await db.employees.find_one({"id": data.get("employee_id")}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    data["employee_name"] = employee.get("full_name")
+    data["employee_current_role"] = employee.get("job_title")
+    
+    if employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+        if dept:
+            data["employee_department"] = dept.get("name")
+    
+    # Calculate 9-box position
+    potential_map = {"exceptional": 3, "high": 3, "medium": 2, "limited": 1}
+    performance_map = {"exceptional": 3, "exceeds": 3, "meets": 2, "below": 1}
+    pot = potential_map.get(data.get("potential", "medium"), 2)
+    perf = performance_map.get(data.get("performance", "meets"), 2)
+    
+    nine_box_grid = {
+        (3, 3): "star", (3, 2): "high_potential", (3, 1): "potential_gem",
+        (2, 3): "high_performer", (2, 2): "core_player", (2, 1): "inconsistent",
+        (1, 3): "solid_performer", (1, 2): "average", (1, 1): "underperformer"
+    }
+    data["nine_box_position"] = nine_box_grid.get((pot, perf), "core_player")
+    
+    # Get mentor info
+    if data.get("mentor_id"):
+        mentor = await db.employees.find_one({"id": data["mentor_id"]}, {"_id": 0})
+        if mentor:
+            data["mentor_name"] = mentor.get("full_name")
+    
+    # Determine ranking
+    existing = await db.succession_candidates.count_documents({
+        "position_id": data["position_id"],
+        "status": "active"
+    })
+    data["ranking"] = existing + 1
+    
+    candidate = SuccessionCandidate(**data)
+    await db.succession_candidates.insert_one(candidate.model_dump())
+    
+    # Update position succession strength
+    await update_position_strength(data["position_id"])
+    
+    return candidate.model_dump()
+
+async def update_position_strength(position_id: str):
+    """Update the succession strength of a position based on candidates"""
+    candidates = await db.succession_candidates.find(
+        {"position_id": position_id, "status": "active"},
+        {"_id": 0}
+    ).to_list(20)
+    
+    ready_now = sum(1 for c in candidates if c.get("readiness") == "ready_now")
+    total = len(candidates)
+    
+    if ready_now >= 2:
+        strength = "strong"
+    elif ready_now >= 1 or total >= 2:
+        strength = "adequate"
+    elif total >= 1:
+        strength = "developing"
+    else:
+        strength = "weak"
+    
+    await db.key_positions.update_one(
+        {"id": position_id},
+        {"$set": {"succession_strength": strength, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+
+@api_router.put("/succession/candidates/{candidate_id}")
+async def update_succession_candidate(candidate_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a succession candidate"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    candidate = await db.succession_candidates.find_one({"id": candidate_id}, {"_id": 0})
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    
+    # Recalculate 9-box if potential or performance changed
+    if "potential" in data or "performance" in data:
+        potential_map = {"exceptional": 3, "high": 3, "medium": 2, "limited": 1}
+        performance_map = {"exceptional": 3, "exceeds": 3, "meets": 2, "below": 1}
+        pot = potential_map.get(data.get("potential", candidate.get("potential", "medium")), 2)
+        perf = performance_map.get(data.get("performance", candidate.get("performance", "meets")), 2)
+        
+        nine_box_grid = {
+            (3, 3): "star", (3, 2): "high_potential", (3, 1): "potential_gem",
+            (2, 3): "high_performer", (2, 2): "core_player", (2, 1): "inconsistent",
+            (1, 3): "solid_performer", (1, 2): "average", (1, 1): "underperformer"
+        }
+        data["nine_box_position"] = nine_box_grid.get((pot, perf), "core_player")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.succession_candidates.update_one({"id": candidate_id}, {"$set": data})
+    
+    # Update position strength
+    await update_position_strength(candidate["position_id"])
+    
+    return await db.succession_candidates.find_one({"id": candidate_id}, {"_id": 0})
+
+@api_router.post("/succession/candidates/{candidate_id}/note")
+async def add_candidate_note(candidate_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a progress note to a candidate"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    note = {
+        "id": str(uuid.uuid4()),
+        "text": data.get("text", ""),
+        "added_by": current_user.full_name,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.succession_candidates.update_one(
+        {"id": candidate_id},
+        {
+            "$push": {"progress_notes": note},
+            "$set": {"last_review_date": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    return note
+
+@api_router.delete("/succession/candidates/{candidate_id}")
+async def delete_succession_candidate(candidate_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a succession candidate"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    candidate = await db.succession_candidates.find_one({"id": candidate_id}, {"_id": 0})
+    if candidate:
+        position_id = candidate.get("position_id")
+        await db.succession_candidates.delete_one({"id": candidate_id})
+        if position_id:
+            await update_position_strength(position_id)
+    
+    return {"message": "Candidate removed"}
+
+# Talent Pool endpoints
+@api_router.get("/succession/talent-pool")
+async def get_talent_pool(
+    category: Optional[str] = None,
+    department_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get talent pool entries"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view succession planning")
+    
+    query = {"status": "active"}
+    if category:
+        query["category"] = category
+    
+    entries = await db.talent_pool.find(query, {"_id": 0}).to_list(500)
+    
+    # Filter by department if needed
+    if department_id:
+        # Get employee IDs in department
+        dept_employees = await db.employees.find({"department_id": department_id}, {"id": 1, "_id": 0}).to_list(500)
+        dept_emp_ids = {e["id"] for e in dept_employees}
+        entries = [e for e in entries if e.get("employee_id") in dept_emp_ids]
+    
+    return entries
+
+@api_router.post("/succession/talent-pool")
+async def add_to_talent_pool(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add an employee to talent pool"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    # Check if already in pool
+    existing = await db.talent_pool.find_one({
+        "employee_id": data.get("employee_id"),
+        "status": "active"
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Employee already in talent pool")
+    
+    # Get employee info
+    employee = await db.employees.find_one({"id": data.get("employee_id")}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    data["employee_name"] = employee.get("full_name")
+    data["employee_current_role"] = employee.get("job_title")
+    
+    if employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+        if dept:
+            data["employee_department"] = dept.get("name")
+    
+    data["added_by"] = current_user.full_name
+    
+    entry = TalentPoolEntry(**data)
+    await db.talent_pool.insert_one(entry.model_dump())
+    
+    return entry.model_dump()
+
+@api_router.put("/succession/talent-pool/{entry_id}")
+async def update_talent_pool_entry(entry_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a talent pool entry"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.talent_pool.update_one({"id": entry_id}, {"$set": data})
+    
+    return await db.talent_pool.find_one({"id": entry_id}, {"_id": 0})
+
+@api_router.delete("/succession/talent-pool/{entry_id}")
+async def remove_from_talent_pool(entry_id: str, current_user: User = Depends(get_current_user)):
+    """Remove from talent pool"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage succession planning")
+    
+    await db.talent_pool.delete_one({"id": entry_id})
+    return {"message": "Removed from talent pool"}
+
+@api_router.get("/succession/9-box")
+async def get_nine_box_data(current_user: User = Depends(get_current_user)):
+    """Get 9-box grid data"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view succession planning")
+    
+    candidates = await db.succession_candidates.find({"status": "active"}, {"_id": 0}).to_list(500)
+    
+    # Group by 9-box position
+    grid_data = {}
+    for c in candidates:
+        pos = c.get("nine_box_position", "core_player")
+        if pos not in grid_data:
+            grid_data[pos] = []
+        grid_data[pos].append({
+            "id": c["id"],
+            "employee_id": c["employee_id"],
+            "employee_name": c["employee_name"],
+            "position_title": c.get("position_title"),
+            "readiness": c.get("readiness")
+        })
+    
+    return grid_data
+
+@api_router.get("/succession/my-status")
+async def get_my_succession_status(current_user: User = Depends(get_current_user)):
+    """Get current user's succession status (if in talent pool or as candidate)"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return {"in_talent_pool": False, "succession_positions": []}
+    
+    # Check talent pool
+    talent_entry = await db.talent_pool.find_one({
+        "employee_id": employee["id"],
+        "status": "active"
+    }, {"_id": 0})
+    
+    # Check succession candidacies
+    candidacies = await db.succession_candidates.find({
+        "employee_id": employee["id"],
+        "status": "active"
+    }, {"_id": 0}).to_list(10)
+    
+    return {
+        "in_talent_pool": talent_entry is not None,
+        "talent_pool_category": talent_entry.get("category") if talent_entry else None,
+        "succession_positions": [
+            {
+                "position_title": c.get("position_title"),
+                "readiness": c.get("readiness"),
+                "ranking": c.get("ranking")
+            }
+            for c in candidacies
+        ]
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
