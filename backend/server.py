@@ -4124,12 +4124,22 @@ async def assign_appraisals(cycle_id: str, data: Dict[str, Any], current_user: U
         if reviewer_id:
             reviewer = await db.employees.find_one({"id": reviewer_id}, {"_id": 0})
             if reviewer:
-                reviewer_name = f"{reviewer.get('first_name', '')} {reviewer.get('last_name', '')}"
+                rev_first = reviewer.get('first_name', '')
+                rev_last = reviewer.get('last_name', '')
+                reviewer_name = f"{rev_first} {rev_last}".strip() or reviewer.get("work_email") or reviewer.get("personal_email") or "Reviewer"
+        
+        # Build employee name with fallback to email
+        emp_first = employee.get('first_name', '')
+        emp_last = employee.get('last_name', '')
+        emp_name = f"{emp_first} {emp_last}".strip()
+        if not emp_name:
+            emp_email = employee.get("work_email") or employee.get("personal_email") or ""
+            emp_name = emp_email.split("@")[0].replace(".", " ").replace("_", " ").title() if emp_email else "Unknown Employee"
         
         appraisal = Appraisal(
             cycle_id=cycle_id,
             employee_id=emp_id,
-            employee_name=f"{employee.get('first_name', '')} {employee.get('last_name', '')}",
+            employee_name=emp_name,
             employee_email=employee.get("work_email") or employee.get("personal_email"),
             department=employee.get("department"),
             reviewer_id=reviewer_id,
