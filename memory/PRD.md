@@ -170,6 +170,53 @@ Build a full-stack HR platform with:
 - Offboarding contacts display
 - Feedback submission after completion
 
+### Expense Claims Module (COMPLETED - Jan 15, 2026)
+**Expense Claims:**
+- Create expense claims with title, amount, category, date, merchant
+- Categories: Travel, Meals, Transportation, Accommodation, Equipment, Office, Communication, Training, Other
+- Payment methods: Personal, Corporate Card, Reimbursement
+- Receipt URL attachment support
+- Workflow integration for approval chain
+
+**Admin Features:**
+- Stats dashboard (Total Claims, Pending Review, Approved Amount, Total Amount)
+- All/Pending/Approved tabs with filtering
+- Approve/Reject expense claims with notes
+- Mark expenses as Paid for reimbursement tracking
+- Export expenses to CSV
+- Category filter dropdown
+
+**Employee Features:**
+- "My Expenses" view with quick stats
+- Submit expense claims form
+- View expense status and rejection reasons
+- Edit/Delete pending expenses
+
+### Training Requests Module (COMPLETED - Jan 15, 2026)
+**Training Requests:**
+- Create training requests with title, type, category, provider, cost, dates
+- Training types: Course, Certification, Workshop, Conference, Online, Seminar, Bootcamp
+- Categories: Professional, Technical, Leadership, Compliance, Soft Skills, Other
+- Location options: Online, On-site, Off-site, Hybrid
+- Learning objectives and expected outcomes
+- Workflow integration for approval chain
+
+**Admin Features:**
+- Stats dashboard (Total Requests, Pending Review, In Progress, Total Budget)
+- All/Pending/Active tabs with filtering
+- Approve/Reject training requests
+- Start training (mark as in progress)
+- Complete training with certificate URL and feedback
+- Export requests to CSV
+- Type filter dropdown
+
+**Employee Features:**
+- "My Training" view with quick stats
+- Submit training request form
+- Start approved training
+- Complete training with certificate and rating
+- View request status and rejection reasons
+
 ### Responsive Design (COMPLETED)
 - Mobile header with hamburger menu
 - Slide-out sidebar on mobile/tablet
