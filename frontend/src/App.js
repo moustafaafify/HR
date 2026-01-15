@@ -21,6 +21,7 @@ import Recruitment from './pages/Recruitment';
 import Onboarding from './pages/Onboarding';
 import Offboarding from './pages/Offboarding';
 import Expenses from './pages/Expenses';
+import Training from './pages/Training';
 import Layout from './components/Layout';
 import './App.css';
 
