@@ -60,6 +60,7 @@ function AppRoutes() {
         <Route path="offboarding" element={<Offboarding />} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="training" element={<Training />} />
+        <Route path="documents" element={<Documents />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
