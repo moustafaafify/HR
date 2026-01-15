@@ -24,6 +24,7 @@ import Expenses from './pages/Expenses';
 import Training from './pages/Training';
 import Documents from './pages/Documents';
 import Appraisals from './pages/Appraisals';
+import OrgChart from './pages/OrgChart';
 import Layout from './components/Layout';
 import './App.css';
 
