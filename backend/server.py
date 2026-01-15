@@ -323,6 +323,27 @@ class Attendance(BaseModel):
     clock_in: Optional[str] = None
     clock_out: Optional[str] = None
     schedule_id: Optional[str] = None
+    status: str = "present"  # present, absent, late, half_day
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class TimeCorrectionRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    attendance_id: str
+    date: str
+    # Original values
+    original_clock_in: Optional[str] = None
+    original_clock_out: Optional[str] = None
+    # Requested values
+    requested_clock_in: Optional[str] = None
+    requested_clock_out: Optional[str] = None
+    reason: str
+    status: str = "pending"  # pending, approved, rejected
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class Schedule(BaseModel):
