@@ -31,6 +31,8 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="corporations" element={<Corporations />} />
         <Route path="branches" element={<Branches />} />
+        <Route path="departments" element={<Departments />} />
+        <Route path="divisions" element={<Divisions />} />
         <Route path="employees" element={<Employees />} />
         <Route path="leaves" element={<Leaves />} />
         <Route path="attendance" element={<Attendance />} />
