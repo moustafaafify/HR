@@ -1620,28 +1620,241 @@ async def delete_expense(expense_id: str, current_user: User = Depends(get_curre
 
 @api_router.post("/training-requests")
 async def create_training_request(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # Set employee_id from current user if not provided
+    if "employee_id" not in data:
+        employee = await db.employees.find_one({
+            "$or": [
+                {"email": current_user.email},
+                {"work_email": current_user.email},
+                {"personal_email": current_user.email}
+            ]
+        }, {"_id": 0})
+        if employee:
+            data["employee_id"] = employee["id"]
+    
     training = TrainingRequest(**data)
     await db.training_requests.insert_one(training.model_dump())
-    return training.model_dump()
+    
+    # Check for training workflow and create instance if exists
+    workflow = await db.workflows.find_one({"module": "training", "is_active": True}, {"_id": 0})
+    if workflow and data.get("status") == "submitted":
+        workflow_data = {
+            "workflow_id": workflow["id"],
+            "workflow_name": workflow["name"],
+            "module": "training",
+            "reference_id": training.id,
+            "initiated_by": current_user.id,
+            "status": "pending",
+            "current_step": 0,
+            "step_history": []
+        }
+        instance = WorkflowInstance(**workflow_data)
+        await db.workflow_instances.insert_one(instance.model_dump())
+        await db.training_requests.update_one(
+            {"id": training.id}, 
+            {"$set": {"workflow_instance_id": instance.id, "status": "under_review"}}
+        )
+    
+    return await db.training_requests.find_one({"id": training.id}, {"_id": 0})
 
 @api_router.get("/training-requests")
-async def get_training_requests(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+async def get_training_requests(
+    employee_id: Optional[str] = None, 
+    status: Optional[str] = None, 
+    training_type: Optional[str] = None,
+    category: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
     query = {}
     if employee_id:
         query["employee_id"] = employee_id
     if status:
         query["status"] = status
-    requests = await db.training_requests.find(query, {"_id": 0}).to_list(1000)
+    if training_type:
+        query["training_type"] = training_type
+    if category:
+        query["category"] = category
+    requests = await db.training_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return requests
+
+@api_router.get("/training-requests/my")
+async def get_my_training_requests(current_user: User = Depends(get_current_user)):
+    """Get current user's training requests"""
+    employee = await db.employees.find_one({
+        "$or": [
+            {"email": current_user.email},
+            {"work_email": current_user.email},
+            {"personal_email": current_user.email}
+        ]
+    }, {"_id": 0})
+    if not employee:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    requests = await db.training_requests.find({"employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return requests
+
+@api_router.get("/training-requests/stats")
+async def get_training_stats(current_user: User = Depends(get_current_user)):
+    """Get training request statistics"""
+    requests = await db.training_requests.find({}, {"_id": 0}).to_list(1000)
+    
+    total_cost = sum(r.get("cost", 0) for r in requests)
+    approved_cost = sum(r.get("cost", 0) for r in requests if r.get("status") == "approved")
+    pending_cost = sum(r.get("cost", 0) for r in requests if r.get("status") in ["pending", "submitted", "under_review"])
+    
+    # By type
+    by_type = {}
+    for r in requests:
+        t = r.get("training_type", "other")
+        if t not in by_type:
+            by_type[t] = {"count": 0, "cost": 0}
+        by_type[t]["count"] += 1
+        by_type[t]["cost"] += r.get("cost", 0)
+    
+    # By status
+    by_status = {}
+    for r in requests:
+        s = r.get("status", "pending")
+        if s not in by_status:
+            by_status[s] = {"count": 0, "cost": 0}
+        by_status[s]["count"] += 1
+        by_status[s]["cost"] += r.get("cost", 0)
+    
+    # By category
+    by_category = {}
+    for r in requests:
+        c = r.get("category", "other")
+        if c not in by_category:
+            by_category[c] = {"count": 0, "cost": 0}
+        by_category[c]["count"] += 1
+        by_category[c]["cost"] += r.get("cost", 0)
+    
+    return {
+        "total_requests": len(requests),
+        "total_cost": round(total_cost, 2),
+        "pending_count": len([r for r in requests if r.get("status") in ["pending", "submitted", "under_review"]]),
+        "pending_cost": round(pending_cost, 2),
+        "approved_count": len([r for r in requests if r.get("status") == "approved"]),
+        "approved_cost": round(approved_cost, 2),
+        "in_progress_count": len([r for r in requests if r.get("status") == "in_progress"]),
+        "completed_count": len([r for r in requests if r.get("status") == "completed"]),
+        "rejected_count": len([r for r in requests if r.get("status") == "rejected"]),
+        "by_type": by_type,
+        "by_status": by_status,
+        "by_category": by_category
+    }
+
+@api_router.get("/training-requests/{request_id}")
+async def get_training_request(request_id: str, current_user: User = Depends(get_current_user)):
+    request = await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return request
 
 @api_router.put("/training-requests/{request_id}")
 async def update_training_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
     if data.get("status") == "approved":
         data["approved_by"] = current_user.id
         data["approved_at"] = datetime.now(timezone.utc).isoformat()
-    await db.training_requests.update_one({"id": request_id}, {"$set": data})
-    request = await db.training_requests.find_one({"id": request_id}, {"_id": 0})
-    return request
+    elif data.get("status") == "completed":
+        data["completion_date"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.training_requests.update_one({"id": request_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.put("/training-requests/{request_id}/approve")
+async def approve_training_request(request_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Approve a training request"""
+    update_data = {
+        "status": "approved",
+        "approved_by": current_user.id,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if data.get("notes"):
+        update_data["notes"] = data["notes"]
+    
+    result = await db.training_requests.update_one({"id": request_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.put("/training-requests/{request_id}/reject")
+async def reject_training_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject a training request"""
+    update_data = {
+        "status": "rejected",
+        "approved_by": current_user.id,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "rejection_reason": data.get("reason", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.training_requests.update_one({"id": request_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.put("/training-requests/{request_id}/start")
+async def start_training(request_id: str, current_user: User = Depends(get_current_user)):
+    """Mark training as in progress"""
+    update_data = {
+        "status": "in_progress",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.training_requests.update_one({"id": request_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.put("/training-requests/{request_id}/complete")
+async def complete_training(request_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Mark training as completed"""
+    update_data = {
+        "status": "completed",
+        "completion_date": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if data.get("certificate_url"):
+        update_data["completion_certificate_url"] = data["certificate_url"]
+    if data.get("feedback"):
+        update_data["feedback"] = data["feedback"]
+    if data.get("rating"):
+        update_data["feedback_rating"] = data["rating"]
+    
+    result = await db.training_requests.update_one({"id": request_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training request not found")
+    return await db.training_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.get("/training-requests/export")
+async def export_training_requests(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export training requests to CSV"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    requests = await db.training_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    employees = {e["id"]: e for e in await db.employees.find({}, {"_id": 0}).to_list(1000)}
+    
+    csv_lines = ["ID,Employee,Title,Type,Category,Provider,Cost,Currency,Start Date,End Date,Status"]
+    for req in requests:
+        emp = employees.get(req.get("employee_id"), {})
+        emp_name = emp.get("full_name", "Unknown")
+        csv_lines.append(
+            f'{req.get("id","")},{emp_name},{req.get("title","")},{req.get("training_type","")},{req.get("category","")},{req.get("provider","")},{req.get("cost",0)},{req.get("currency","USD")},{req.get("start_date","")},{req.get("end_date","")},{req.get("status","")}'
+        )
+    
+    return {"csv": "\n".join(csv_lines), "count": len(requests)}
 
 @api_router.delete("/training-requests/{request_id}")
 async def delete_training_request(request_id: str, current_user: User = Depends(get_current_user)):
