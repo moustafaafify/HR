@@ -810,18 +810,31 @@ const Attendance = () => {
               </div>
             )}
             
-            {isAdmin && (
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={openAddDialog}
-                    data-testid="add-attendance-button"
-                    className="rounded-xl bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg"
-                  >
-                    <Plus size={20} className="me-2" />
-                    Add Record
-                  </Button>
-                </DialogTrigger>
+            <div className="flex items-center gap-2">
+              {/* Export Button */}
+              {isManager && (
+                <Button 
+                  onClick={() => setExportDialogOpen(true)}
+                  variant="outline"
+                  className="rounded-xl"
+                >
+                  <Download size={18} className="mr-2" />
+                  Export
+                </Button>
+              )}
+              
+              {isAdmin && (
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      onClick={openAddDialog}
+                      data-testid="add-attendance-button"
+                      className="rounded-xl bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg"
+                    >
+                      <Plus size={20} className="me-2" />
+                      Add Record
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="rounded-2xl">
                   <DialogHeader>
                     <DialogTitle className="text-xl">{editingRecord ? 'Edit' : 'Record'} Attendance</DialogTitle>
