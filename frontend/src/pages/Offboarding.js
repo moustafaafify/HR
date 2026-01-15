@@ -1283,12 +1283,12 @@ const Offboarding = () => {
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Offboarding Template</label>
-              <Select value={assignForm.template_id} onValueChange={(v) => setAssignForm({ ...assignForm, template_id: v })}>
+              <Select value={assignForm.template_id || "none"} onValueChange={(v) => setAssignForm({ ...assignForm, template_id: v === "none" ? "" : v })}>
                 <SelectTrigger className="rounded-xl">
                   <SelectValue placeholder="Select template (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No template</SelectItem>
+                  <SelectItem value="none">No template</SelectItem>
                   {templates.map((template) => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name} ({template.tasks?.length || 0} tasks)
