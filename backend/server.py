@@ -1367,28 +1367,232 @@ async def workflow_action(instance_id: str, data: Dict[str, Any], current_user: 
 
 @api_router.post("/expenses")
 async def create_expense(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # Set employee_id from current user if not provided
+    if "employee_id" not in data:
+        employee = await db.employees.find_one({
+            "$or": [
+                {"email": current_user.email},
+                {"work_email": current_user.email},
+                {"personal_email": current_user.email}
+            ]
+        }, {"_id": 0})
+        if employee:
+            data["employee_id"] = employee["id"]
+    
     expense = ExpenseClaim(**data)
     await db.expenses.insert_one(expense.model_dump())
-    return expense.model_dump()
+    
+    # Check for expense workflow and create instance if exists
+    workflow = await db.workflows.find_one({"module": "expense", "is_active": True}, {"_id": 0})
+    if workflow and data.get("status") == "submitted":
+        workflow_data = {
+            "workflow_id": workflow["id"],
+            "workflow_name": workflow["name"],
+            "module": "expense",
+            "reference_id": expense.id,
+            "initiated_by": current_user.id,
+            "status": "pending",
+            "current_step": 0,
+            "step_history": []
+        }
+        instance = WorkflowInstance(**workflow_data)
+        await db.workflow_instances.insert_one(instance.model_dump())
+        # Update expense with workflow instance id
+        await db.expenses.update_one(
+            {"id": expense.id}, 
+            {"$set": {"workflow_instance_id": instance.id, "status": "under_review"}}
+        )
+    
+    return await db.expenses.find_one({"id": expense.id}, {"_id": 0})
 
 @api_router.get("/expenses")
-async def get_expenses(employee_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+async def get_expenses(
+    employee_id: Optional[str] = None, 
+    status: Optional[str] = None, 
+    category: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
     query = {}
     if employee_id:
         query["employee_id"] = employee_id
     if status:
         query["status"] = status
-    expenses = await db.expenses.find(query, {"_id": 0}).to_list(1000)
+    if category:
+        query["category"] = category
+    if date_from:
+        query["expense_date"] = {"$gte": date_from}
+    if date_to:
+        if "expense_date" in query:
+            query["expense_date"]["$lte"] = date_to
+        else:
+            query["expense_date"] = {"$lte": date_to}
+    expenses = await db.expenses.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return expenses
+
+@api_router.get("/expenses/my")
+async def get_my_expenses(current_user: User = Depends(get_current_user)):
+    """Get current user's expenses"""
+    employee = await db.employees.find_one({
+        "$or": [
+            {"email": current_user.email},
+            {"work_email": current_user.email},
+            {"personal_email": current_user.email}
+        ]
+    }, {"_id": 0})
+    if not employee:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    expenses = await db.expenses.find({"employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return expenses
+
+@api_router.get("/expenses/stats")
+async def get_expense_stats(current_user: User = Depends(get_current_user)):
+    """Get expense statistics"""
+    expenses = await db.expenses.find({}, {"_id": 0}).to_list(1000)
+    
+    total_amount = sum(e.get("amount", 0) for e in expenses)
+    pending_amount = sum(e.get("amount", 0) for e in expenses if e.get("status") in ["pending", "submitted", "under_review"])
+    approved_amount = sum(e.get("amount", 0) for e in expenses if e.get("status") == "approved")
+    paid_amount = sum(e.get("amount", 0) for e in expenses if e.get("status") == "paid")
+    
+    # By category
+    by_category = {}
+    for e in expenses:
+        cat = e.get("category", "other")
+        if cat not in by_category:
+            by_category[cat] = {"count": 0, "amount": 0}
+        by_category[cat]["count"] += 1
+        by_category[cat]["amount"] += e.get("amount", 0)
+    
+    # By status
+    by_status = {}
+    for e in expenses:
+        status = e.get("status", "pending")
+        if status not in by_status:
+            by_status[status] = {"count": 0, "amount": 0}
+        by_status[status]["count"] += 1
+        by_status[status]["amount"] += e.get("amount", 0)
+    
+    return {
+        "total_claims": len(expenses),
+        "total_amount": round(total_amount, 2),
+        "pending_count": len([e for e in expenses if e.get("status") in ["pending", "submitted", "under_review"]]),
+        "pending_amount": round(pending_amount, 2),
+        "approved_count": len([e for e in expenses if e.get("status") == "approved"]),
+        "approved_amount": round(approved_amount, 2),
+        "paid_count": len([e for e in expenses if e.get("status") == "paid"]),
+        "paid_amount": round(paid_amount, 2),
+        "rejected_count": len([e for e in expenses if e.get("status") == "rejected"]),
+        "by_category": by_category,
+        "by_status": by_status
+    }
+
+@api_router.get("/expenses/{expense_id}")
+async def get_expense(expense_id: str, current_user: User = Depends(get_current_user)):
+    expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return expense
 
 @api_router.put("/expenses/{expense_id}")
 async def update_expense(expense_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
     if data.get("status") == "approved":
         data["approved_by"] = current_user.id
         data["approved_at"] = datetime.now(timezone.utc).isoformat()
-    await db.expenses.update_one({"id": expense_id}, {"$set": data})
+    elif data.get("status") == "paid":
+        data["reimbursement_date"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.expenses.update_one({"id": expense_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
     expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
     return expense
+
+@api_router.put("/expenses/{expense_id}/approve")
+async def approve_expense(expense_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Approve an expense claim"""
+    update_data = {
+        "status": "approved",
+        "approved_by": current_user.id,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if data.get("notes"):
+        update_data["notes"] = data["notes"]
+    
+    result = await db.expenses.update_one({"id": expense_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+
+@api_router.put("/expenses/{expense_id}/reject")
+async def reject_expense(expense_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject an expense claim"""
+    update_data = {
+        "status": "rejected",
+        "approved_by": current_user.id,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "rejection_reason": data.get("reason", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.expenses.update_one({"id": expense_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+
+@api_router.put("/expenses/{expense_id}/mark-paid")
+async def mark_expense_paid(expense_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Mark an expense as paid/reimbursed"""
+    update_data = {
+        "status": "paid",
+        "reimbursement_date": data.get("date", datetime.now(timezone.utc).isoformat()),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if data.get("notes"):
+        update_data["notes"] = data["notes"]
+    
+    result = await db.expenses.update_one({"id": expense_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+
+@api_router.get("/expenses/export")
+async def export_expenses(
+    status: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export expenses to CSV"""
+    query = {}
+    if status:
+        query["status"] = status
+    if date_from:
+        query["expense_date"] = {"$gte": date_from}
+    if date_to:
+        if "expense_date" in query:
+            query["expense_date"]["$lte"] = date_to
+        else:
+            query["expense_date"] = {"$lte": date_to}
+    
+    expenses = await db.expenses.find(query, {"_id": 0}).sort("expense_date", -1).to_list(1000)
+    employees = {e["id"]: e for e in await db.employees.find({}, {"_id": 0}).to_list(1000)}
+    
+    csv_lines = ["ID,Employee,Title,Category,Amount,Currency,Expense Date,Status,Submitted Date"]
+    for exp in expenses:
+        emp = employees.get(exp.get("employee_id"), {})
+        emp_name = emp.get("full_name", "Unknown")
+        csv_lines.append(
+            f'{exp.get("id","")},{emp_name},{exp.get("title","")},{exp.get("category","")},{exp.get("amount",0)},{exp.get("currency","USD")},{exp.get("expense_date","")},{exp.get("status","")},{exp.get("created_at","")[:10]}'
+        )
+    
+    return {"csv": "\n".join(csv_lines), "count": len(expenses)}
 
 @api_router.delete("/expenses/{expense_id}")
 async def delete_expense(expense_id: str, current_user: User = Depends(get_current_user)):
