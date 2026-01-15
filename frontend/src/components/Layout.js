@@ -217,18 +217,32 @@ const Layout = () => {
 
           {/* Settings - Only for admins */}
           {isAdmin && (
-            <Link
-              to="/settings"
-              data-testid="nav-settings"
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                location.pathname === '/settings'
-                  ? 'bg-indigo-950 text-white shadow-lg'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-              }`}
-            >
-              <SettingsIcon size={20} />
-              {sidebarOpen && <span className="font-medium">{t('settings')}</span>}
-            </Link>
+            <>
+              <Link
+                to="/settings"
+                data-testid="nav-settings"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  location.pathname === '/settings'
+                    ? 'bg-indigo-950 text-white shadow-lg'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
+                }`}
+              >
+                <SettingsIcon size={20} />
+                {sidebarOpen && <span className="font-medium">{t('settings')}</span>}
+              </Link>
+              <Link
+                to="/settings/workflows"
+                data-testid="nav-workflows"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  location.pathname === '/settings/workflows'
+                    ? 'bg-indigo-950 text-white shadow-lg'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
+                }`}
+              >
+                <Workflow size={20} />
+                {sidebarOpen && <span className="font-medium">Workflows</span>}
+              </Link>
+            </>
           )}
         </nav>
 
