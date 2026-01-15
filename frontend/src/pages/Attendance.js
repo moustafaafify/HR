@@ -911,13 +911,13 @@ const Attendance = () => {
                     <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Clock Out</th>
                     <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Duration</th>
                     <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Status</th>
-                    {isAdmin && <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Actions</th>}
+                    {(isAdmin || (!isManager && currentEmployee)) && <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAttendance.length === 0 ? (
                     <tr>
-                      <td colSpan={isAdmin ? 7 : (isManager ? 6 : 5)} className="px-6 py-16 text-center">
+                      <td colSpan={isAdmin ? 7 : (isManager ? 6 : (!isManager && currentEmployee ? 7 : 6))} className="px-6 py-16 text-center">
                         <div className="bg-slate-50 rounded-2xl p-8 max-w-sm mx-auto">
                           <Clock size={48} className="mx-auto mb-4 text-slate-300" />
                           <p className="text-slate-500 font-medium">No attendance records found</p>
