@@ -665,30 +665,69 @@ const Workflows = () => {
         </TabsContent>
 
         {/* Active Requests Tab */}
-        <TabsContent value="instances" className="mt-6">
+        <TabsContent value="instances" className="mt-4 sm:mt-6">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <Select value={filterModule} onValueChange={setFilterModule}>
+              <SelectTrigger className="w-full sm:w-48 rounded-xl">
+                <SelectValue placeholder="Filter by Module" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Modules</SelectItem>
+                {MODULES.map((mod) => (
+                  <SelectItem key={mod.value} value={mod.value}>{mod.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-full sm:w-48 rounded-xl">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterModule !== 'all' || filterStatus !== 'all') && (
+              <Button 
+                variant="outline" 
+                onClick={() => { setFilterModule('all'); setFilterStatus('all'); }}
+                className="rounded-xl text-sm"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Request</th>
-                    <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Module</th>
-                    <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Requester</th>
-                    <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Current Step</th>
-                    <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Status</th>
-                    <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Actions</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Request</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700 hidden sm:table-cell">Module</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Requester</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700 hidden md:table-cell">Current Step</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Status</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-start text-xs sm:text-sm font-bold text-slate-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {instances.length === 0 ? (
+                  {filteredInstances.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-16 text-center">
-                        <GitBranch size={48} className="mx-auto mb-4 text-slate-300" />
-                        <p className="text-slate-500">No active workflow requests</p>
+                      <td colSpan={6} className="px-6 py-12 sm:py-16 text-center">
+                        <GitBranch size={40} className="mx-auto mb-4 text-slate-300 sm:w-12 sm:h-12" />
+                        <p className="text-slate-500 text-sm sm:text-base">No workflow requests found</p>
+                        {(filterModule !== 'all' || filterStatus !== 'all') && (
+                          <p className="text-slate-400 text-xs sm:text-sm mt-1">Try adjusting your filters</p>
+                        )}
                       </td>
                     </tr>
                   ) : (
-                    instances.map((instance) => {
+                    filteredInstances.map((instance) => {
                       const workflow = workflows.find(w => w.id === instance.workflow_id);
                       const moduleInfo = getModuleInfo(instance.module);
                       const ModuleIcon = moduleInfo.icon;
@@ -698,60 +737,67 @@ const Workflows = () => {
                       
                       return (
                         <tr key={instance.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="font-medium text-slate-900">{workflow?.name || 'Unknown'}</p>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
+                            <p className="font-medium text-slate-900 text-sm">{workflow?.name || 'Unknown'}</p>
                             <p className="text-xs text-slate-400">ID: {instance.reference_id?.slice(0, 8)}...</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <ModuleIcon size={16} className={`text-${moduleInfo.color}-600`} />
-                              <span className="text-slate-600">{moduleInfo.label}</span>
+                            <div className="sm:hidden mt-1 flex items-center gap-1">
+                              <ModuleIcon size={12} className={`text-${moduleInfo.color}-600`} />
+                              <span className="text-xs text-slate-500">{moduleInfo.label}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-slate-600">
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
+                            <div className="flex items-center gap-2">
+                              <ModuleIcon size={16} className={`text-${moduleInfo.color}-600`} />
+                              <span className="text-slate-600 text-sm">{moduleInfo.label}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 text-slate-600 text-sm">
                             {getEmployeeName(instance.requester_id)}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
                             {currentStepInfo ? (
                               <span className="text-sm">
                                 Step {instance.current_step + 1}: {currentStepInfo.name}
                               </span>
                             ) : (
-                              <span className="text-slate-400">-</span>
+                              <span className="text-slate-400 text-sm">-</span>
                             )}
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${statusInfo.color}`}>
-                              <StatusIcon size={12} />
-                              {statusInfo.label}
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
+                            <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-bold ${statusInfo.color}`}>
+                              <StatusIcon size={10} className="sm:w-3 sm:h-3" />
+                              <span className="hidden sm:inline">{statusInfo.label}</span>
                             </span>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex gap-2">
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
+                            <div className="flex gap-1 sm:gap-2">
                               <Button
-                                onClick={() => { setSelectedInstance(instance); setViewDialogOpen(true); }}
+                                onClick={() => openInstanceDetails(instance)}
                                 size="sm"
                                 variant="ghost"
-                                className="rounded-lg"
+                                className="rounded-lg p-1 sm:p-2"
+                                data-testid={`view-instance-${instance.id}`}
                               >
-                                <Eye size={16} />
+                                <Eye size={14} className="sm:w-4 sm:h-4" />
                               </Button>
                               {(instance.status === 'pending' || instance.status === 'in_progress') && (
                                 <>
                                   <Button
                                     onClick={() => handleWorkflowAction(instance.id, 'approve')}
                                     size="sm"
-                                    className="rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                                    className="rounded-lg bg-emerald-600 hover:bg-emerald-700 p-1 sm:p-2"
+                                    data-testid={`approve-instance-${instance.id}`}
                                   >
-                                    <CheckCircle2 size={16} />
+                                    <CheckCircle2 size={14} className="sm:w-4 sm:h-4" />
                                   </Button>
                                   <Button
-                                    onClick={() => handleWorkflowAction(instance.id, 'reject', 'Rejected by admin')}
+                                    onClick={() => { setSelectedInstance(instance); setRejectDialogOpen(true); }}
                                     size="sm"
                                     variant="outline"
-                                    className="rounded-lg text-red-600"
+                                    className="rounded-lg text-red-600 p-1 sm:p-2"
+                                    data-testid={`reject-instance-${instance.id}`}
                                   >
-                                    <XCircle size={16} />
+                                    <XCircle size={14} className="sm:w-4 sm:h-4" />
                                   </Button>
                                 </>
                               )}
@@ -768,16 +814,205 @@ const Workflows = () => {
         </TabsContent>
       </Tabs>
 
-      {/* View Instance Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-lg">
+      {/* Reject Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md mx-4">
           <DialogHeader>
-            <DialogTitle className="text-xl">Workflow Details</DialogTitle>
+            <DialogTitle className="text-xl flex items-center gap-2 text-rose-600">
+              <XCircle size={24} />
+              Reject Request
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleWorkflowAction(selectedInstance?.id, 'reject', rejectionComment); }} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Reason for Rejection</label>
+              <textarea
+                value={rejectionComment}
+                onChange={(e) => setRejectionComment(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all outline-none resize-none"
+                rows={3}
+                placeholder="Please provide a reason for rejection..."
+                required
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button type="submit" className="rounded-xl bg-rose-600 hover:bg-rose-700 flex-1">
+                Reject Request
+              </Button>
+              <Button type="button" onClick={() => setRejectDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Instance Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={(open) => { setViewDialogOpen(open); if (!open) setInstanceDetails(null); }}>
+        <DialogContent className="rounded-2xl max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <GitBranch className="text-indigo-600" size={24} />
+              Workflow Details
+            </DialogTitle>
           </DialogHeader>
           {selectedInstance && (
             <div className="space-y-4 mt-4">
+              {/* Status Badge */}
               <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-sm text-slate-500">Status</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Status</p>
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold mt-1 ${getStatusInfo(selectedInstance.status).color}`}>
+                      {React.createElement(getStatusInfo(selectedInstance.status).icon, { size: 14 })}
+                      {getStatusInfo(selectedInstance.status).label}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-500">Submitted</p>
+                    <p className="text-sm font-medium text-slate-900 mt-1">{formatDate(selectedInstance.created_at)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Request Details */}
+              {instanceDetails?.reference_document && (
+                <div className="border border-slate-200 rounded-xl p-4">
+                  <h4 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    {React.createElement(getModuleInfo(selectedInstance.module).icon, { size: 18 })}
+                    Request Details
+                  </h4>
+                  {selectedInstance.module === 'leave' && (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-slate-500">Leave Type</p>
+                        <p className="font-medium text-slate-900 capitalize">{instanceDetails.reference_document.leave_type?.replace('_', ' ')}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Duration</p>
+                        <p className="font-medium text-slate-900">
+                          {formatDate(instanceDetails.reference_document.start_date)} - {formatDate(instanceDetails.reference_document.end_date)}
+                        </p>
+                      </div>
+                      {instanceDetails.reference_document.reason && (
+                        <div className="col-span-2">
+                          <p className="text-slate-500">Reason</p>
+                          <p className="font-medium text-slate-900">{instanceDetails.reference_document.reason}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {selectedInstance.module === 'time_correction' && (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-slate-500">Date</p>
+                        <p className="font-medium text-slate-900">{formatDate(instanceDetails.reference_document.date)}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Original Clock In/Out</p>
+                        <p className="font-medium text-slate-900">
+                          {instanceDetails.reference_document.original_clock_in || '-'} / {instanceDetails.reference_document.original_clock_out || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Requested Clock In/Out</p>
+                        <p className="font-medium text-slate-900 text-blue-600">
+                          {instanceDetails.reference_document.requested_clock_in || '-'} / {instanceDetails.reference_document.requested_clock_out || '-'}
+                        </p>
+                      </div>
+                      {instanceDetails.reference_document.reason && (
+                        <div className="col-span-2">
+                          <p className="text-slate-500">Reason</p>
+                          <p className="font-medium text-slate-900">{instanceDetails.reference_document.reason}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {selectedInstance.module === 'expense' && instanceDetails.reference_document && (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-slate-500">Title</p>
+                        <p className="font-medium text-slate-900">{instanceDetails.reference_document.title}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Amount</p>
+                        <p className="font-medium text-slate-900">
+                          {instanceDetails.reference_document.currency} {instanceDetails.reference_document.amount}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Category</p>
+                        <p className="font-medium text-slate-900 capitalize">{instanceDetails.reference_document.category}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Requester Info */}
+              <div className="border border-slate-200 rounded-xl p-4">
+                <h4 className="font-bold text-slate-900 mb-2">Requester</h4>
+                <p className="text-slate-600">{instanceDetails?.requester?.full_name || getEmployeeName(selectedInstance.requester_id)}</p>
+              </div>
+              
+              {/* Approval History */}
+              <div className="border border-slate-200 rounded-xl p-4">
+                <h4 className="font-bold text-slate-900 mb-3">Approval History</h4>
+                <div className="space-y-2">
+                  {selectedInstance.step_history?.length > 0 ? (
+                    selectedInstance.step_history.map((history, idx) => (
+                      <div key={idx} className="flex items-start gap-3 bg-slate-50 rounded-lg p-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          history.action === 'approve' ? 'bg-emerald-100' : history.action === 'reject' ? 'bg-rose-100' : 'bg-amber-100'
+                        }`}>
+                          {history.action === 'approve' ? (
+                            <CheckCircle2 size={16} className="text-emerald-600" />
+                          ) : history.action === 'reject' ? (
+                            <XCircle size={16} className="text-rose-600" />
+                          ) : (
+                            <ArrowRight size={16} className="text-amber-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-900 capitalize">{history.action}ed</p>
+                          <p className="text-sm text-slate-500">Step {history.step + 1}</p>
+                          {history.comment && <p className="text-sm text-slate-600 mt-1 break-words">"{history.comment}"</p>}
+                          <p className="text-xs text-slate-400 mt-1">
+                            {new Date(history.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-slate-400 text-sm">No actions taken yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              {(selectedInstance.status === 'pending' || selectedInstance.status === 'in_progress') && (
+                <div className="flex gap-3 pt-2">
+                  <Button 
+                    onClick={() => handleWorkflowAction(selectedInstance.id, 'approve')}
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 flex-1"
+                  >
+                    <CheckCircle2 size={18} className="me-2" />
+                    Approve
+                  </Button>
+                  <Button 
+                    onClick={() => { setViewDialogOpen(false); setRejectDialogOpen(true); }}
+                    variant="outline" 
+                    className="rounded-xl text-rose-600 border-rose-200 hover:bg-rose-50 flex-1"
+                  >
+                    <XCircle size={18} className="me-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold mt-1 ${getStatusInfo(selectedInstance.status).color}`}>
                   {React.createElement(getStatusInfo(selectedInstance.status).icon, { size: 14 })}
                   {getStatusInfo(selectedInstance.status).label}
