@@ -465,6 +465,28 @@ const Training = () => {
 
   const getRequestStatusInfo = (status) => REQUEST_STATUS.find(s => s.value === status) || REQUEST_STATUS[0];
 
+  // Admin functions for handling training requests
+  const handleApproveRequest = async (requestId) => {
+    try {
+      await axios.put(`${API}/training-requests/${requestId}/approve`);
+      toast.success('Training request approved');
+      fetchAllTrainingRequests();
+    } catch (error) {
+      toast.error('Failed to approve request');
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    const reason = window.prompt('Enter rejection reason (optional):');
+    try {
+      await axios.put(`${API}/training-requests/${requestId}/reject`, { rejection_reason: reason || '' });
+      toast.success('Training request rejected');
+      fetchAllTrainingRequests();
+    } catch (error) {
+      toast.error('Failed to reject request');
+    }
+  };
+
   // Fetch training requests (for employees)
   const fetchMyRequests = async () => {
     try {
