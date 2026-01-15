@@ -454,33 +454,25 @@ const Training = () => {
 
   const getRequestStatusInfo = (status) => REQUEST_STATUS.find(s => s.value === status) || REQUEST_STATUS[0];
 
+  // Fetch training requests (for employees)
+  const fetchMyRequests = async () => {
+    try {
+      const response = await axios.get(`${API}/training-requests/my`);
+      setMyRequests(response.data);
+    } catch (error) {
+      console.error('Failed to fetch my requests:', error);
+    }
+  };
+
+  // Fetch employee requests on load (only for non-admin users)
+  useEffect(() => {
+    if (!isAdmin) {
+      fetchMyRequests();
+    }
+  }, [isAdmin]);
+
   // Employee View
   if (!isAdmin) {
-    // State for training requests
-    const [employeeTab, setEmployeeTab] = useState('assigned');
-    const [myRequests, setMyRequests] = useState([]);
-    const [requestDialogOpen, setRequestDialogOpen] = useState(false);
-    const [editingRequest, setEditingRequest] = useState(null);
-    const [requestForm, setRequestForm] = useState({
-      title: '', description: '', training_type: 'course', category: 'professional',
-      provider: '', provider_url: '', cost: '', currency: 'USD',
-      start_date: '', end_date: '', duration_hours: '', location: 'online',
-      objectives: '', expected_outcomes: ''
-    });
-
-    // Fetch training requests
-    const fetchMyRequests = async () => {
-      try {
-        const response = await axios.get(`${API}/training-requests/my`);
-        setMyRequests(response.data);
-      } catch (error) {
-        console.error('Failed to fetch my requests:', error);
-      }
-    };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { fetchMyRequests(); }, []);
-
     const handleRequestSubmit = async (e) => {
       e.preventDefault();
       try {
