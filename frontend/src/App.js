@@ -30,6 +30,7 @@ import Assets from './pages/Assets';
 import Communications from './pages/Communications';
 import Complaints from './pages/Complaints';
 import Disciplinary from './pages/Disciplinary';
+import Travel from './pages/Travel';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -75,6 +76,7 @@ function AppRoutes() {
         <Route path="communications" element={<Communications />} />
         <Route path="complaints" element={<Complaints />} />
         <Route path="disciplinary" element={<Disciplinary />} />
+        <Route path="travel" element={<Travel />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
