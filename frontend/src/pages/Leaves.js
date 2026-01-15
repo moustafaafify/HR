@@ -387,14 +387,14 @@ const Leaves = () => {
   };
 
   return (
-    <div data-testid="leaves-page" className="space-y-6">
+    <div data-testid="leaves-page" className="space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {t('leaves')}
           </h1>
-          <p className="text-slate-500 mt-1">Manage time off requests</p>
+          <p className="text-slate-500 mt-1 text-sm lg:text-base">Manage time off requests</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -402,20 +402,20 @@ const Leaves = () => {
             <Button 
               onClick={() => setDialogOpen(true)} 
               data-testid="add-leave-button"
-              className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 px-6"
+              className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 px-4 sm:px-6 w-full sm:w-auto"
             >
               <Plus size={20} className="me-2" />
               Request Leave
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg rounded-2xl">
+          <DialogContent className="max-w-lg rounded-2xl mx-4 sm:mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl flex items-center gap-2">
+              <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
                 <Calendar className="text-indigo-600" size={24} />
                 Request Time Off
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-5 mt-4" data-testid="leave-form">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 mt-4" data-testid="leave-form">
               {isAdmin && (
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-1.5 block">Employee</label>
