@@ -95,6 +95,7 @@ const Layout = () => {
 
   const menuItems = [
     { path: '/', icon: LayoutDashboard, label: t('dashboard') },
+    { path: '/team-calendar', icon: CalendarDays, label: 'Team Calendar' },
   ];
 
   const NavLink = ({ item, nested = false }) => {
