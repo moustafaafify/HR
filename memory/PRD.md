@@ -350,16 +350,24 @@ Build a full-stack HR platform with:
 - `/app/test_reports/iteration_4.json` - Recruitment module tests (100% backend, 95% frontend)
 - `/app/test_reports/iteration_5.json` - Onboarding module tests (100% backend, 100% frontend)
 - `/app/test_reports/iteration_6.json` - Offboarding module tests (100% backend, 100% frontend)
+- `/app/test_reports/iteration_7.json` - All modules smoke tests
+- `/app/test_reports/iteration_8.json` - Data seeding fix verification (100% backend, 100% frontend)
 - `/app/tests/test_recruitment.py` - Recruitment pytest file (26 tests)
 - `/app/tests/test_onboarding.py` - Onboarding pytest file (23 tests)
 - `/app/tests/test_offboarding.py` - Offboarding pytest file (26 tests)
+- `/app/tests/test_hr_platform_iteration8.py` - Data integrity tests (27 tests)
 
 ## Key Files
 - `backend/server.py` - All API endpoints
+- `backend/seed_data.py` - Data seeding script (NEW - fixes employee/user linking)
+- `frontend/src/pages/Payroll.js` - Payroll UI (NEW)
+- `frontend/src/pages/OrgChart.js` - Organization Chart UI (NEW)
+- `frontend/src/pages/Appraisals.js` - Appraisals UI (NEW)
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
 - `frontend/src/pages/Offboarding.js` - Offboarding UI
 - `frontend/src/pages/Expenses.js` - Expense Claims UI
 - `frontend/src/pages/Training.js` - Training Requests UI
+- `frontend/src/pages/Documents.js` - Documents UI
 - `frontend/src/pages/Workflows.js` - Workflow management
 - `frontend/src/components/Layout.js` - Responsive layout
