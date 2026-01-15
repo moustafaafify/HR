@@ -2653,6 +2653,157 @@ async def acknowledge_document(doc_id: str, current_user: User = Depends(get_cur
     updated_doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
     return updated_doc
 
+# ============= DOCUMENT TYPES ROUTES =============
+
+@api_router.get("/document-types")
+async def get_document_types(current_user: User = Depends(get_current_user)):
+    """Get all document types"""
+    types = await db.document_types.find({}, {"_id": 0}).to_list(1000)
+    return types
+
+@api_router.post("/document-types")
+async def create_document_type(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new document type"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create document types")
+    doc_type = DocumentType(**data)
+    await db.document_types.insert_one(doc_type.model_dump())
+    return doc_type.model_dump()
+
+@api_router.put("/document-types/{type_id}")
+async def update_document_type(type_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a document type"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update document types")
+    await db.document_types.update_one({"id": type_id}, {"$set": data})
+    doc_type = await db.document_types.find_one({"id": type_id}, {"_id": 0})
+    return doc_type
+
+@api_router.delete("/document-types/{type_id}")
+async def delete_document_type(type_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a document type"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete document types")
+    await db.document_types.delete_one({"id": type_id})
+    return {"message": "Document type deleted"}
+
+# ============= DOCUMENT CATEGORIES ROUTES =============
+
+@api_router.get("/document-categories")
+async def get_document_categories(current_user: User = Depends(get_current_user)):
+    """Get all document categories"""
+    categories = await db.document_categories.find({}, {"_id": 0}).to_list(1000)
+    return categories
+
+@api_router.post("/document-categories")
+async def create_document_category(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new document category"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create document categories")
+    category = DocumentCategory(**data)
+    await db.document_categories.insert_one(category.model_dump())
+    return category.model_dump()
+
+@api_router.put("/document-categories/{category_id}")
+async def update_document_category(category_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a document category"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update document categories")
+    await db.document_categories.update_one({"id": category_id}, {"$set": data})
+    category = await db.document_categories.find_one({"id": category_id}, {"_id": 0})
+    return category
+
+@api_router.delete("/document-categories/{category_id}")
+async def delete_document_category(category_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a document category"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete document categories")
+    await db.document_categories.delete_one({"id": category_id})
+    return {"message": "Document category deleted"}
+
+# ============= DOCUMENT TEMPLATES ROUTES =============
+
+@api_router.get("/document-templates")
+async def get_document_templates(current_user: User = Depends(get_current_user)):
+    """Get all document templates"""
+    templates = await db.document_templates.find({}, {"_id": 0}).to_list(1000)
+    return templates
+
+@api_router.get("/document-templates/active")
+async def get_active_document_templates(current_user: User = Depends(get_current_user)):
+    """Get active document templates for employees"""
+    templates = await db.document_templates.find({"is_active": True}, {"_id": 0}).to_list(1000)
+    return templates
+
+@api_router.post("/document-templates")
+async def create_document_template(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new document template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create document templates")
+    data["created_by"] = current_user.id
+    template = DocumentTemplate(**data)
+    await db.document_templates.insert_one(template.model_dump())
+    return template.model_dump()
+
+@api_router.get("/document-templates/{template_id}")
+async def get_document_template(template_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific document template"""
+    template = await db.document_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+@api_router.put("/document-templates/{template_id}")
+async def update_document_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a document template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update document templates")
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.document_templates.update_one({"id": template_id}, {"$set": data})
+    template = await db.document_templates.find_one({"id": template_id}, {"_id": 0})
+    return template
+
+@api_router.delete("/document-templates/{template_id}")
+async def delete_document_template(template_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a document template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete document templates")
+    await db.document_templates.delete_one({"id": template_id})
+    return {"message": "Document template deleted"}
+
+@api_router.post("/document-templates/{template_id}/use")
+async def use_document_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a document from a template"""
+    template = await db.document_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Get employee ID
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"personal_email": current_user.email})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    employee_id = employee["id"] if employee else current_user.id
+    
+    # Create document from template
+    doc_data = {
+        "employee_id": employee_id,
+        "title": data.get("title", template.get("name")),
+        "description": data.get("description", template.get("description")),
+        "document_type": template.get("document_type_id", "other"),
+        "category": template.get("category_id", "general"),
+        "document_url": data.get("document_url", template.get("document_url")),
+        "priority": template.get("default_priority", "normal"),
+        "template_id": template_id,
+        "status": "submitted"
+    }
+    
+    doc = DocumentApproval(**doc_data)
+    await db.document_approvals.insert_one(doc.model_dump())
+    return doc.model_dump()
+
 # ============= ONBOARDING ROUTES =============
 
 @api_router.post("/onboarding-tasks")
