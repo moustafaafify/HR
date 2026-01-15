@@ -6212,6 +6212,384 @@ async def get_communications_stats(current_user: User = Depends(get_current_user
         "surveys_active": surveys_active
     }
 
+# ============= COMPLAINTS MANAGEMENT MODELS =============
+
+class Complaint(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    reference_number: str = Field(default_factory=lambda: f"CMP-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}")
+    title: str
+    description: str
+    category: str = "general"  # harassment, discrimination, safety, policy_violation, workplace_conduct, compensation, management, general
+    priority: str = "medium"  # low, medium, high, critical
+    status: str = "submitted"  # submitted, under_review, investigating, resolved, closed, dismissed
+    anonymous: bool = False
+    employee_id: Optional[str] = None  # Null if anonymous
+    employee_name: Optional[str] = None
+    employee_department: Optional[str] = None
+    assigned_to_id: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    resolution: Optional[str] = None
+    resolution_date: Optional[str] = None
+    resolution_type: Optional[str] = None  # resolved_in_favor, partially_resolved, not_substantiated, dismissed
+    attachments: List[str] = []
+    is_confidential: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ComplaintComment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    complaint_id: str
+    author_id: Optional[str] = None
+    author_name: str = "Anonymous"
+    content: str
+    is_internal: bool = False  # Internal notes only visible to admins
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ComplaintStatusHistory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    complaint_id: str
+    from_status: Optional[str] = None
+    to_status: str
+    changed_by_id: Optional[str] = None
+    changed_by_name: str
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= COMPLAINTS ROUTES =============
+
+COMPLAINT_CATEGORIES = [
+    {"value": "harassment", "label": "Harassment"},
+    {"value": "discrimination", "label": "Discrimination"},
+    {"value": "safety", "label": "Workplace Safety"},
+    {"value": "policy_violation", "label": "Policy Violation"},
+    {"value": "workplace_conduct", "label": "Workplace Conduct"},
+    {"value": "compensation", "label": "Compensation & Benefits"},
+    {"value": "management", "label": "Management Issues"},
+    {"value": "general", "label": "General Complaint"},
+]
+
+@api_router.get("/complaints/categories")
+async def get_complaint_categories(current_user: User = Depends(get_current_user)):
+    return COMPLAINT_CATEGORIES
+
+@api_router.get("/complaints")
+async def get_complaints(
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    priority: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    
+    # Non-admins can only see their own non-anonymous complaints
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee:
+            employee = await db.employees.find_one({"work_email": current_user.email})
+        
+        if employee:
+            query["$and"] = [
+                {"employee_id": employee["id"]},
+                {"anonymous": False}
+            ]
+        else:
+            return []
+    
+    if status:
+        query["status"] = status
+    if category:
+        query["category"] = category
+    if priority:
+        query["priority"] = priority
+    if assigned_to:
+        query["assigned_to_id"] = assigned_to
+    
+    complaints = await db.complaints.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return complaints
+
+@api_router.get("/complaints/my")
+async def get_my_complaints(current_user: User = Depends(get_current_user)):
+    """Get complaints submitted by current user (excludes anonymous)"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    
+    if not employee:
+        return []
+    
+    complaints = await db.complaints.find({
+        "employee_id": employee["id"],
+        "anonymous": False
+    }, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    return complaints
+
+@api_router.get("/complaints/stats")
+async def get_complaints_stats(current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view stats")
+    
+    total = await db.complaints.count_documents({})
+    submitted = await db.complaints.count_documents({"status": "submitted"})
+    under_review = await db.complaints.count_documents({"status": "under_review"})
+    investigating = await db.complaints.count_documents({"status": "investigating"})
+    resolved = await db.complaints.count_documents({"status": "resolved"})
+    closed = await db.complaints.count_documents({"status": "closed"})
+    
+    # Priority breakdown
+    critical = await db.complaints.count_documents({"priority": "critical", "status": {"$nin": ["resolved", "closed", "dismissed"]}})
+    high = await db.complaints.count_documents({"priority": "high", "status": {"$nin": ["resolved", "closed", "dismissed"]}})
+    
+    # Anonymous count
+    anonymous = await db.complaints.count_documents({"anonymous": True})
+    
+    # Category breakdown
+    category_stats = []
+    for cat in COMPLAINT_CATEGORIES:
+        count = await db.complaints.count_documents({"category": cat["value"]})
+        if count > 0:
+            category_stats.append({"category": cat["label"], "count": count})
+    
+    return {
+        "total": total,
+        "submitted": submitted,
+        "under_review": under_review,
+        "investigating": investigating,
+        "resolved": resolved,
+        "closed": closed,
+        "critical_priority": critical,
+        "high_priority": high,
+        "anonymous": anonymous,
+        "by_category": category_stats
+    }
+
+@api_router.get("/complaints/{complaint_id}")
+async def get_complaint(complaint_id: str, current_user: User = Depends(get_current_user)):
+    complaint = await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    # Check access
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee or complaint.get("employee_id") != employee["id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return complaint
+
+@api_router.get("/complaints/{complaint_id}/comments")
+async def get_complaint_comments(complaint_id: str, current_user: User = Depends(get_current_user)):
+    query = {"complaint_id": complaint_id}
+    
+    # Non-admins don't see internal comments
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        query["is_internal"] = False
+    
+    comments = await db.complaint_comments.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
+    return comments
+
+@api_router.get("/complaints/{complaint_id}/history")
+async def get_complaint_history(complaint_id: str, current_user: User = Depends(get_current_user)):
+    history = await db.complaint_status_history.find(
+        {"complaint_id": complaint_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    return history
+
+@api_router.post("/complaints")
+async def create_complaint(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    employee = None
+    if not data.get("anonymous"):
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if not employee:
+            employee = await db.employees.find_one({"work_email": current_user.email})
+        
+        if employee:
+            data["employee_id"] = employee["id"]
+            data["employee_name"] = employee.get("full_name", "Unknown")
+            data["employee_department"] = None
+            
+            # Get department name
+            if employee.get("department_id"):
+                dept = await db.departments.find_one({"id": employee["department_id"]})
+                if dept:
+                    data["employee_department"] = dept.get("name")
+    
+    complaint = Complaint(**data)
+    await db.complaints.insert_one(complaint.model_dump())
+    
+    # Create initial status history
+    history = ComplaintStatusHistory(
+        complaint_id=complaint.id,
+        from_status=None,
+        to_status="submitted",
+        changed_by_id=current_user.id if not data.get("anonymous") else None,
+        changed_by_name=current_user.full_name if not data.get("anonymous") else "Anonymous"
+    )
+    await db.complaint_status_history.insert_one(history.model_dump())
+    
+    return complaint.model_dump()
+
+@api_router.put("/complaints/{complaint_id}")
+async def update_complaint(complaint_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    complaint = await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    # Track status changes
+    old_status = complaint.get("status")
+    new_status = data.get("status")
+    
+    if new_status and new_status != old_status:
+        history = ComplaintStatusHistory(
+            complaint_id=complaint_id,
+            from_status=old_status,
+            to_status=new_status,
+            changed_by_id=current_user.id,
+            changed_by_name=current_user.full_name,
+            notes=data.get("status_notes")
+        )
+        await db.complaint_status_history.insert_one(history.model_dump())
+        
+        # Set resolution date if resolved
+        if new_status in ["resolved", "closed"]:
+            data["resolution_date"] = datetime.now(timezone.utc).isoformat()
+    
+    # Get assignee name if assigned
+    if data.get("assigned_to_id"):
+        admin = await db.users.find_one({"id": data["assigned_to_id"]})
+        if admin:
+            data["assigned_to_name"] = admin.get("full_name", "Unknown")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Remove status_notes from data before updating
+    data.pop("status_notes", None)
+    
+    await db.complaints.update_one({"id": complaint_id}, {"$set": data})
+    return await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+
+@api_router.post("/complaints/{complaint_id}/comments")
+async def add_complaint_comment(complaint_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    complaint = await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    # Determine if anonymous
+    author_name = current_user.full_name
+    author_id = current_user.id
+    
+    # Check if this is the complaint owner posting anonymously
+    if complaint.get("anonymous") and complaint.get("employee_id"):
+        employee = await db.employees.find_one({"user_id": current_user.id})
+        if employee and employee["id"] == complaint["employee_id"]:
+            author_name = "Complainant (Anonymous)"
+            author_id = None
+    
+    comment = ComplaintComment(
+        complaint_id=complaint_id,
+        author_id=author_id,
+        author_name=author_name,
+        content=data.get("content", ""),
+        is_internal=data.get("is_internal", False) and current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    )
+    
+    await db.complaint_comments.insert_one(comment.model_dump())
+    
+    # Update complaint's updated_at
+    await db.complaints.update_one(
+        {"id": complaint_id},
+        {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return comment.model_dump()
+
+@api_router.post("/complaints/{complaint_id}/assign")
+async def assign_complaint(complaint_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can assign complaints")
+    
+    assignee_id = data.get("assigned_to_id")
+    if not assignee_id:
+        raise HTTPException(status_code=400, detail="Assignee ID required")
+    
+    admin = await db.users.find_one({"id": assignee_id})
+    if not admin:
+        raise HTTPException(status_code=404, detail="Assignee not found")
+    
+    await db.complaints.update_one({"id": complaint_id}, {"$set": {
+        "assigned_to_id": assignee_id,
+        "assigned_to_name": admin.get("full_name", "Unknown"),
+        "status": "under_review",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    # Add status history
+    complaint = await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+    if complaint:
+        history = ComplaintStatusHistory(
+            complaint_id=complaint_id,
+            from_status=complaint.get("status"),
+            to_status="under_review",
+            changed_by_id=current_user.id,
+            changed_by_name=current_user.full_name,
+            notes=f"Assigned to {admin.get('full_name', 'Unknown')}"
+        )
+        await db.complaint_status_history.insert_one(history.model_dump())
+    
+    return await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+
+@api_router.post("/complaints/{complaint_id}/resolve")
+async def resolve_complaint(complaint_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can resolve complaints")
+    
+    complaint = await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    old_status = complaint.get("status")
+    
+    await db.complaints.update_one({"id": complaint_id}, {"$set": {
+        "status": "resolved",
+        "resolution": data.get("resolution", ""),
+        "resolution_type": data.get("resolution_type", "resolved_in_favor"),
+        "resolution_date": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    # Add status history
+    history = ComplaintStatusHistory(
+        complaint_id=complaint_id,
+        from_status=old_status,
+        to_status="resolved",
+        changed_by_id=current_user.id,
+        changed_by_name=current_user.full_name,
+        notes=data.get("notes", "Complaint resolved")
+    )
+    await db.complaint_status_history.insert_one(history.model_dump())
+    
+    return await db.complaints.find_one({"id": complaint_id}, {"_id": 0})
+
+@api_router.delete("/complaints/{complaint_id}")
+async def delete_complaint(complaint_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can delete complaints")
+    
+    result = await db.complaints.delete_one({"id": complaint_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    # Delete associated comments and history
+    await db.complaint_comments.delete_many({"complaint_id": complaint_id})
+    await db.complaint_status_history.delete_many({"complaint_id": complaint_id})
+    
+    return {"message": "Complaint deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
