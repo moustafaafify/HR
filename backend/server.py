@@ -7982,6 +7982,385 @@ async def get_employee_points(employee_id: str, current_user: User = Depends(get
         return {"total_points": result[0]["total"], "recognition_count": result[0]["count"]}
     return {"total_points": 0, "recognition_count": 0}
 
+# ============= TEAM CALENDAR MODELS =============
+
+class CalendarEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Event details
+    title: str
+    description: Optional[str] = None
+    event_type: str = "meeting"  # meeting, holiday, birthday, anniversary, company_event, team_event, training, deadline, other
+    
+    # Timing
+    start_date: str
+    end_date: str
+    start_time: Optional[str] = None  # HH:MM format
+    end_time: Optional[str] = None
+    all_day: bool = False
+    timezone: str = "UTC"
+    
+    # Recurrence
+    is_recurring: bool = False
+    recurrence_pattern: Optional[str] = None  # daily, weekly, monthly, yearly
+    recurrence_end_date: Optional[str] = None
+    
+    # Location
+    location: Optional[str] = None
+    is_virtual: bool = False
+    meeting_link: Optional[str] = None
+    
+    # Organizer
+    organizer_id: str
+    organizer_name: Optional[str] = None
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    
+    # Attendees
+    attendees: List[Dict[str, Any]] = Field(default_factory=list)  # [{id, name, status: pending/accepted/declined}]
+    
+    # Visibility
+    is_public: bool = True  # visible to all employees
+    is_company_wide: bool = False  # company-wide event
+    
+    # Colors
+    color: str = "#6366f1"
+    
+    # Linked entities
+    linked_leave_id: Optional[str] = None
+    linked_training_id: Optional[str] = None
+    
+    # Status
+    status: str = "scheduled"  # scheduled, cancelled, completed
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= TEAM CALENDAR API ENDPOINTS =============
+
+@api_router.get("/calendar/events")
+async def get_calendar_events(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    event_type: Optional[str] = None,
+    department_id: Optional[str] = None,
+    include_leaves: bool = True,
+    include_birthdays: bool = True,
+    include_anniversaries: bool = True,
+    current_user: User = Depends(get_current_user)
+):
+    """Get calendar events with filters"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    # Build query for custom events
+    query = {"status": {"$ne": "cancelled"}}
+    
+    if start_date and end_date:
+        query["$or"] = [
+            {"start_date": {"$gte": start_date, "$lte": end_date}},
+            {"end_date": {"$gte": start_date, "$lte": end_date}},
+            {"$and": [{"start_date": {"$lte": start_date}}, {"end_date": {"$gte": end_date}}]}
+        ]
+    
+    if event_type:
+        query["event_type"] = event_type
+    
+    if department_id:
+        query["department_id"] = department_id
+    
+    # Get custom events
+    events = await db.calendar_events.find(query, {"_id": 0}).to_list(500)
+    
+    # Get approved leaves as events
+    if include_leaves and start_date and end_date:
+        leave_query = {
+            "status": "approved",
+            "$or": [
+                {"start_date": {"$gte": start_date, "$lte": end_date}},
+                {"end_date": {"$gte": start_date, "$lte": end_date}},
+            ]
+        }
+        leaves = await db.leaves.find(leave_query, {"_id": 0}).to_list(200)
+        
+        for leave in leaves:
+            employee = await db.employees.find_one({"id": leave.get("employee_id")}, {"_id": 0})
+            emp_name = employee.get("full_name", "Employee") if employee else "Employee"
+            
+            events.append({
+                "id": f"leave-{leave.get('id', '')}",
+                "title": f"{emp_name} - {leave.get('leave_type', 'Leave')}",
+                "description": leave.get("reason", ""),
+                "event_type": "leave",
+                "start_date": leave.get("start_date"),
+                "end_date": leave.get("end_date"),
+                "all_day": True,
+                "color": "#f59e0b",
+                "organizer_name": emp_name,
+                "is_public": True,
+                "linked_leave_id": leave.get("id")
+            })
+    
+    # Get birthdays
+    if include_birthdays and start_date and end_date:
+        # Extract month-day range for birthday matching
+        employees = await db.employees.find({"date_of_birth": {"$exists": True, "$ne": None}}, {"_id": 0}).to_list(500)
+        
+        start = datetime.fromisoformat(start_date.replace('Z', '+00:00')) if start_date else datetime.now(timezone.utc)
+        end = datetime.fromisoformat(end_date.replace('Z', '+00:00')) if end_date else start + timedelta(days=30)
+        
+        for emp in employees:
+            dob = emp.get("date_of_birth")
+            if dob:
+                try:
+                    birth_date = datetime.fromisoformat(dob.replace('Z', '+00:00'))
+                    # Check each year in range
+                    for year in range(start.year, end.year + 1):
+                        birthday_this_year = birth_date.replace(year=year)
+                        if start <= birthday_this_year <= end:
+                            events.append({
+                                "id": f"birthday-{emp.get('id')}-{year}",
+                                "title": f"🎂 {emp.get('full_name', 'Employee')}'s Birthday",
+                                "event_type": "birthday",
+                                "start_date": birthday_this_year.strftime("%Y-%m-%d"),
+                                "end_date": birthday_this_year.strftime("%Y-%m-%d"),
+                                "all_day": True,
+                                "color": "#ec4899",
+                                "is_public": True
+                            })
+                except:
+                    pass
+    
+    # Get work anniversaries
+    if include_anniversaries and start_date and end_date:
+        employees = await db.employees.find({"date_of_joining": {"$exists": True, "$ne": None}}, {"_id": 0}).to_list(500)
+        
+        start = datetime.fromisoformat(start_date.replace('Z', '+00:00')) if start_date else datetime.now(timezone.utc)
+        end = datetime.fromisoformat(end_date.replace('Z', '+00:00')) if end_date else start + timedelta(days=30)
+        
+        for emp in employees:
+            join_date = emp.get("date_of_joining")
+            if join_date:
+                try:
+                    joined = datetime.fromisoformat(join_date.replace('Z', '+00:00'))
+                    for year in range(start.year, end.year + 1):
+                        if year > joined.year:  # Only show anniversaries after first year
+                            anniversary = joined.replace(year=year)
+                            years = year - joined.year
+                            if start <= anniversary <= end:
+                                events.append({
+                                    "id": f"anniversary-{emp.get('id')}-{year}",
+                                    "title": f"🎉 {emp.get('full_name', 'Employee')}'s {years} Year Anniversary",
+                                    "event_type": "anniversary",
+                                    "start_date": anniversary.strftime("%Y-%m-%d"),
+                                    "end_date": anniversary.strftime("%Y-%m-%d"),
+                                    "all_day": True,
+                                    "color": "#8b5cf6",
+                                    "is_public": True
+                                })
+                except:
+                    pass
+    
+    # Get holidays
+    holidays = await db.holidays.find({}, {"_id": 0}).to_list(100)
+    for holiday in holidays:
+        if start_date and end_date:
+            h_date = holiday.get("date", "")
+            if h_date >= start_date and h_date <= end_date:
+                events.append({
+                    "id": f"holiday-{holiday.get('id', '')}",
+                    "title": f"🏖️ {holiday.get('name', 'Holiday')}",
+                    "event_type": "holiday",
+                    "start_date": h_date,
+                    "end_date": h_date,
+                    "all_day": True,
+                    "color": "#10b981",
+                    "is_public": True,
+                    "is_company_wide": True
+                })
+    
+    # Sort by start date
+    events.sort(key=lambda x: x.get("start_date", ""))
+    
+    return events
+
+@api_router.post("/calendar/events")
+async def create_calendar_event(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new calendar event"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    # Get organizer info
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    
+    organizer_id = employee["id"] if employee else current_user.id
+    organizer_name = employee.get("full_name") if employee else current_user.full_name
+    
+    dept_id = None
+    dept_name = None
+    if employee and employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+        if dept:
+            dept_id = dept["id"]
+            dept_name = dept.get("name")
+    
+    # Only admins can create company-wide events
+    if data.get("is_company_wide") and not is_admin:
+        data["is_company_wide"] = False
+    
+    event_data = {
+        **data,
+        "organizer_id": organizer_id,
+        "organizer_name": organizer_name,
+        "department_id": dept_id,
+        "department_name": dept_name,
+    }
+    
+    event = CalendarEvent(**event_data)
+    await db.calendar_events.insert_one(event.model_dump())
+    
+    return event.model_dump()
+
+@api_router.get("/calendar/events/{event_id}")
+async def get_calendar_event(event_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific calendar event"""
+    event = await db.calendar_events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
+@api_router.put("/calendar/events/{event_id}")
+async def update_calendar_event(event_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a calendar event"""
+    event = await db.calendar_events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    organizer_id = employee["id"] if employee else current_user.id
+    
+    # Check permission
+    if not is_admin and event["organizer_id"] != organizer_id:
+        raise HTTPException(status_code=403, detail="Only the organizer can edit this event")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.calendar_events.update_one({"id": event_id}, {"$set": data})
+    
+    return await db.calendar_events.find_one({"id": event_id}, {"_id": 0})
+
+@api_router.delete("/calendar/events/{event_id}")
+async def delete_calendar_event(event_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a calendar event"""
+    event = await db.calendar_events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    organizer_id = employee["id"] if employee else current_user.id
+    
+    if not is_admin and event["organizer_id"] != organizer_id:
+        raise HTTPException(status_code=403, detail="Only the organizer can delete this event")
+    
+    await db.calendar_events.delete_one({"id": event_id})
+    return {"message": "Event deleted"}
+
+@api_router.post("/calendar/events/{event_id}/respond")
+async def respond_to_event(event_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Respond to an event invitation (accept/decline)"""
+    event = await db.calendar_events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    attendee_id = employee["id"] if employee else current_user.id
+    
+    response_status = data.get("status", "accepted")  # accepted, declined, tentative
+    
+    # Update attendee status
+    attendees = event.get("attendees", [])
+    updated = False
+    for att in attendees:
+        if att.get("id") == attendee_id:
+            att["status"] = response_status
+            updated = True
+            break
+    
+    if not updated:
+        # Add as new attendee
+        attendees.append({
+            "id": attendee_id,
+            "name": employee.get("full_name") if employee else current_user.full_name,
+            "status": response_status
+        })
+    
+    await db.calendar_events.update_one({"id": event_id}, {"$set": {"attendees": attendees}})
+    
+    return {"message": f"Response recorded: {response_status}"}
+
+@api_router.get("/calendar/team-availability")
+async def get_team_availability(
+    date: str,
+    department_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get team availability for a specific date"""
+    # Get employees
+    emp_query = {}
+    if department_id:
+        emp_query["department_id"] = department_id
+    
+    employees = await db.employees.find(emp_query, {"_id": 0}).to_list(200)
+    
+    # Get leaves for this date
+    leaves = await db.leaves.find({
+        "status": "approved",
+        "start_date": {"$lte": date},
+        "end_date": {"$gte": date}
+    }, {"_id": 0}).to_list(200)
+    
+    leave_employee_ids = {l.get("employee_id") for l in leaves}
+    
+    availability = []
+    for emp in employees:
+        is_on_leave = emp["id"] in leave_employee_ids
+        leave_info = None
+        if is_on_leave:
+            for l in leaves:
+                if l.get("employee_id") == emp["id"]:
+                    leave_info = l.get("leave_type")
+                    break
+        
+        availability.append({
+            "employee_id": emp["id"],
+            "employee_name": emp.get("full_name"),
+            "department": emp.get("department_name"),
+            "is_available": not is_on_leave,
+            "leave_type": leave_info
+        })
+    
+    return availability
+
+@api_router.get("/calendar/upcoming")
+async def get_upcoming_events(
+    days: int = 7,
+    current_user: User = Depends(get_current_user)
+):
+    """Get upcoming events for the next N days"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    end_date = (datetime.now(timezone.utc) + timedelta(days=days)).strftime("%Y-%m-%d")
+    
+    events = await get_calendar_events(
+        start_date=today,
+        end_date=end_date,
+        include_leaves=True,
+        include_birthdays=True,
+        include_anniversaries=True,
+        current_user=current_user
+    )
+    
+    return events[:20]  # Limit to 20 events
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
