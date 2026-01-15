@@ -18,7 +18,8 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  Workflow
+  Workflow,
+  UserPlus
 } from 'lucide-react';
 
 const Layout = () => {
