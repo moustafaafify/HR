@@ -258,7 +258,7 @@ Build a full-stack HR platform with:
 - Employee: `sarah.johnson@lojyn.com` / `sarah123`
 
 ## Upcoming Tasks (P1)
-1. **Implement New Workflow-driven Modules** - Expense Claims, Training Requests, Document Approvals
+1. **Implement Document Approvals Module** - Submit documents for approval, versioning, status tracking
 
 ## Future/Backlog (P2+)
 - Budget allocation per department/division
@@ -266,7 +266,7 @@ Build a full-stack HR platform with:
 - Bulk employee import via CSV
 - Employment history timeline view
 - Email notifications for workflows and recruitment
-- Refactor large components (EmployeesNew.js, Leaves.js, Attendance.js, Workflows.js, Recruitment.js, Onboarding.js, Offboarding.js)
+- Refactor large components (EmployeesNew.js, Leaves.js, Attendance.js, Workflows.js, Recruitment.js, Onboarding.js, Offboarding.js, Expenses.js, Training.js)
 
 ## Test Reports
 - `/app/test_reports/iteration_3.json` - Workflow system tests
@@ -282,5 +282,7 @@ Build a full-stack HR platform with:
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
 - `frontend/src/pages/Offboarding.js` - Offboarding UI
+- `frontend/src/pages/Expenses.js` - Expense Claims UI
+- `frontend/src/pages/Training.js` - Training Requests UI
 - `frontend/src/pages/Workflows.js` - Workflow management
 - `frontend/src/components/Layout.js` - Responsive layout
