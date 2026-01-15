@@ -420,6 +420,7 @@ const Documents = () => {
       tags: ''
     });
     setEditingDocument(null);
+    setUploadedFile(null);
   };
 
   const openEditDocument = (doc) => {
