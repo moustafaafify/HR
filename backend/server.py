@@ -2530,8 +2530,10 @@ async def create_document_approval(data: Dict[str, Any], current_user: User = De
     # Get employee ID from current user - try multiple methods
     employee = await db.employees.find_one({"user_id": current_user.id})
     if not employee:
-        # Fallback: try to find employee by email
-        employee = await db.employees.find_one({"email": current_user.email})
+        # Fallback: try to find employee by work_email or personal_email
+        employee = await db.employees.find_one({"work_email": current_user.email})
+    if not employee:
+        employee = await db.employees.find_one({"personal_email": current_user.email})
     
     # Use employee ID if found, otherwise use current user ID
     if employee:
