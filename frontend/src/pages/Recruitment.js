@@ -181,7 +181,26 @@ const Recruitment = () => {
     fetchDepartments();
     fetchEmployees();
     fetchStats();
+    fetchCurrentEmployee();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchCurrentEmployee = async () => {
+    try {
+      // Try to find the employee record for the current user
+      const response = await axios.get(`${API}/employees`);
+      const employees = response.data;
+      // Find employee matching the current user's email
+      if (user?.email) {
+        const emp = employees.find(e => e.email?.toLowerCase() === user.email.toLowerCase());
+        if (emp) {
+          setCurrentEmployee(emp);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch current employee:', error);
+    }
+  };
 
   const fetchJobs = async () => {
     try {
