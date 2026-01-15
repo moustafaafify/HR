@@ -4040,6 +4040,297 @@ async def delete_offboarding(offboarding_id: str, current_user: User = Depends(g
         raise HTTPException(status_code=404, detail="Offboarding not found")
     return {"message": "Offboarding deleted"}
 
+# ============= APPRAISAL CYCLES =============
+
+@api_router.get("/appraisal-cycles")
+async def get_appraisal_cycles(current_user: User = Depends(get_current_user)):
+    """Get all appraisal cycles"""
+    cycles = await db.appraisal_cycles.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return cycles
+
+@api_router.get("/appraisal-cycles/{cycle_id}")
+async def get_appraisal_cycle(cycle_id: str, current_user: User = Depends(get_current_user)):
+    """Get a single appraisal cycle"""
+    cycle = await db.appraisal_cycles.find_one({"id": cycle_id}, {"_id": 0})
+    if not cycle:
+        raise HTTPException(status_code=404, detail="Appraisal cycle not found")
+    return cycle
+
+@api_router.post("/appraisal-cycles")
+async def create_appraisal_cycle(cycle: AppraisalCycle, current_user: User = Depends(get_current_user)):
+    """Create a new appraisal cycle"""
+    cycle_dict = cycle.model_dump()
+    cycle_dict["created_by"] = current_user.id
+    
+    # Default questions if none provided
+    if not cycle_dict["questions"]:
+        cycle_dict["questions"] = [
+            {"id": str(uuid.uuid4()), "question": "How well did you achieve your goals for this period?", "type": "rating", "required": True},
+            {"id": str(uuid.uuid4()), "question": "Rate your communication skills", "type": "rating", "required": True},
+            {"id": str(uuid.uuid4()), "question": "Rate your teamwork and collaboration", "type": "rating", "required": True},
+            {"id": str(uuid.uuid4()), "question": "Rate your problem-solving abilities", "type": "rating", "required": True},
+            {"id": str(uuid.uuid4()), "question": "Rate your technical/job-specific skills", "type": "rating", "required": True},
+            {"id": str(uuid.uuid4()), "question": "Describe your key achievements this period", "type": "text", "required": True},
+            {"id": str(uuid.uuid4()), "question": "What challenges did you face and how did you overcome them?", "type": "text", "required": False},
+            {"id": str(uuid.uuid4()), "question": "What are your goals for the next period?", "type": "text", "required": True},
+        ]
+    
+    await db.appraisal_cycles.insert_one(cycle_dict)
+    return {k: v for k, v in cycle_dict.items() if k != "_id"}
+
+@api_router.put("/appraisal-cycles/{cycle_id}")
+async def update_appraisal_cycle(cycle_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an appraisal cycle"""
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.appraisal_cycles.update_one({"id": cycle_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Appraisal cycle not found")
+    return await db.appraisal_cycles.find_one({"id": cycle_id}, {"_id": 0})
+
+@api_router.delete("/appraisal-cycles/{cycle_id}")
+async def delete_appraisal_cycle(cycle_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an appraisal cycle and its appraisals"""
+    result = await db.appraisal_cycles.delete_one({"id": cycle_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Appraisal cycle not found")
+    # Also delete all appraisals for this cycle
+    await db.appraisals.delete_many({"cycle_id": cycle_id})
+    return {"message": "Appraisal cycle deleted"}
+
+@api_router.post("/appraisal-cycles/{cycle_id}/assign")
+async def assign_appraisals(cycle_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Assign appraisals to employees for a cycle"""
+    employee_ids = data.get("employee_ids", [])
+    reviewer_id = data.get("reviewer_id")
+    
+    cycle = await db.appraisal_cycles.find_one({"id": cycle_id}, {"_id": 0})
+    if not cycle:
+        raise HTTPException(status_code=404, detail="Appraisal cycle not found")
+    
+    created_count = 0
+    for emp_id in employee_ids:
+        # Check if appraisal already exists
+        existing = await db.appraisals.find_one({"cycle_id": cycle_id, "employee_id": emp_id})
+        if existing:
+            continue
+        
+        # Get employee details
+        employee = await db.employees.find_one({"id": emp_id}, {"_id": 0})
+        if not employee:
+            continue
+        
+        # Get reviewer details if provided
+        reviewer_name = None
+        if reviewer_id:
+            reviewer = await db.employees.find_one({"id": reviewer_id}, {"_id": 0})
+            if reviewer:
+                reviewer_name = f"{reviewer.get('first_name', '')} {reviewer.get('last_name', '')}"
+        
+        appraisal = Appraisal(
+            cycle_id=cycle_id,
+            employee_id=emp_id,
+            employee_name=f"{employee.get('first_name', '')} {employee.get('last_name', '')}",
+            employee_email=employee.get("work_email") or employee.get("personal_email"),
+            department=employee.get("department"),
+            reviewer_id=reviewer_id,
+            reviewer_name=reviewer_name,
+            status="pending"
+        )
+        await db.appraisals.insert_one(appraisal.model_dump())
+        created_count += 1
+    
+    # Update cycle status to active if it was draft
+    if cycle.get("status") == "draft":
+        await db.appraisal_cycles.update_one({"id": cycle_id}, {"$set": {"status": "active"}})
+    
+    return {"message": f"Assigned {created_count} appraisals", "created_count": created_count}
+
+# ============= APPRAISALS =============
+
+@api_router.get("/appraisals")
+async def get_appraisals(cycle_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get all appraisals (admin) or assigned appraisals (employee)"""
+    query = {}
+    if cycle_id:
+        query["cycle_id"] = cycle_id
+    
+    # Non-admin users only see their own appraisals
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        # Find employee by user_id or email
+        employee = await db.employees.find_one(
+            {"$or": [{"user_id": current_user.id}, {"work_email": current_user.email}, {"personal_email": current_user.email}]},
+            {"_id": 0}
+        )
+        if employee:
+            query["employee_id"] = employee.get("id")
+        else:
+            return []
+    
+    appraisals = await db.appraisals.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    # Enrich with cycle info
+    for appraisal in appraisals:
+        cycle = await db.appraisal_cycles.find_one({"id": appraisal.get("cycle_id")}, {"_id": 0})
+        if cycle:
+            appraisal["cycle_name"] = cycle.get("name")
+            appraisal["cycle_type"] = cycle.get("cycle_type")
+            appraisal["questions"] = cycle.get("questions", [])
+            appraisal["rating_scale"] = cycle.get("rating_scale", 5)
+    
+    return appraisals
+
+@api_router.get("/appraisals/my")
+async def get_my_appraisals(current_user: User = Depends(get_current_user)):
+    """Get appraisals for the current user"""
+    # Find employee by user_id or email
+    employee = await db.employees.find_one(
+        {"$or": [{"user_id": current_user.id}, {"work_email": current_user.email}, {"personal_email": current_user.email}]},
+        {"_id": 0}
+    )
+    
+    if not employee:
+        return []
+    
+    appraisals = await db.appraisals.find({"employee_id": employee.get("id")}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Enrich with cycle info
+    for appraisal in appraisals:
+        cycle = await db.appraisal_cycles.find_one({"id": appraisal.get("cycle_id")}, {"_id": 0})
+        if cycle:
+            appraisal["cycle_name"] = cycle.get("name")
+            appraisal["cycle_type"] = cycle.get("cycle_type")
+            appraisal["questions"] = cycle.get("questions", [])
+            appraisal["rating_scale"] = cycle.get("rating_scale", 5)
+    
+    return appraisals
+
+@api_router.get("/appraisals/{appraisal_id}")
+async def get_appraisal(appraisal_id: str, current_user: User = Depends(get_current_user)):
+    """Get a single appraisal with full details"""
+    appraisal = await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+    if not appraisal:
+        raise HTTPException(status_code=404, detail="Appraisal not found")
+    
+    # Get cycle info
+    cycle = await db.appraisal_cycles.find_one({"id": appraisal.get("cycle_id")}, {"_id": 0})
+    if cycle:
+        appraisal["cycle_name"] = cycle.get("name")
+        appraisal["cycle_type"] = cycle.get("cycle_type")
+        appraisal["questions"] = cycle.get("questions", [])
+        appraisal["rating_scale"] = cycle.get("rating_scale", 5)
+    
+    return appraisal
+
+@api_router.post("/appraisals/{appraisal_id}/self-assessment")
+async def submit_self_assessment(appraisal_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Submit self-assessment for an appraisal"""
+    appraisal = await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+    if not appraisal:
+        raise HTTPException(status_code=404, detail="Appraisal not found")
+    
+    update_data = {
+        "self_assessment_answers": data.get("answers", []),
+        "self_overall_rating": data.get("overall_rating"),
+        "self_achievements": data.get("achievements"),
+        "self_challenges": data.get("challenges"),
+        "self_goals": data.get("goals"),
+        "self_submitted_at": datetime.now(timezone.utc).isoformat(),
+        "status": "manager_review",  # Move to manager review after self-assessment
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.appraisals.update_one({"id": appraisal_id}, {"$set": update_data})
+    return await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+
+@api_router.post("/appraisals/{appraisal_id}/manager-review")
+async def submit_manager_review(appraisal_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Submit manager review for an appraisal"""
+    appraisal = await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+    if not appraisal:
+        raise HTTPException(status_code=404, detail="Appraisal not found")
+    
+    # Calculate final rating (average of self and manager, or just manager if no self)
+    manager_rating = data.get("overall_rating")
+    self_rating = appraisal.get("self_overall_rating")
+    final_rating = manager_rating
+    if self_rating and manager_rating:
+        final_rating = round((float(self_rating) + float(manager_rating)) / 2, 1)
+    
+    update_data = {
+        "manager_answers": data.get("answers", []),
+        "manager_overall_rating": manager_rating,
+        "manager_feedback": data.get("feedback"),
+        "manager_strengths": data.get("strengths"),
+        "manager_improvements": data.get("improvements"),
+        "manager_recommendations": data.get("recommendations"),
+        "manager_submitted_at": datetime.now(timezone.utc).isoformat(),
+        "reviewer_id": current_user.id,
+        "final_rating": final_rating,
+        "final_comments": data.get("final_comments"),
+        "status": "completed",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Get reviewer name
+    employee = await db.employees.find_one(
+        {"$or": [{"user_id": current_user.id}, {"work_email": current_user.email}]},
+        {"_id": 0}
+    )
+    if employee:
+        update_data["reviewer_name"] = f"{employee.get('first_name', '')} {employee.get('last_name', '')}"
+    
+    await db.appraisals.update_one({"id": appraisal_id}, {"$set": update_data})
+    return await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+
+@api_router.post("/appraisals/{appraisal_id}/acknowledge")
+async def acknowledge_appraisal(appraisal_id: str, current_user: User = Depends(get_current_user)):
+    """Employee acknowledges their completed appraisal"""
+    appraisal = await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+    if not appraisal:
+        raise HTTPException(status_code=404, detail="Appraisal not found")
+    
+    update_data = {
+        "acknowledged_by_employee": True,
+        "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.appraisals.update_one({"id": appraisal_id}, {"$set": update_data})
+    return await db.appraisals.find_one({"id": appraisal_id}, {"_id": 0})
+
+@api_router.delete("/appraisals/{appraisal_id}")
+async def delete_appraisal(appraisal_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an appraisal"""
+    result = await db.appraisals.delete_one({"id": appraisal_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Appraisal not found")
+    return {"message": "Appraisal deleted"}
+
+@api_router.get("/appraisals/stats/summary")
+async def get_appraisal_stats(current_user: User = Depends(get_current_user)):
+    """Get appraisal statistics"""
+    total = await db.appraisals.count_documents({})
+    pending = await db.appraisals.count_documents({"status": "pending"})
+    self_assessment = await db.appraisals.count_documents({"status": "self_assessment"})
+    manager_review = await db.appraisals.count_documents({"status": "manager_review"})
+    completed = await db.appraisals.count_documents({"status": "completed"})
+    
+    # Calculate average rating for completed appraisals
+    completed_appraisals = await db.appraisals.find({"status": "completed", "final_rating": {"$ne": None}}, {"final_rating": 1}).to_list(1000)
+    avg_rating = 0
+    if completed_appraisals:
+        ratings = [a.get("final_rating", 0) for a in completed_appraisals if a.get("final_rating")]
+        avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else 0
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "self_assessment": self_assessment,
+        "manager_review": manager_review,
+        "completed": completed,
+        "average_rating": avg_rating
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
