@@ -2396,6 +2396,234 @@ async def delete_onboarding(onboarding_id: str, current_user: User = Depends(get
         raise HTTPException(status_code=404, detail="Onboarding not found")
     return {"message": "Onboarding deleted"}
 
+# ============= OFFBOARDING ENDPOINTS =============
+
+@api_router.get("/offboarding-templates")
+async def get_offboarding_templates(department_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if department_id:
+        query["department_id"] = department_id
+    templates = await db.offboarding_templates.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return templates
+
+@api_router.get("/offboarding-templates/{template_id}")
+async def get_offboarding_template(template_id: str, current_user: User = Depends(get_current_user)):
+    template = await db.offboarding_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+@api_router.post("/offboarding-templates")
+async def create_offboarding_template(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    template = OffboardingTemplate(**data)
+    await db.offboarding_templates.insert_one(template.model_dump())
+    return template.model_dump()
+
+@api_router.put("/offboarding-templates/{template_id}")
+async def update_offboarding_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.offboarding_templates.update_one({"id": template_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return await db.offboarding_templates.find_one({"id": template_id}, {"_id": 0})
+
+@api_router.delete("/offboarding-templates/{template_id}")
+async def delete_offboarding_template(template_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.offboarding_templates.delete_one({"id": template_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"message": "Template deleted"}
+
+@api_router.get("/offboardings")
+async def get_offboardings(status: Optional[str] = None, employee_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if status:
+        query["status"] = status
+    if employee_id:
+        query["employee_id"] = employee_id
+    offboardings = await db.offboardings.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return offboardings
+
+@api_router.get("/offboardings/my")
+async def get_my_offboarding(current_user: User = Depends(get_current_user)):
+    """Get the current user's offboarding (for employees)"""
+    employee = await db.employees.find_one({
+        "$or": [
+            {"email": current_user.email},
+            {"work_email": current_user.email},
+            {"personal_email": current_user.email}
+        ]
+    }, {"_id": 0})
+    if not employee:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return None
+    offboarding = await db.offboardings.find_one(
+        {"employee_id": employee["id"], "status": {"$in": ["in_progress", "not_started", "on_hold"]}},
+        {"_id": 0}
+    )
+    return offboarding
+
+@api_router.get("/offboardings/stats")
+async def get_offboarding_stats(current_user: User = Depends(get_current_user)):
+    """Get offboarding statistics"""
+    offboardings = await db.offboardings.find({}, {"_id": 0}).to_list(1000)
+    
+    total_tasks = 0
+    completed_tasks = 0
+    overdue_tasks = 0
+    
+    for ob in offboardings:
+        tasks = ob.get("tasks", [])
+        total_tasks += len(tasks)
+        completed_tasks += len([t for t in tasks if t.get("completed")])
+        
+        # Check overdue
+        if ob.get("last_working_date"):
+            last_date = datetime.fromisoformat(ob["last_working_date"].replace('Z', '+00:00'))
+            for task in tasks:
+                if not task.get("completed"):
+                    due_day = task.get("due_day", 1)
+                    task_due = last_date - timedelta(days=ob.get("duration_days", 14) - due_day)
+                    if task_due < datetime.now(timezone.utc):
+                        overdue_tasks += 1
+    
+    return {
+        "total": len(offboardings),
+        "in_progress": len([o for o in offboardings if o.get("status") == "in_progress"]),
+        "completed": len([o for o in offboardings if o.get("status") == "completed"]),
+        "on_hold": len([o for o in offboardings if o.get("status") == "on_hold"]),
+        "not_started": len([o for o in offboardings if o.get("status") == "not_started"]),
+        "total_tasks": total_tasks,
+        "completed_tasks": completed_tasks,
+        "overdue_tasks": overdue_tasks,
+        "avg_completion_rate": round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0)
+    }
+
+@api_router.get("/offboardings/{offboarding_id}")
+async def get_offboarding(offboarding_id: str, current_user: User = Depends(get_current_user)):
+    offboarding = await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+    if not offboarding:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    return offboarding
+
+@api_router.post("/offboardings")
+async def create_offboarding(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    # If template_id provided, copy tasks from template
+    template_id = data.get("template_id")
+    if template_id:
+        template = await db.offboarding_templates.find_one({"id": template_id}, {"_id": 0})
+        if template:
+            data["template_name"] = template.get("name")
+            data["duration_days"] = template.get("duration_days", 14)
+            data["exit_message"] = template.get("exit_message")
+            # Copy tasks with completion tracking
+            template_tasks = template.get("tasks", [])
+            data["tasks"] = [
+                {**task, "completed": False, "completed_at": None, "completed_by": None, "completion_notes": None}
+                for task in template_tasks
+            ]
+    
+    offboarding = Offboarding(**data)
+    await db.offboardings.insert_one(offboarding.model_dump())
+    return offboarding.model_dump()
+
+@api_router.put("/offboardings/{offboarding_id}")
+async def update_offboarding(offboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Handle status change to completed
+    if data.get("status") == "completed" and "completed_at" not in data:
+        data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.offboardings.update_one({"id": offboarding_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    return await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+
+@api_router.put("/offboardings/{offboarding_id}/tasks/{task_index}")
+async def update_offboarding_task(offboarding_id: str, task_index: int, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    offboarding = await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+    if not offboarding:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    
+    tasks = offboarding.get("tasks", [])
+    if task_index < 0 or task_index >= len(tasks):
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update task
+    tasks[task_index]["completed"] = data.get("completed", tasks[task_index].get("completed", False))
+    if tasks[task_index]["completed"]:
+        tasks[task_index]["completed_at"] = datetime.now(timezone.utc).isoformat()
+        tasks[task_index]["completed_by"] = current_user.id
+        if data.get("completion_notes"):
+            tasks[task_index]["completion_notes"] = data["completion_notes"]
+    else:
+        tasks[task_index]["completed_at"] = None
+        tasks[task_index]["completed_by"] = None
+    
+    update_data = {"tasks": tasks, "updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    # Check if all tasks completed to auto-complete offboarding
+    all_completed = all(t.get("completed", False) for t in tasks)
+    if all_completed and offboarding.get("status") == "in_progress":
+        update_data["status"] = "completed"
+        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.offboardings.update_one({"id": offboarding_id}, {"$set": update_data})
+    return await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+
+@api_router.put("/offboardings/{offboarding_id}/clearance")
+async def update_offboarding_clearance(offboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update clearance status for offboarding"""
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    for field in ["clearance_hr", "clearance_it", "clearance_finance", "clearance_manager", "clearance_admin"]:
+        if field in data:
+            update_data[field] = data[field]
+    
+    result = await db.offboardings.update_one({"id": offboarding_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    return await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+
+@api_router.put("/offboardings/{offboarding_id}/exit-interview")
+async def update_exit_interview(offboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update exit interview details"""
+    update_data = {
+        "exit_interview_conducted": data.get("conducted", False),
+        "exit_interview_date": data.get("date"),
+        "exit_interview_notes": data.get("notes"),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.offboardings.update_one({"id": offboarding_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    return await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+
+@api_router.post("/offboardings/{offboarding_id}/feedback")
+async def submit_offboarding_feedback(offboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Submit feedback for offboarding (exit survey)"""
+    result = await db.offboardings.update_one(
+        {"id": offboarding_id},
+        {"$set": {
+            "feedback": data.get("feedback"),
+            "feedback_rating": data.get("rating"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    return await db.offboardings.find_one({"id": offboarding_id}, {"_id": 0})
+
+@api_router.delete("/offboardings/{offboarding_id}")
+async def delete_offboarding(offboarding_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.offboardings.delete_one({"id": offboarding_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Offboarding not found")
+    return {"message": "Offboarding deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
