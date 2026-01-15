@@ -264,7 +264,7 @@ const EmployeesNew = () => {
       // Fetch leave balance for this employee
       let leaveBalance = null;
       try {
-        const balanceResponse = await axios.get(`${API}/leave-balances/employee/${emp.id}`);
+        const balanceResponse = await axios.get(`${API}/leave-balances/${emp.id}`);
         leaveBalance = balanceResponse.data;
       } catch (error) {
         // No leave balance found, will use defaults
