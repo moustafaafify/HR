@@ -3,25 +3,27 @@ import ReactDOM from "react-dom/client";
 import "@/index.css";
 import App from "@/App";
 
-// Suppress ResizeObserver loop error (benign error from Radix UI components)
-// This error doesn't affect functionality and is safe to ignore
-const isResizeObserverError = (message) => {
-  return message?.includes?.('ResizeObserver loop') || 
-         message === 'ResizeObserver loop completed with undelivered notifications.' ||
-         message === 'ResizeObserver loop limit exceeded';
-};
-
-// Handle window.onerror
-window.onerror = function (message, source, lineno, colno, error) {
-  if (isResizeObserverError(message)) {
-    return true; // Suppress the error
+// Patch ResizeObserver to prevent the "loop completed" error
+// This error is benign and caused by Radix UI components
+const RO = window.ResizeObserver;
+window.ResizeObserver = class ResizeObserver extends RO {
+  constructor(callback) {
+    super((entries, observer) => {
+      // Use requestAnimationFrame to defer the callback
+      window.requestAnimationFrame(() => {
+        try {
+          callback(entries, observer);
+        } catch (e) {
+          // Silently ignore ResizeObserver errors
+        }
+      });
+    });
   }
-  return false;
 };
 
-// Handle unhandled errors via event listener
-window.addEventListener('error', function(event) {
-  if (isResizeObserverError(event.message)) {
+// Suppress ResizeObserver errors from window.onerror
+window.addEventListener('error', (event) => {
+  if (event.message?.includes?.('ResizeObserver')) {
     event.stopImmediatePropagation();
     event.preventDefault();
     return true;
@@ -31,8 +33,8 @@ window.addEventListener('error', function(event) {
 // Suppress console.error for ResizeObserver
 const originalConsoleError = console.error;
 console.error = (...args) => {
-  const errorString = args[0]?.toString?.() || '';
-  if (isResizeObserverError(errorString)) {
+  const errorString = String(args[0] || '');
+  if (errorString.includes('ResizeObserver')) {
     return;
   }
   originalConsoleError.apply(console, args);
