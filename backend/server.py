@@ -4669,6 +4669,433 @@ async def get_department_org_chart(department_id: str, current_user: User = Depe
         "count": len(nodes)
     }
 
+# ============= PAYROLL - SALARY STRUCTURES =============
+
+@api_router.get("/payroll/salary-structures")
+async def get_salary_structures(current_user: User = Depends(get_current_user)):
+    """Get all salary structures (admin) or own salary structure (employee)"""
+    if current_user.role in ["super_admin", "corp_admin"]:
+        structures = await db.salary_structures.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    else:
+        # Find employee by user_id or email
+        employee = await db.employees.find_one(
+            {"$or": [{"user_id": current_user.id}, {"work_email": current_user.email}, {"personal_email": current_user.email}]},
+            {"_id": 0}
+        )
+        if not employee:
+            return []
+        structures = await db.salary_structures.find({"employee_id": employee.get("id")}, {"_id": 0}).to_list(10)
+    return structures
+
+@api_router.get("/payroll/salary-structures/{employee_id}")
+async def get_employee_salary_structure(employee_id: str, current_user: User = Depends(get_current_user)):
+    """Get salary structure for a specific employee"""
+    structure = await db.salary_structures.find_one({"employee_id": employee_id, "status": "active"}, {"_id": 0})
+    return structure
+
+@api_router.post("/payroll/salary-structures")
+async def create_salary_structure(structure: SalaryStructure, current_user: User = Depends(get_current_user)):
+    """Create or update salary structure for an employee"""
+    structure_dict = structure.model_dump()
+    
+    # Get employee details
+    employee = await db.employees.find_one({"id": structure.employee_id}, {"_id": 0})
+    if employee:
+        first = employee.get("first_name") or ""
+        last = employee.get("last_name") or ""
+        name = f"{first} {last}".strip()
+        if not name:
+            email = employee.get("work_email") or employee.get("personal_email") or ""
+            name = email.split("@")[0].replace(".", " ").replace("_", " ").title() if email else "Unknown"
+        structure_dict["employee_name"] = name
+        structure_dict["employee_email"] = employee.get("work_email") or employee.get("personal_email")
+        structure_dict["department"] = employee.get("department")
+    
+    # Deactivate previous structure
+    await db.salary_structures.update_many(
+        {"employee_id": structure.employee_id, "status": "active"},
+        {"$set": {"status": "inactive", "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await db.salary_structures.insert_one(structure_dict)
+    return {k: v for k, v in structure_dict.items() if k != "_id"}
+
+@api_router.put("/payroll/salary-structures/{structure_id}")
+async def update_salary_structure(structure_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a salary structure"""
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.salary_structures.update_one({"id": structure_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Salary structure not found")
+    return await db.salary_structures.find_one({"id": structure_id}, {"_id": 0})
+
+@api_router.delete("/payroll/salary-structures/{structure_id}")
+async def delete_salary_structure(structure_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a salary structure"""
+    result = await db.salary_structures.delete_one({"id": structure_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Salary structure not found")
+    return {"message": "Salary structure deleted"}
+
+# ============= PAYROLL - PAYSLIPS =============
+
+@api_router.get("/payroll/payslips")
+async def get_payslips(pay_period: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get all payslips (admin) or own payslips (employee)"""
+    query = {}
+    if pay_period:
+        query["pay_period"] = pay_period
+    if status:
+        query["status"] = status
+    
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        employee = await db.employees.find_one(
+            {"$or": [{"user_id": current_user.id}, {"work_email": current_user.email}, {"personal_email": current_user.email}]},
+            {"_id": 0}
+        )
+        if not employee:
+            return []
+        query["employee_id"] = employee.get("id")
+    
+    payslips = await db.payslips.find(query, {"_id": 0}).sort("payment_date", -1).to_list(500)
+    return payslips
+
+@api_router.get("/payroll/payslips/my")
+async def get_my_payslips(current_user: User = Depends(get_current_user)):
+    """Get payslips for the current user"""
+    employee = await db.employees.find_one(
+        {"$or": [{"user_id": current_user.id}, {"work_email": current_user.email}, {"personal_email": current_user.email}]},
+        {"_id": 0}
+    )
+    if not employee:
+        return []
+    
+    payslips = await db.payslips.find(
+        {"employee_id": employee.get("id"), "status": {"$in": ["approved", "paid"]}},
+        {"_id": 0}
+    ).sort("payment_date", -1).to_list(100)
+    return payslips
+
+@api_router.get("/payroll/payslips/{payslip_id}")
+async def get_payslip(payslip_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific payslip"""
+    payslip = await db.payslips.find_one({"id": payslip_id}, {"_id": 0})
+    if not payslip:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+    return payslip
+
+@api_router.post("/payroll/payslips")
+async def create_payslip(payslip: Payslip, current_user: User = Depends(get_current_user)):
+    """Create a payslip"""
+    payslip_dict = payslip.model_dump()
+    
+    # Calculate gross and net salary
+    gross = (payslip.basic_salary + payslip.housing_allowance + payslip.transport_allowance +
+             payslip.meal_allowance + payslip.phone_allowance + payslip.other_allowances +
+             payslip.overtime_pay + payslip.bonus + payslip.commission)
+    
+    deductions = (payslip.tax_amount + payslip.social_security + payslip.health_insurance +
+                  payslip.pension_contribution + payslip.loan_deduction + payslip.other_deductions)
+    
+    payslip_dict["gross_salary"] = gross
+    payslip_dict["total_deductions"] = deductions
+    payslip_dict["net_salary"] = gross - deductions
+    
+    await db.payslips.insert_one(payslip_dict)
+    return {k: v for k, v in payslip_dict.items() if k != "_id"}
+
+@api_router.put("/payroll/payslips/{payslip_id}")
+async def update_payslip(payslip_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a payslip"""
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Recalculate if salary components changed
+    if any(k in data for k in ["basic_salary", "housing_allowance", "transport_allowance", "bonus"]):
+        payslip = await db.payslips.find_one({"id": payslip_id}, {"_id": 0})
+        if payslip:
+            for k, v in data.items():
+                payslip[k] = v
+            
+            gross = (payslip.get("basic_salary", 0) + payslip.get("housing_allowance", 0) + 
+                     payslip.get("transport_allowance", 0) + payslip.get("meal_allowance", 0) + 
+                     payslip.get("phone_allowance", 0) + payslip.get("other_allowances", 0) +
+                     payslip.get("overtime_pay", 0) + payslip.get("bonus", 0) + payslip.get("commission", 0))
+            
+            deductions = (payslip.get("tax_amount", 0) + payslip.get("social_security", 0) + 
+                          payslip.get("health_insurance", 0) + payslip.get("pension_contribution", 0) + 
+                          payslip.get("loan_deduction", 0) + payslip.get("other_deductions", 0))
+            
+            data["gross_salary"] = gross
+            data["total_deductions"] = deductions
+            data["net_salary"] = gross - deductions
+    
+    result = await db.payslips.update_one({"id": payslip_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+    return await db.payslips.find_one({"id": payslip_id}, {"_id": 0})
+
+@api_router.post("/payroll/payslips/{payslip_id}/approve")
+async def approve_payslip(payslip_id: str, current_user: User = Depends(get_current_user)):
+    """Approve a payslip"""
+    result = await db.payslips.update_one(
+        {"id": payslip_id},
+        {"$set": {
+            "status": "approved",
+            "approved_by": current_user.id,
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+    return await db.payslips.find_one({"id": payslip_id}, {"_id": 0})
+
+@api_router.post("/payroll/payslips/{payslip_id}/mark-paid")
+async def mark_payslip_paid(payslip_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Mark a payslip as paid"""
+    result = await db.payslips.update_one(
+        {"id": payslip_id},
+        {"$set": {
+            "status": "paid",
+            "paid_at": datetime.now(timezone.utc).isoformat(),
+            "payment_reference": data.get("payment_reference"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+    return await db.payslips.find_one({"id": payslip_id}, {"_id": 0})
+
+@api_router.delete("/payroll/payslips/{payslip_id}")
+async def delete_payslip(payslip_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a payslip"""
+    result = await db.payslips.delete_one({"id": payslip_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+    return {"message": "Payslip deleted"}
+
+# ============= PAYROLL - PAYROLL RUNS =============
+
+@api_router.get("/payroll/runs")
+async def get_payroll_runs(current_user: User = Depends(get_current_user)):
+    """Get all payroll runs"""
+    runs = await db.payroll_runs.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return runs
+
+@api_router.get("/payroll/runs/{run_id}")
+async def get_payroll_run(run_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific payroll run with its payslips"""
+    run = await db.payroll_runs.find_one({"id": run_id}, {"_id": 0})
+    if not run:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+    
+    payslips = await db.payslips.find({"pay_period": run.get("pay_period")}, {"_id": 0}).to_list(500)
+    run["payslips"] = payslips
+    return run
+
+@api_router.post("/payroll/runs")
+async def create_payroll_run(run: PayrollRun, current_user: User = Depends(get_current_user)):
+    """Create a new payroll run"""
+    run_dict = run.model_dump()
+    run_dict["created_by"] = current_user.id
+    await db.payroll_runs.insert_one(run_dict)
+    return {k: v for k, v in run_dict.items() if k != "_id"}
+
+@api_router.post("/payroll/runs/{run_id}/generate")
+async def generate_payroll(run_id: str, current_user: User = Depends(get_current_user)):
+    """Generate payslips for all employees with active salary structures"""
+    run = await db.payroll_runs.find_one({"id": run_id}, {"_id": 0})
+    if not run:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+    
+    # Get all active salary structures
+    structures = await db.salary_structures.find({"status": "active"}, {"_id": 0}).to_list(500)
+    
+    created_count = 0
+    total_gross = 0
+    total_deductions = 0
+    total_net = 0
+    
+    for structure in structures:
+        # Check if payslip already exists for this period
+        existing = await db.payslips.find_one({
+            "employee_id": structure.get("employee_id"),
+            "pay_period": run.get("pay_period")
+        })
+        if existing:
+            continue
+        
+        # Calculate tax amount
+        gross = (structure.get("basic_salary", 0) + structure.get("housing_allowance", 0) +
+                 structure.get("transport_allowance", 0) + structure.get("meal_allowance", 0) +
+                 structure.get("phone_allowance", 0) + structure.get("other_allowances", 0))
+        
+        tax_amount = gross * (structure.get("tax_rate", 0) / 100)
+        
+        deductions = (tax_amount + structure.get("social_security", 0) +
+                      structure.get("health_insurance", 0) + structure.get("pension_contribution", 0) +
+                      structure.get("other_deductions", 0))
+        
+        net = gross - deductions
+        
+        payslip = Payslip(
+            employee_id=structure.get("employee_id"),
+            employee_name=structure.get("employee_name"),
+            employee_email=structure.get("employee_email"),
+            department=structure.get("department"),
+            pay_period=run.get("pay_period"),
+            pay_period_start=run.get("pay_period_start"),
+            pay_period_end=run.get("pay_period_end"),
+            payment_date=run.get("payment_date"),
+            basic_salary=structure.get("basic_salary", 0),
+            housing_allowance=structure.get("housing_allowance", 0),
+            transport_allowance=structure.get("transport_allowance", 0),
+            meal_allowance=structure.get("meal_allowance", 0),
+            phone_allowance=structure.get("phone_allowance", 0),
+            other_allowances=structure.get("other_allowances", 0),
+            gross_salary=gross,
+            tax_amount=tax_amount,
+            social_security=structure.get("social_security", 0),
+            health_insurance=structure.get("health_insurance", 0),
+            pension_contribution=structure.get("pension_contribution", 0),
+            other_deductions=structure.get("other_deductions", 0),
+            total_deductions=deductions,
+            net_salary=net,
+            currency=structure.get("currency", "USD"),
+            payment_method=structure.get("payment_method"),
+            status="draft"
+        )
+        
+        await db.payslips.insert_one(payslip.model_dump())
+        created_count += 1
+        total_gross += gross
+        total_deductions += deductions
+        total_net += net
+    
+    # Update payroll run totals
+    await db.payroll_runs.update_one(
+        {"id": run_id},
+        {"$set": {
+            "total_employees": created_count,
+            "total_gross": total_gross,
+            "total_deductions": total_deductions,
+            "total_net": total_net,
+            "status": "processing",
+            "processed_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "message": f"Generated {created_count} payslips",
+        "total_employees": created_count,
+        "total_gross": total_gross,
+        "total_net": total_net
+    }
+
+@api_router.post("/payroll/runs/{run_id}/approve-all")
+async def approve_all_payslips(run_id: str, current_user: User = Depends(get_current_user)):
+    """Approve all payslips in a payroll run"""
+    run = await db.payroll_runs.find_one({"id": run_id}, {"_id": 0})
+    if not run:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+    
+    result = await db.payslips.update_many(
+        {"pay_period": run.get("pay_period"), "status": "draft"},
+        {"$set": {
+            "status": "approved",
+            "approved_by": current_user.id,
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    await db.payroll_runs.update_one(
+        {"id": run_id},
+        {"$set": {
+            "status": "approved",
+            "approved_by": current_user.id,
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": f"Approved {result.modified_count} payslips"}
+
+@api_router.post("/payroll/runs/{run_id}/mark-paid")
+async def mark_all_payslips_paid(run_id: str, current_user: User = Depends(get_current_user)):
+    """Mark all approved payslips in a run as paid"""
+    run = await db.payroll_runs.find_one({"id": run_id}, {"_id": 0})
+    if not run:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+    
+    result = await db.payslips.update_many(
+        {"pay_period": run.get("pay_period"), "status": "approved"},
+        {"$set": {
+            "status": "paid",
+            "paid_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    await db.payroll_runs.update_one(
+        {"id": run_id},
+        {"$set": {
+            "status": "paid",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": f"Marked {result.modified_count} payslips as paid"}
+
+@api_router.delete("/payroll/runs/{run_id}")
+async def delete_payroll_run(run_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a payroll run and its payslips"""
+    run = await db.payroll_runs.find_one({"id": run_id}, {"_id": 0})
+    if not run:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+    
+    # Delete associated payslips
+    await db.payslips.delete_many({"pay_period": run.get("pay_period")})
+    
+    result = await db.payroll_runs.delete_one({"id": run_id})
+    return {"message": "Payroll run deleted"}
+
+# ============= PAYROLL - STATISTICS =============
+
+@api_router.get("/payroll/stats")
+async def get_payroll_stats(current_user: User = Depends(get_current_user)):
+    """Get payroll statistics"""
+    total_structures = await db.salary_structures.count_documents({"status": "active"})
+    total_payslips = await db.payslips.count_documents({})
+    paid_payslips = await db.payslips.count_documents({"status": "paid"})
+    pending_payslips = await db.payslips.count_documents({"status": {"$in": ["draft", "approved"]}})
+    
+    # Calculate total paid this month
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    month_payslips = await db.payslips.find(
+        {"pay_period": current_month, "status": "paid"},
+        {"net_salary": 1}
+    ).to_list(500)
+    total_paid_month = sum(p.get("net_salary", 0) for p in month_payslips)
+    
+    # Calculate total paid YTD
+    current_year = datetime.now(timezone.utc).strftime("%Y")
+    year_payslips = await db.payslips.find(
+        {"pay_period": {"$regex": f"^{current_year}"}, "status": "paid"},
+        {"net_salary": 1}
+    ).to_list(5000)
+    total_paid_ytd = sum(p.get("net_salary", 0) for p in year_payslips)
+    
+    return {
+        "total_salary_structures": total_structures,
+        "total_payslips": total_payslips,
+        "paid_payslips": paid_payslips,
+        "pending_payslips": pending_payslips,
+        "total_paid_this_month": total_paid_month,
+        "total_paid_ytd": total_paid_ytd
+    }
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
