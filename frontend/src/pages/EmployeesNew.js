@@ -194,15 +194,8 @@ const EmployeesNew = () => {
           paternity_leave: parseFloat(submitData.paternity_leave) || 14
         };
         
-        try {
-          // Try to update existing leave balance or create new one
-          await axios.put(`${API}/leave-balances/employee/${editingEmp.id}`, leaveBalanceData);
-        } catch (balanceError) {
-          // If no existing balance, create one
-          if (balanceError.response?.status === 404) {
-            await axios.post(`${API}/leave-balances`, leaveBalanceData);
-          }
-        }
+        // Update leave balance (upsert is handled by backend)
+        await axios.put(`${API}/leave-balances/${editingEmp.id}`, leaveBalanceData);
         
         toast.success('Employee updated successfully');
       } else {
