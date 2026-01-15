@@ -74,6 +74,7 @@ function AppRoutes() {
         <Route path="assets" element={<Assets />} />
         <Route path="communications" element={<Communications />} />
         <Route path="complaints" element={<Complaints />} />
+        <Route path="disciplinary" element={<Disciplinary />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />

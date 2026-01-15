@@ -30,7 +30,8 @@ import {
   Wallet,
   Package,
   Megaphone,
-  AlertOctagon
+  AlertOctagon,
+  Gavel
 } from 'lucide-react';
 
 const Layout = () => {
