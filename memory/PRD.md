@@ -330,6 +330,9 @@ Build a full-stack HR platform with:
 2. **Payroll Module (P0)** - Initial implementation complete. UI functional, needs more testing.
 3. **Organization Chart Module** - Implemented with tree, grid, and list views.
 4. **Appraisals Module** - Full implementation with analytics and self-assessment workflow.
+5. **Asset Management Module** - Full CRUD for assets, categories, assignments, and requests.
+6. **Communications Module** - Announcements, Memos (with acknowledgment), and Surveys (with results aggregation).
+7. **Complaints Management Module** - Submit/track complaints (anonymous supported), assign, investigate, resolve workflow.
 
 ## Upcoming Tasks (P1)
 1. **Test & Finalize Payroll Module** - Create salary structure, run payroll, verify payslips
