@@ -27,20 +27,28 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [employeesExpanded, setEmployeesExpanded] = useState(true);
 
-  const organizationItems = [
+  // Role-based access control
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
+  const isManager = user?.role === 'branch_manager' || isAdmin;
+  const isEmployee = user?.role === 'employee';
+
+  // Only admins can see organization structure
+  const organizationItems = isAdmin ? [
     { path: '/corporations', icon: Building2, label: t('corporations') },
     { path: '/branches', icon: GitBranch, label: t('branches'), nested: true },
-  ];
+  ] : [];
 
-  const employeeSubItems = [
+  // Only managers and admins can see departments/divisions
+  const employeeSubItems = isManager ? [
     { path: '/departments', icon: FolderTree, label: t('departments') },
     { path: '/divisions', icon: Layers, label: t('divisions') },
-  ];
+  ] : [];
 
+  // Everyone can see leaves/attendance, but performance only for managers+
   const peopleItems = [
     { path: '/leaves', icon: Calendar, label: t('leaves') },
     { path: '/attendance', icon: Clock, label: t('attendance') },
-    { path: '/performance', icon: BarChart3, label: t('performance') },
+    ...(isManager ? [{ path: '/performance', icon: BarChart3, label: t('performance') }] : []),
   ];
 
   const menuItems = [
