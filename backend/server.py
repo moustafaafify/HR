@@ -798,7 +798,73 @@ async def delete_leave(leave_id: str, current_user: User = Depends(get_current_u
         raise HTTPException(status_code=404, detail="Leave not found")
     return {"message": "Leave request deleted"}
 
+@api_router.get("/leaves/export")
+async def export_leaves(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    leave_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export leave requests as JSON (frontend will convert to CSV)"""
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    if leave_type:
+        query["leave_type"] = leave_type
+    if start_date and end_date:
+        query["start_date"] = {"$gte": start_date, "$lte": end_date}
+    elif start_date:
+        query["start_date"] = {"$gte": start_date}
+    elif end_date:
+        query["start_date"] = {"$lte": end_date}
+    
+    records = await db.leaves.find(query, {"_id": 0}).sort("start_date", -1).to_list(10000)
+    
+    # Get employee names for the export
+    employee_ids = list(set(r.get("employee_id") for r in records))
+    employees = await db.employees.find({"id": {"$in": employee_ids}}, {"_id": 0, "id": 1, "full_name": 1}).to_list(1000)
+    emp_map = {e["id"]: e["full_name"] for e in employees}
+    
+    # Enrich records with employee names
+    for record in records:
+        record["employee_name"] = emp_map.get(record.get("employee_id"), "Unknown")
+    
+    return {"records": records, "total": len(records)}
+
 # ============= LEAVE BALANCE ROUTES =============
+
+@api_router.get("/leave-balances/export")
+async def export_leave_balances(
+    year: Optional[int] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export leave balances as JSON (frontend will convert to CSV)"""
+    if year is None:
+        year = datetime.now().year
+    
+    balances = await db.leave_balances.find({"year": year}, {"_id": 0}).to_list(10000)
+    
+    # Get employee names for the export
+    employee_ids = list(set(b.get("employee_id") for b in balances))
+    employees = await db.employees.find({"id": {"$in": employee_ids}}, {"_id": 0, "id": 1, "full_name": 1, "department_id": 1}).to_list(1000)
+    emp_map = {e["id"]: {"name": e["full_name"], "department_id": e.get("department_id")} for e in employees}
+    
+    # Get department names
+    dept_ids = list(set(e.get("department_id") for e in employees if e.get("department_id")))
+    departments = await db.departments.find({"id": {"$in": dept_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    dept_map = {d["id"]: d["name"] for d in departments}
+    
+    # Enrich records
+    for balance in balances:
+        emp_info = emp_map.get(balance.get("employee_id"), {"name": "Unknown", "department_id": None})
+        balance["employee_name"] = emp_info["name"]
+        balance["department_name"] = dept_map.get(emp_info.get("department_id"), "-")
+    
+    return {"records": balances, "total": len(balances), "year": year}
 
 @api_router.get("/leave-balances/{employee_id}")
 async def get_leave_balance(employee_id: str, year: Optional[int] = None, current_user: User = Depends(get_current_user)):
