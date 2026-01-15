@@ -60,7 +60,10 @@ const Leaves = () => {
   const [balanceForm, setBalanceForm] = useState({
     annual_leave: 20,
     sick_leave: 10,
-    personal_leave: 5
+    personal_leave: 5,
+    maternity_leave: 90,
+    paternity_leave: 14,
+    bereavement_leave: 5
   });
 
   // Role-based access
