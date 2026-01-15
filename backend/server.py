@@ -1784,6 +1784,84 @@ async def initialize_default_roles(current_user: User = Depends(get_current_user
     
     return {"message": f"Initialized {len(default_roles)} default roles"}
 
+# ============= RECRUITMENT ROUTES =============
+
+@api_router.get("/jobs")
+async def get_jobs(status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if status:
+        query["status"] = status
+    jobs = await db.jobs.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return jobs
+
+@api_router.get("/jobs/{job_id}")
+async def get_job(job_id: str, current_user: User = Depends(get_current_user)):
+    job = await db.jobs.find_one({"id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+@api_router.post("/jobs")
+async def create_job(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    job = Job(**data)
+    await db.jobs.insert_one(job.model_dump())
+    return job.model_dump()
+
+@api_router.put("/jobs/{job_id}")
+async def update_job(job_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.jobs.update_one({"id": job_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return await db.jobs.find_one({"id": job_id}, {"_id": 0})
+
+@api_router.delete("/jobs/{job_id}")
+async def delete_job(job_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.jobs.delete_one({"id": job_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Job not found")
+    # Also delete related applications
+    await db.applications.delete_many({"job_id": job_id})
+    return {"message": "Job deleted"}
+
+@api_router.get("/applications")
+async def get_applications(job_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if job_id:
+        query["job_id"] = job_id
+    if status:
+        query["status"] = status
+    applications = await db.applications.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return applications
+
+@api_router.get("/applications/{application_id}")
+async def get_application(application_id: str, current_user: User = Depends(get_current_user)):
+    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return application
+
+@api_router.post("/applications")
+async def create_application(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    application = Application(**data)
+    await db.applications.insert_one(application.model_dump())
+    return application.model_dump()
+
+@api_router.put("/applications/{application_id}")
+async def update_application(application_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.applications.update_one({"id": application_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return await db.applications.find_one({"id": application_id}, {"_id": 0})
+
+@api_router.delete("/applications/{application_id}")
+async def delete_application(application_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.applications.delete_one({"id": application_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"message": "Application deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
