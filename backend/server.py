@@ -37,6 +37,9 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
+# Mount static files for uploads
+app.mount("/uploads", StaticFiles(directory=str(ROOT_DIR / "uploads")), name="uploads")
+
 # ============= MODELS =============
 
 class UserRole:
