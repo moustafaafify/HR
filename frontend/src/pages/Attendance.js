@@ -754,6 +754,15 @@ const Attendance = () => {
             <Clock size={16} />
             Attendance Records
           </TabsTrigger>
+          <TabsTrigger value="corrections" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <AlertCircle size={16} />
+            Time Corrections
+            {corrections.filter(c => c.status === 'pending').length > 0 && (
+              <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
+                {corrections.filter(c => c.status === 'pending').length}
+              </span>
+            )}
+          </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="schedules" className="rounded-lg flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <CalendarDays size={16} />
