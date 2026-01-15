@@ -972,6 +972,17 @@ const Attendance = () => {
                               </button>
                             </td>
                           )}
+                          {!isManager && currentEmployee && record.employee_id === currentEmployee.id && (
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => openCorrectionDialog(record)}
+                                className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-all flex items-center gap-1"
+                              >
+                                <AlertCircle size={14} />
+                                Request Correction
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })
