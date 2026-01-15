@@ -70,10 +70,12 @@ const STATUS_CONFIG = [
 const Documents = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
+  const [employeeTab, setEmployeeTab] = useState('submitted');
   
   // Data
   const [documents, setDocuments] = useState([]);
   const [myDocuments, setMyDocuments] = useState([]);
+  const [assignedDocuments, setAssignedDocuments] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState(null);
   
@@ -83,6 +85,7 @@ const Documents = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
   const [resubmitDialogOpen, setResubmitDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   
   // Selected/Editing
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -106,6 +109,18 @@ const Documents = () => {
     tags: ''
   });
   
+  // Assignment form for admin
+  const [assignForm, setAssignForm] = useState({
+    title: '',
+    description: '',
+    document_type: 'policy',
+    category: 'hr',
+    document_url: '',
+    priority: 'normal',
+    due_date: '',
+    employee_ids: []
+  });
+  
   const [rejectReason, setRejectReason] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
   const [resubmitForm, setResubmitForm] = useState({ document_url: '', description: '' });
@@ -114,6 +129,7 @@ const Documents = () => {
   useEffect(() => {
     fetchDocuments();
     fetchMyDocuments();
+    fetchAssignedDocuments();
     fetchEmployees();
     fetchStats();
   }, []);
@@ -124,6 +140,15 @@ const Documents = () => {
       setDocuments(response.data);
     } catch (error) {
       console.error('Failed to fetch documents:', error);
+    }
+  };
+
+  const fetchAssignedDocuments = async () => {
+    try {
+      const response = await axios.get(`${API}/document-approvals/assigned`);
+      setAssignedDocuments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch assigned documents:', error);
     }
   };
 
