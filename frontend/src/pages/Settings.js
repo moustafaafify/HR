@@ -14,6 +14,7 @@ const API = `${BACKEND_URL}/api`;
 const Settings = () => {
   const { t, refreshSettings } = useLanguage();
   const { refreshSettings: refreshCurrencySettings } = useCurrency();
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     language_1: 'en',
     language_2: '',
