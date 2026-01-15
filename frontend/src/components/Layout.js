@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   Workflow,
-  UserPlus
+  UserPlus,
+  ClipboardCheck
 } from 'lucide-react';
 
 const Layout = () => {
