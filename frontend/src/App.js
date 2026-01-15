@@ -88,6 +88,7 @@ function AppRoutes() {
         <Route path="succession" element={<SuccessionPlanning />} />
         <Route path="skills" element={<Skills />} />
         <Route path="overtime" element={<Overtime />} />
+        <Route path="timesheets" element={<Timesheets />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
