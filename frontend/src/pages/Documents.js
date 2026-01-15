@@ -1443,6 +1443,14 @@ const Documents = () => {
               <span className="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs rounded-full">{assignedDocs.length}</span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="templates" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <Copy size={14} />
+            Templates
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <Settings size={14} />
+            Types & Categories
+          </TabsTrigger>
         </TabsList>
 
         {/* All Documents Tab */}
