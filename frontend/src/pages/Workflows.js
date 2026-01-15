@@ -19,6 +19,7 @@ const API = `${BACKEND_URL}/api`;
 
 const MODULES = [
   { value: 'leave', label: 'Leave Requests', icon: Palmtree, color: 'emerald' },
+  { value: 'time_correction', label: 'Time Corrections', icon: Clock, color: 'cyan' },
   { value: 'expense', label: 'Expense Claims', icon: DollarSign, color: 'amber' },
   { value: 'training', label: 'Training Requests', icon: GraduationCap, color: 'blue' },
   { value: 'document', label: 'Document Approvals', icon: FileText, color: 'purple' },
