@@ -487,6 +487,18 @@ const Training = () => {
     }
   };
 
+  // Admin function to delete training requests
+  const handleDeleteTrainingRequest = async (requestId) => {
+    if (!window.confirm('Are you sure you want to delete this training request?')) return;
+    try {
+      await axios.delete(`${API}/training-requests/${requestId}`);
+      toast.success('Training request deleted');
+      fetchAllTrainingRequests();
+    } catch (error) {
+      toast.error('Failed to delete training request');
+    }
+  };
+
   // Fetch training requests (for employees)
   const fetchMyRequests = async () => {
     try {
