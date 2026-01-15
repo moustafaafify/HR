@@ -284,9 +284,9 @@ const Documents = () => {
       if (formType === 'document') {
         setUploadedFile(fileData);
         setDocumentForm(prev => ({ ...prev, document_url: response.data.file_url }));
-      } else if (formType === 'assign') {
-        setAssignUploadedFile(fileData);
-        setAssignForm(prev => ({ ...prev, document_url: response.data.file_url }));
+      } else if (formType === 'template') {
+        setTemplateUploadedFile(fileData);
+        setTemplateForm(prev => ({ ...prev, document_url: response.data.file_url }));
       }
       
       toast.success('File uploaded successfully');
