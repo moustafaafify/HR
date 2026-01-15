@@ -615,7 +615,162 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         "pending_leaves": pending_leaves
     }
 
-# Include router
+# ============= ROLES & PERMISSIONS =============
+
+AVAILABLE_PERMISSIONS = [
+    # Employee Management
+    {"id": "employees.view", "name": "View Employees", "category": "Employees", "description": "View employee list and details"},
+    {"id": "employees.create", "name": "Create Employees", "category": "Employees", "description": "Add new employees"},
+    {"id": "employees.edit", "name": "Edit Employees", "category": "Employees", "description": "Modify employee information"},
+    {"id": "employees.delete", "name": "Delete Employees", "category": "Employees", "description": "Remove employees"},
+    {"id": "employees.reset_password", "name": "Reset Passwords", "category": "Employees", "description": "Reset employee passwords"},
+    {"id": "employees.manage_access", "name": "Manage Portal Access", "category": "Employees", "description": "Enable/disable employee portal access"},
+    
+    # Leave Management
+    {"id": "leaves.view", "name": "View Leaves", "category": "Leave Management", "description": "View leave requests"},
+    {"id": "leaves.create", "name": "Create Leaves", "category": "Leave Management", "description": "Submit leave requests"},
+    {"id": "leaves.approve", "name": "Approve/Reject Leaves", "category": "Leave Management", "description": "Approve or reject leave requests"},
+    
+    # Attendance
+    {"id": "attendance.view", "name": "View Attendance", "category": "Attendance", "description": "View attendance records"},
+    {"id": "attendance.manage", "name": "Manage Attendance", "category": "Attendance", "description": "Add/edit attendance records"},
+    
+    # Performance Reviews
+    {"id": "reviews.view", "name": "View Reviews", "category": "Performance", "description": "View performance reviews"},
+    {"id": "reviews.create", "name": "Create Reviews", "category": "Performance", "description": "Create performance reviews"},
+    {"id": "reviews.edit", "name": "Edit Reviews", "category": "Performance", "description": "Modify performance reviews"},
+    
+    # Organization Structure
+    {"id": "organization.view", "name": "View Organization", "category": "Organization", "description": "View corporations, branches, departments, divisions"},
+    {"id": "organization.manage", "name": "Manage Organization", "category": "Organization", "description": "Create/edit/delete organizational units"},
+    
+    # Payroll
+    {"id": "payroll.view", "name": "View Payroll", "category": "Payroll", "description": "View salary and payroll information"},
+    {"id": "payroll.manage", "name": "Manage Payroll", "category": "Payroll", "description": "Edit salary and payroll data"},
+    
+    # Settings & Admin
+    {"id": "settings.view", "name": "View Settings", "category": "Administration", "description": "View system settings"},
+    {"id": "settings.manage", "name": "Manage Settings", "category": "Administration", "description": "Modify system settings"},
+    {"id": "roles.manage", "name": "Manage Roles", "category": "Administration", "description": "Create and manage user roles"},
+]
+
+@api_router.get("/permissions", response_model=List[Permission])
+async def get_permissions(current_user: User = Depends(get_current_user)):
+    return [Permission(**p) for p in AVAILABLE_PERMISSIONS]
+
+@api_router.post("/roles", response_model=Role)
+async def create_role(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can create roles")
+    
+    role = Role(**data)
+    await db.roles.insert_one(role.model_dump())
+    return role
+
+@api_router.get("/roles", response_model=List[Role])
+async def get_roles(current_user: User = Depends(get_current_user)):
+    roles = await db.roles.find({}, {"_id": 0}).to_list(1000)
+    return [Role(**r) for r in roles]
+
+@api_router.get("/roles/{role_id}", response_model=Role)
+async def get_role(role_id: str, current_user: User = Depends(get_current_user)):
+    role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return Role(**role)
+
+@api_router.put("/roles/{role_id}", response_model=Role)
+async def update_role(role_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can update roles")
+    
+    role = await db.roles.find_one({"id": role_id})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    if role.get("is_system_role"):
+        raise HTTPException(status_code=400, detail="Cannot modify system roles")
+    
+    await db.roles.update_one({"id": role_id}, {"$set": data})
+    updated_role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    return Role(**updated_role)
+
+@api_router.delete("/roles/{role_id}")
+async def delete_role(role_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can delete roles")
+    
+    role = await db.roles.find_one({"id": role_id})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    if role.get("is_system_role"):
+        raise HTTPException(status_code=400, detail="Cannot delete system roles")
+    
+    # Check if any users have this role
+    users_with_role = await db.users.count_documents({"role": role["name"]})
+    if users_with_role > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete role. {users_with_role} users are assigned to this role")
+    
+    await db.roles.delete_one({"id": role_id})
+    return {"message": "Role deleted successfully"}
+
+@api_router.post("/roles/initialize-defaults")
+async def initialize_default_roles(current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can initialize roles")
+    
+    existing_roles = await db.roles.count_documents({})
+    if existing_roles > 0:
+        raise HTTPException(status_code=400, detail="Roles already initialized")
+    
+    default_roles = [
+        {
+            "name": "super_admin",
+            "display_name": "Super Administrator",
+            "description": "Full system access with all permissions",
+            "permissions": [p["id"] for p in AVAILABLE_PERMISSIONS],
+            "is_system_role": True
+        },
+        {
+            "name": "corp_admin",
+            "display_name": "Corporate Administrator",
+            "description": "Manage corporation and employees",
+            "permissions": [
+                "employees.view", "employees.create", "employees.edit", "employees.reset_password",
+                "leaves.view", "leaves.approve", "attendance.view", "attendance.manage",
+                "reviews.view", "reviews.create", "organization.view", "payroll.view"
+            ],
+            "is_system_role": True
+        },
+        {
+            "name": "branch_manager",
+            "display_name": "Branch Manager",
+            "description": "Manage branch employees and operations",
+            "permissions": [
+                "employees.view", "leaves.view", "leaves.approve", 
+                "attendance.view", "attendance.manage", "reviews.view", "reviews.create"
+            ],
+            "is_system_role": True
+        },
+        {
+            "name": "employee",
+            "display_name": "Employee",
+            "description": "Basic employee access",
+            "permissions": [
+                "leaves.view", "leaves.create", "attendance.view"
+            ],
+            "is_system_role": True
+        },
+    ]
+    
+    for role_data in default_roles:
+        role = Role(**role_data)
+        await db.roles.insert_one(role.model_dump())
+    
+    return {"message": f"Initialized {len(default_roles)} default roles"}
+
+# ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
 app.add_middleware(
