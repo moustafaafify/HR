@@ -50,6 +50,19 @@ Build a full-stack HR platform with:
 ### Data Model Fixes (COMPLETED - Jan 15, 2026)
 - Made `personal_email` field optional in Employee model to fix data consistency issues
 
+### Leave Balance Fix (COMPLETED - Jan 15, 2026)
+- **Bug:** Admin could not save leave balance changes in employee edit form
+- **Root Cause:** 
+  1. Form fields for new leave types (annual_leave, sick_leave, personal_leave, bereavement_leave, maternity_leave, paternity_leave) were in JSX but not connected to form state
+  2. `openDialog` function was not fetching leave balance data when editing employee
+  3. `handleSubmit` was not updating the leave_balances collection
+- **Fix Applied:**
+  1. Updated `formData` initial state with all new leave fields
+  2. Updated `resetForm` function with new leave fields  
+  3. Modified `openDialog` to fetch leave balance from API when editing
+  4. Modified `handleSubmit` to update leave_balances collection after saving employee
+  5. Added POST endpoint `/api/leave-balances` for creating new leave balances
+
 ## Tech Stack
 - **Frontend:** React, Tailwind CSS, Shadcn/UI, React Router
 - **Backend:** FastAPI, Pydantic, JWT
