@@ -1196,7 +1196,202 @@ const Documents = () => {
             getEmployeeName={getEmployeeName}
           />
         </TabsContent>
+
+        {/* Assigned Documents Tab */}
+        <TabsContent value="assigned" className="mt-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                <Users size={18} />
+                Documents Assigned to Employees
+              </h3>
+              <span className="text-sm text-slate-500">{assignedDocs.length} assigned</span>
+            </div>
+            {assignedDocs.length === 0 ? (
+              <div className="p-12 text-center">
+                <Users size={48} className="mx-auto mb-4 text-slate-300" />
+                <p className="text-slate-500">No documents assigned yet</p>
+                <Button onClick={() => setAssignDialogOpen(true)} variant="outline" className="mt-4 rounded-xl">
+                  <Plus size={16} className="mr-2" />
+                  Assign First Document
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {assignedDocs.map((doc) => {
+                  const statusInfo = getStatusInfo(doc.status);
+                  const typeInfo = getTypeInfo(doc.document_type);
+                  return (
+                    <div key={doc.id} className="p-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-lg">{typeInfo.icon}</span>
+                            <h4 className="font-bold text-slate-900">{doc.title}</h4>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${doc.acknowledged ? 'bg-teal-100 text-teal-700' : 'bg-purple-100 text-purple-700'}`}>
+                              {doc.acknowledged ? 'Acknowledged' : 'Pending'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-500 line-clamp-2 mb-2">{doc.description || 'No description'}</p>
+                          <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400">
+                            <span className="font-medium text-slate-600">{getEmployeeName(doc.employee_id)}</span>
+                            <span>•</span>
+                            <span>{typeInfo.label}</span>
+                            <span>•</span>
+                            <span>Assigned: {new Date(doc.assigned_at || doc.created_at).toLocaleDateString()}</span>
+                            {doc.acknowledged_at && (
+                              <>
+                                <span>•</span>
+                                <span className="text-teal-600">Acknowledged: {new Date(doc.acknowledged_at).toLocaleDateString()}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Button onClick={() => handleDelete(doc.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Assign Document Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Users className="text-indigo-600" size={24} />
+              Assign Document to Employees
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAssignDocument} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Document Title *</label>
+              <Input 
+                value={assignForm.title} 
+                onChange={(e) => setAssignForm({ ...assignForm, title: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="e.g. Employee Handbook 2026" 
+                required 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type</label>
+                <Select value={assignForm.document_type} onValueChange={(v) => setAssignForm({ ...assignForm, document_type: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.icon} {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+                <Select value={assignForm.category} onValueChange={(v) => setAssignForm({ ...assignForm, category: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Priority</label>
+                <Select value={assignForm.priority} onValueChange={(v) => setAssignForm({ ...assignForm, priority: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Due Date</label>
+                <Input 
+                  type="date" 
+                  value={assignForm.due_date} 
+                  onChange={(e) => setAssignForm({ ...assignForm, due_date: e.target.value })} 
+                  className="rounded-xl" 
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Document URL</label>
+              <Input 
+                value={assignForm.document_url} 
+                onChange={(e) => setAssignForm({ ...assignForm, document_url: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="https://drive.google.com/..." 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
+              <textarea 
+                value={assignForm.description} 
+                onChange={(e) => setAssignForm({ ...assignForm, description: e.target.value })} 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" 
+                rows={2} 
+                placeholder="Brief description of the document..." 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Assign to Employees *</label>
+              <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1">
+                {employees.length === 0 ? (
+                  <p className="text-sm text-slate-500 p-2">No employees found</p>
+                ) : (
+                  employees.map((emp) => (
+                    <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        checked={assignForm.employee_ids.includes(emp.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setAssignForm({ ...assignForm, employee_ids: [...assignForm.employee_ids, emp.id] });
+                          } else {
+                            setAssignForm({ ...assignForm, employee_ids: assignForm.employee_ids.filter(id => id !== emp.id) });
+                          }
+                        }}
+                        className="rounded border-slate-300"
+                      />
+                      <span className="text-sm font-medium text-slate-700">{emp.full_name}</span>
+                      <span className="text-xs text-slate-400">{emp.email}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">{assignForm.employee_ids.length} employee(s) selected</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                Assign Document
+              </Button>
+              <Button type="button" onClick={() => setAssignDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* View Document Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
