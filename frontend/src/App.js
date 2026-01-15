@@ -18,6 +18,7 @@ import Settings from './pages/Settings';
 import RolesPermissions from './pages/RolesPermissions';
 import Workflows from './pages/Workflows';
 import Recruitment from './pages/Recruitment';
+import Onboarding from './pages/Onboarding';
 import Layout from './components/Layout';
 import './App.css';
 
