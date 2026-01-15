@@ -261,9 +261,14 @@ const Leaves = () => {
   const getAvailableBalance = (type) => {
     if (!myBalance) return null;
     const mapping = {
-      annual: { total: myBalance.annual_leave, used: myBalance.annual_used || 0 },
-      sick: { total: myBalance.sick_leave, used: myBalance.sick_used || 0 },
-      personal: { total: myBalance.personal_leave, used: myBalance.personal_used || 0 }
+      annual: { total: myBalance.annual_leave || 20, used: myBalance.annual_used || 0 },
+      sick: { total: myBalance.sick_leave || 10, used: myBalance.sick_used || 0 },
+      personal: { total: myBalance.personal_leave || 5, used: myBalance.personal_used || 0 },
+      unpaid: { total: null, used: myBalance.unpaid_used || 0 },
+      maternity: { total: myBalance.maternity_leave || 90, used: myBalance.maternity_used || 0 },
+      paternity: { total: myBalance.paternity_leave || 14, used: myBalance.paternity_used || 0 },
+      bereavement: { total: myBalance.bereavement_leave || 5, used: myBalance.bereavement_used || 0 },
+      other: { total: null, used: myBalance.other_used || 0 }
     };
     return mapping[type];
   };
