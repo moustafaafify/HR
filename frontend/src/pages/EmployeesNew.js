@@ -963,14 +963,16 @@ const EmployeesNew = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => openPasswordDialog(emp)}
-                        data-testid={`reset-password-${emp.id}`}
-                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                        title="Reset Password"
-                      >
-                        <Key size={16} />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => openPasswordDialog(emp)}
+                          data-testid={`reset-password-${emp.id}`}
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          title="Reset Password"
+                        >
+                          <Key size={16} />
+                        </button>
+                      )}
                       <button
                         onClick={() => openViewDialog(emp)}
                         data-testid={`view-emp-${emp.id}`}
@@ -979,20 +981,24 @@ const EmployeesNew = () => {
                       >
                         <Eye size={16} />
                       </button>
-                      <button
-                        onClick={() => openDialog(emp)}
-                        data-testid={`edit-emp-${emp.id}`}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(emp.id)}
-                        data-testid={`delete-emp-${emp.id}`}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => openDialog(emp)}
+                            data-testid={`edit-emp-${emp.id}`}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(emp.id)}
+                            data-testid={`delete-emp-${emp.id}`}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
