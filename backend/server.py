@@ -476,7 +476,17 @@ async def create_employee(data: Dict[str, Any], current_user: User = Depends(get
 async def get_employees(branch_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
     query = {"branch_id": branch_id} if branch_id else {}
     employees = await db.employees.find(query, {"_id": 0}).to_list(1000)
-    return [Employee(**e) for e in employees]
+    result = []
+    for e in employees:
+        # Clean up empty strings for numeric fields
+        for field in ['holiday_allowance', 'sick_leave_allowance', 'salary']:
+            if field in e and e[field] == '':
+                e[field] = None
+        try:
+            result.append(Employee(**e))
+        except Exception:
+            pass  # Skip invalid records
+    return result
 
 @api_router.get("/employees/{emp_id}", response_model=Employee)
 async def get_employee(emp_id: str, current_user: User = Depends(get_current_user)):
