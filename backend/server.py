@@ -9470,6 +9470,539 @@ async def verify_skill(employee_skill_id: str, current_user: User = Depends(get_
     
     return await db.employee_skills.find_one({"id": employee_skill_id}, {"_id": 0})
 
+# ============= OVERTIME MODELS =============
+
+class OvertimeRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    reference_number: str = Field(default_factory=lambda: f"OT-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}")
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    department: Optional[str] = None
+    department_id: Optional[str] = None
+    
+    # Overtime Details
+    date: str  # Date of overtime work
+    start_time: str  # e.g., "18:00"
+    end_time: str  # e.g., "22:00"
+    hours: float  # Total overtime hours
+    overtime_type: str = "regular"  # regular, weekend, holiday, emergency
+    
+    # Reason & Description
+    reason: str
+    tasks_performed: Optional[str] = None
+    project_name: Optional[str] = None
+    
+    # Compensation
+    rate_multiplier: float = 1.5  # 1.5x, 2x, etc.
+    base_hourly_rate: Optional[float] = None
+    compensation_type: str = "paid"  # paid, comp_time, both
+    comp_time_hours: Optional[float] = None
+    
+    # Pre-approved (for planned overtime)
+    is_pre_approved: bool = False
+    pre_approved_by: Optional[str] = None
+    pre_approved_at: Optional[str] = None
+    
+    # Status & Approval
+    status: str = "pending"  # pending, approved, rejected, cancelled, completed
+    approved_by: Optional[str] = None
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    
+    # Manager
+    manager_id: Optional[str] = None
+    manager_name: Optional[str] = None
+    
+    notes: Optional[str] = None
+    attachments: Optional[List[str]] = Field(default_factory=list)
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class OvertimePolicy(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    
+    # Rate multipliers
+    regular_rate: float = 1.5  # Regular overtime (e.g., after 8 hours)
+    weekend_rate: float = 1.5  # Weekend overtime
+    holiday_rate: float = 2.0  # Holiday overtime
+    emergency_rate: float = 2.0  # Emergency call-in
+    
+    # Limits
+    max_daily_hours: float = 4  # Max OT per day
+    max_weekly_hours: float = 20  # Max OT per week
+    max_monthly_hours: float = 60  # Max OT per month
+    
+    # Rules
+    requires_pre_approval: bool = False
+    pre_approval_hours_threshold: float = 2  # Require pre-approval if > X hours
+    auto_approve_under_hours: Optional[float] = None  # Auto-approve if under X hours
+    
+    # Eligibility
+    eligible_departments: Optional[List[str]] = Field(default_factory=list)  # Empty = all
+    eligible_positions: Optional[List[str]] = Field(default_factory=list)  # Empty = all
+    
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= OVERTIME API ENDPOINTS =============
+
+@api_router.get("/overtime/stats")
+async def get_overtime_stats(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get overtime statistics"""
+    if year is None:
+        year = datetime.now().year
+    if month is None:
+        month = datetime.now().month
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    # Build date range
+    start_date = f"{year}-{month:02d}-01"
+    if month == 12:
+        end_date = f"{year + 1}-01-01"
+    else:
+        end_date = f"{year}-{month + 1:02d}-01"
+    
+    # Query filter
+    query = {"date": {"$gte": start_date, "$lt": end_date}}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return {"total_requests": 0, "total_hours": 0, "approved_hours": 0, "pending_hours": 0}
+        query["employee_id"] = employee["id"]
+    
+    requests = await db.overtime_requests.find(query, {"_id": 0}).to_list(1000)
+    
+    total_hours = sum(r.get("hours", 0) for r in requests)
+    approved_hours = sum(r.get("hours", 0) for r in requests if r.get("status") == "approved")
+    pending_hours = sum(r.get("hours", 0) for r in requests if r.get("status") == "pending")
+    rejected_count = sum(1 for r in requests if r.get("status") == "rejected")
+    
+    # By type breakdown
+    by_type = {}
+    for r in requests:
+        ot_type = r.get("overtime_type", "regular")
+        if ot_type not in by_type:
+            by_type[ot_type] = {"count": 0, "hours": 0}
+        by_type[ot_type]["count"] += 1
+        by_type[ot_type]["hours"] += r.get("hours", 0)
+    
+    # By status breakdown
+    by_status = {}
+    for r in requests:
+        status = r.get("status", "pending")
+        if status not in by_status:
+            by_status[status] = {"count": 0, "hours": 0}
+        by_status[status]["count"] += 1
+        by_status[status]["hours"] += r.get("hours", 0)
+    
+    stats = {
+        "year": year,
+        "month": month,
+        "total_requests": len(requests),
+        "total_hours": round(total_hours, 2),
+        "approved_hours": round(approved_hours, 2),
+        "pending_hours": round(pending_hours, 2),
+        "rejected_count": rejected_count,
+        "by_type": by_type,
+        "by_status": by_status
+    }
+    
+    # Admin: add department breakdown
+    if is_admin:
+        by_department = {}
+        for r in requests:
+            dept = r.get("department") or "Unknown"
+            if dept not in by_department:
+                by_department[dept] = {"count": 0, "hours": 0}
+            by_department[dept]["count"] += 1
+            by_department[dept]["hours"] += r.get("hours", 0)
+        stats["by_department"] = by_department
+        
+        # Top overtime employees
+        by_employee = {}
+        for r in requests:
+            emp_name = r.get("employee_name") or "Unknown"
+            if emp_name not in by_employee:
+                by_employee[emp_name] = {"count": 0, "hours": 0}
+            by_employee[emp_name]["count"] += 1
+            by_employee[emp_name]["hours"] += r.get("hours", 0)
+        
+        top_employees = sorted(by_employee.items(), key=lambda x: x[1]["hours"], reverse=True)[:10]
+        stats["top_employees"] = [{"name": k, **v} for k, v in top_employees]
+    
+    return stats
+
+@api_router.get("/overtime")
+async def get_overtime_requests(
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    overtime_type: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get overtime requests"""
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    
+    query = {}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        query["employee_id"] = employee["id"]
+    else:
+        if employee_id:
+            query["employee_id"] = employee_id
+    
+    if status:
+        query["status"] = status
+    if overtime_type:
+        query["overtime_type"] = overtime_type
+    if start_date:
+        query["date"] = {"$gte": start_date}
+    if end_date:
+        if "date" in query:
+            query["date"]["$lte"] = end_date
+        else:
+            query["date"] = {"$lte": end_date}
+    
+    requests = await db.overtime_requests.find(query, {"_id": 0}).sort("date", -1).to_list(500)
+    return requests
+
+@api_router.get("/overtime/{request_id}")
+async def get_overtime_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific overtime request"""
+    request = await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Overtime request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return request
+
+@api_router.post("/overtime")
+async def create_overtime_request(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new overtime request"""
+    # Get employee info
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=400, detail="Employee profile not found")
+    
+    # Get department name
+    dept_name = None
+    if employee.get("department_id"):
+        dept = await db.departments.find_one({"id": employee["department_id"]}, {"_id": 0})
+        if dept:
+            dept_name = dept.get("name")
+    
+    # Get manager info
+    manager_name = None
+    if employee.get("reporting_manager_id"):
+        manager = await db.employees.find_one({"id": employee["reporting_manager_id"]}, {"_id": 0})
+        if manager:
+            manager_name = manager.get("full_name")
+    
+    # Calculate hours from start_time and end_time if not provided
+    hours = data.get("hours")
+    if not hours and data.get("start_time") and data.get("end_time"):
+        try:
+            start = datetime.strptime(data["start_time"], "%H:%M")
+            end = datetime.strptime(data["end_time"], "%H:%M")
+            if end < start:
+                # Overtime crosses midnight
+                hours = (24 - start.hour - start.minute/60) + (end.hour + end.minute/60)
+            else:
+                hours = (end - start).seconds / 3600
+        except:
+            hours = 0
+    
+    # Get rate multiplier based on overtime type
+    rate_multiplier = 1.5
+    ot_type = data.get("overtime_type", "regular")
+    if ot_type == "weekend":
+        rate_multiplier = 1.5
+    elif ot_type == "holiday":
+        rate_multiplier = 2.0
+    elif ot_type == "emergency":
+        rate_multiplier = 2.0
+    
+    overtime_data = {
+        **data,
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "employee_email": employee.get("work_email") or employee.get("personal_email"),
+        "department": dept_name,
+        "department_id": employee.get("department_id"),
+        "manager_id": employee.get("reporting_manager_id"),
+        "manager_name": manager_name,
+        "hours": round(hours, 2) if hours else 0,
+        "rate_multiplier": data.get("rate_multiplier", rate_multiplier),
+        "status": "pending"
+    }
+    
+    overtime_request = OvertimeRequest(**overtime_data)
+    await db.overtime_requests.insert_one(overtime_request.model_dump())
+    
+    return overtime_request.model_dump()
+
+@api_router.put("/overtime/{request_id}")
+async def update_overtime_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an overtime request"""
+    request = await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Overtime request not found")
+    
+    # Check access
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        # Employees can only update pending requests
+        if request["status"] != "pending":
+            raise HTTPException(status_code=400, detail="Can only edit pending requests")
+    
+    # Recalculate hours if time changed
+    if "start_time" in data or "end_time" in data:
+        start_time = data.get("start_time", request.get("start_time"))
+        end_time = data.get("end_time", request.get("end_time"))
+        if start_time and end_time:
+            try:
+                start = datetime.strptime(start_time, "%H:%M")
+                end = datetime.strptime(end_time, "%H:%M")
+                if end < start:
+                    hours = (24 - start.hour - start.minute/60) + (end.hour + end.minute/60)
+                else:
+                    hours = (end - start).seconds / 3600
+                data["hours"] = round(hours, 2)
+            except:
+                pass
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.overtime_requests.update_one({"id": request_id}, {"$set": data})
+    
+    return await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.delete("/overtime/{request_id}")
+async def delete_overtime_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Delete/cancel an overtime request"""
+    request = await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Overtime request not found")
+    
+    is_admin = current_user.role in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or employee["id"] != request["employee_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        # Employees can only delete pending requests
+        if request["status"] != "pending":
+            raise HTTPException(status_code=400, detail="Can only cancel pending requests")
+    
+    await db.overtime_requests.delete_one({"id": request_id})
+    return {"message": "Overtime request deleted"}
+
+@api_router.put("/overtime/{request_id}/approve")
+async def approve_overtime_request(request_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Approve an overtime request (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN, UserRole.BRANCH_MANAGER]:
+        raise HTTPException(status_code=403, detail="Only managers can approve overtime")
+    
+    request = await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Overtime request not found")
+    
+    if request["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed")
+    
+    update_data = {
+        "status": "approved",
+        "approved_by": current_user.id,
+        "approved_by_name": current_user.full_name,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Allow adjusting hours or rate during approval
+    if "hours" in data:
+        update_data["hours"] = data["hours"]
+    if "rate_multiplier" in data:
+        update_data["rate_multiplier"] = data["rate_multiplier"]
+    if "notes" in data:
+        update_data["notes"] = data["notes"]
+    
+    await db.overtime_requests.update_one({"id": request_id}, {"$set": update_data})
+    return await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.put("/overtime/{request_id}/reject")
+async def reject_overtime_request(request_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Reject an overtime request (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN, UserRole.BRANCH_MANAGER]:
+        raise HTTPException(status_code=403, detail="Only managers can reject overtime")
+    
+    request = await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Overtime request not found")
+    
+    if request["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed")
+    
+    await db.overtime_requests.update_one({"id": request_id}, {"$set": {
+        "status": "rejected",
+        "approved_by": current_user.id,
+        "approved_by_name": current_user.full_name,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "rejection_reason": data.get("reason", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
+    
+    return await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.put("/overtime/{request_id}/complete")
+async def complete_overtime_request(request_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Mark overtime as completed (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can mark overtime as completed")
+    
+    request = await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Overtime request not found")
+    
+    if request["status"] != "approved":
+        raise HTTPException(status_code=400, detail="Only approved requests can be marked as completed")
+    
+    update_data = {
+        "status": "completed",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Allow recording actual hours worked
+    if "actual_hours" in data:
+        update_data["hours"] = data["actual_hours"]
+    if "tasks_performed" in data:
+        update_data["tasks_performed"] = data["tasks_performed"]
+    
+    await db.overtime_requests.update_one({"id": request_id}, {"$set": update_data})
+    return await db.overtime_requests.find_one({"id": request_id}, {"_id": 0})
+
+@api_router.get("/overtime/export")
+async def export_overtime(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    status: Optional[str] = None,
+    department_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export overtime data (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can export overtime data")
+    
+    query = {}
+    
+    if year and month:
+        start_date = f"{year}-{month:02d}-01"
+        if month == 12:
+            end_date = f"{year + 1}-01-01"
+        else:
+            end_date = f"{year}-{month + 1:02d}-01"
+        query["date"] = {"$gte": start_date, "$lt": end_date}
+    elif year:
+        query["date"] = {"$gte": f"{year}-01-01", "$lt": f"{year + 1}-01-01"}
+    
+    if status:
+        query["status"] = status
+    if department_id:
+        query["department_id"] = department_id
+    
+    records = await db.overtime_requests.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
+    
+    # Calculate totals
+    total_hours = sum(r.get("hours", 0) for r in records)
+    approved_hours = sum(r.get("hours", 0) for r in records if r.get("status") == "approved")
+    
+    return {
+        "records": records,
+        "total": len(records),
+        "total_hours": round(total_hours, 2),
+        "approved_hours": round(approved_hours, 2)
+    }
+
+# ============= OVERTIME POLICY ENDPOINTS =============
+
+@api_router.get("/overtime/policies")
+async def get_overtime_policies(current_user: User = Depends(get_current_user)):
+    """Get overtime policies"""
+    policies = await db.overtime_policies.find({}, {"_id": 0}).to_list(100)
+    
+    # Create default policy if none exists
+    if not policies:
+        default_policy = OvertimePolicy(
+            name="Standard Overtime Policy",
+            description="Default overtime policy for all employees",
+            regular_rate=1.5,
+            weekend_rate=1.5,
+            holiday_rate=2.0,
+            emergency_rate=2.0,
+            max_daily_hours=4,
+            max_weekly_hours=20,
+            max_monthly_hours=60,
+            is_active=True
+        )
+        await db.overtime_policies.insert_one(default_policy.model_dump())
+        policies = [default_policy.model_dump()]
+    
+    return policies
+
+@api_router.post("/overtime/policies")
+async def create_overtime_policy(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create an overtime policy (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage overtime policies")
+    
+    policy = OvertimePolicy(**data)
+    await db.overtime_policies.insert_one(policy.model_dump())
+    return policy.model_dump()
+
+@api_router.put("/overtime/policies/{policy_id}")
+async def update_overtime_policy(policy_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an overtime policy (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage overtime policies")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.overtime_policies.update_one({"id": policy_id}, {"$set": data})
+    
+    return await db.overtime_policies.find_one({"id": policy_id}, {"_id": 0})
+
+@api_router.delete("/overtime/policies/{policy_id}")
+async def delete_overtime_policy(policy_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an overtime policy (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage overtime policies")
+    
+    await db.overtime_policies.delete_one({"id": policy_id})
+    return {"message": "Policy deleted"}
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
