@@ -142,6 +142,8 @@ const Employees = () => {
         position: emp.position || '',
         branch_id: emp.branch_id,
         corporation_id: emp.corporation_id,
+        department_id: emp.department_id || '',
+        division_id: emp.division_id || '',
         salary: emp.salary?.toString() || '',
         currency: emp.currency || 'USD',
         hire_date: emp.hire_date || '',
