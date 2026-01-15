@@ -493,6 +493,76 @@ class Onboarding(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+# Offboarding Models
+class OffboardingTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: str
+    description: Optional[str] = None
+    category: str = "administrative"  # asset_return, access_revocation, knowledge_transfer, documentation, exit_interview, clearance, administrative, other
+    due_day: int = 1
+    is_required: bool = True
+    assigned_to_type: str = "hr"  # employee, manager, hr, it
+    assigned_to_id: Optional[str] = None
+    order: int = 1
+    completed: bool = False
+    completed_at: Optional[str] = None
+    completed_by: Optional[str] = None
+    completion_notes: Optional[str] = None
+    resource_url: Optional[str] = None
+
+class OffboardingTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    department_id: Optional[str] = None
+    reason_type: Optional[str] = None  # resignation, termination, retirement, contract_end, layoff
+    duration_days: int = 14
+    tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    exit_message: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Offboarding(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    template_id: Optional[str] = None
+    template_name: Optional[str] = None
+    department_id: Optional[str] = None
+    position: Optional[str] = None
+    last_working_date: str
+    separation_date: Optional[str] = None
+    duration_days: int = 14
+    reason: str = "resignation"  # resignation, termination, retirement, contract_end, layoff
+    reason_details: Optional[str] = None
+    status: str = "in_progress"  # not_started, in_progress, completed, on_hold, cancelled
+    manager_id: Optional[str] = None
+    hr_contact_id: Optional[str] = None
+    tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    exit_message: Optional[str] = None
+    # Exit Interview
+    exit_interview_date: Optional[str] = None
+    exit_interview_conducted: bool = False
+    exit_interview_notes: Optional[str] = None
+    # Clearance
+    clearance_hr: bool = False
+    clearance_it: bool = False
+    clearance_finance: bool = False
+    clearance_manager: bool = False
+    clearance_admin: bool = False
+    # Final Settlement
+    final_settlement_status: str = "pending"  # pending, processing, completed
+    final_settlement_notes: Optional[str] = None
+    # Feedback
+    feedback: Optional[str] = None
+    feedback_rating: Optional[int] = None
+    completed_at: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class PerformanceReview(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
