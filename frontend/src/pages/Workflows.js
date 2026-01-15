@@ -47,7 +47,12 @@ const Workflows = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
   const [selectedInstance, setSelectedInstance] = useState(null);
+  const [instanceDetails, setInstanceDetails] = useState(null);
   const [expandedWorkflow, setExpandedWorkflow] = useState(null);
+  const [filterModule, setFilterModule] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectionComment, setRejectionComment] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
