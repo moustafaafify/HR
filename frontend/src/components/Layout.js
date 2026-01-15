@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -25,8 +25,33 @@ const Layout = () => {
   const { user, logout } = useAuth();
   const { t, currentLanguage, availableLanguages, changeLanguage, isRTL } = useLanguage();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [employeesExpanded, setEmployeesExpanded] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  // Handle responsive sidebar
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   // Role-based access control
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
@@ -56,120 +81,124 @@ const Layout = () => {
     { path: '/', icon: LayoutDashboard, label: t('dashboard') },
   ];
 
+  const NavLink = ({ item, nested = false }) => {
+    const Icon = item.icon;
+    const isActive = location.pathname === item.path;
+    return (
+      <Link
+        to={item.path}
+        data-testid={`nav-${item.path.slice(1) || 'dashboard'}`}
+        className={`flex items-center gap-3 py-3 rounded-xl transition-all duration-200 ${
+          nested ? 'ps-8 pe-4' : 'px-4'
+        } ${
+          isActive
+            ? 'bg-indigo-950 text-white shadow-lg'
+            : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
+        }`}
+      >
+        <Icon size={20} />
+        <span className="font-medium">{item.label}</span>
+      </Link>
+    );
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 noise-texture">
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+          data-testid="mobile-menu-toggle"
+        >
+          <Menu size={24} />
+        </button>
+        <h1 className="text-xl font-black text-indigo-950" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          HR Platform
+        </h1>
+        <div className="w-10" /> {/* Spacer for centering */}
+      </header>
+
+      {/* Overlay for mobile */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`${
-        sidebarOpen ? 'w-64' : 'w-20'
-      } bg-white border-e border-slate-100 transition-all duration-300 flex flex-col shadow-sm`}>
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          {sidebarOpen && (
-            <h1 className="text-2xl font-black tracking-tight text-indigo-950" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              HR Platform
-            </h1>
-          )}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        w-72 lg:w-64 bg-white border-e border-slate-100 
+        transition-transform duration-300 ease-in-out
+        flex flex-col shadow-lg lg:shadow-sm
+        ${isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
+      `}>
+        <div className="p-4 lg:p-6 border-b border-slate-100 flex items-center justify-between">
+          <h1 className="text-xl lg:text-2xl font-black tracking-tight text-indigo-950" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            HR Platform
+          </h1>
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            data-testid="sidebar-toggle"
+            onClick={() => setSidebarOpen(false)}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
+            data-testid="sidebar-close"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            <X size={20} />
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                data-testid={`nav-${item.path.slice(1) || 'dashboard'}`}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-indigo-950 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-                }`}
-              >
-                <Icon size={20} />
-                {sidebarOpen && <span className="font-medium">{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-3 lg:p-4 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <NavLink key={item.path} item={item} />
+          ))}
 
           {/* Organization Section - Only for admins */}
           {organizationItems.length > 0 && (
             <>
-              {sidebarOpen && (
-                <div className="pt-4 pb-2 px-4">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</p>
-                </div>
-              )}
-              {organizationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    data-testid={`nav-${item.path.slice(1)}`}
-                    className={`flex items-center gap-3 py-3 rounded-lg transition-all duration-200 ${
-                      item.nested ? 'ps-8 pe-4' : 'px-4'
-                    } ${
-                      isActive
-                        ? 'bg-indigo-950 text-white shadow-lg'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-                    }`}
-                  >
-                    <Icon size={20} />
-                    {sidebarOpen && <span className="font-medium">{item.label}</span>}
-                  </Link>
-                );
-              })}
+              <div className="pt-4 pb-2 px-4">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</p>
+              </div>
+              {organizationItems.map((item) => (
+                <NavLink key={item.path} item={item} nested={item.nested} />
+              ))}
             </>
           )}
 
           {/* People Section */}
-          {sidebarOpen && (
-            <div className="pt-4 pb-2 px-4">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">People</p>
-            </div>
-          )}
+          <div className="pt-4 pb-2 px-4">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">People</p>
+          </div>
           
           {/* Employees with collapsible sub-menu */}
           <div>
             <Link
               to="/employees"
               data-testid="nav-employees"
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 location.pathname === '/employees' || location.pathname === '/departments' || location.pathname === '/divisions'
                   ? 'bg-indigo-950 text-white shadow-lg'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
               }`}
             >
               <Users size={20} />
-              {sidebarOpen && (
-                <>
-                  <span className="font-medium flex-1">{t('employees')}</span>
-                  {employeeSubItems.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setEmployeesExpanded(!employeesExpanded);
-                      }}
-                      className="hover:bg-white/10 rounded p-1 transition-colors"
-                    >
-                      {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                    </button>
-                  )}
-                </>
+              <span className="font-medium flex-1">{t('employees')}</span>
+              {employeeSubItems.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEmployeesExpanded(!employeesExpanded);
+                  }}
+                  className="hover:bg-white/10 rounded p-1 transition-colors"
+                >
+                  {employeesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
               )}
             </Link>
             
             {/* Employee sub-items - Only for managers and admins */}
-            {employeesExpanded && sidebarOpen && employeeSubItems.length > 0 && (
+            {employeesExpanded && employeeSubItems.length > 0 && (
               <div className="ms-4 border-s-2 border-slate-200 mt-1">
                 {employeeSubItems.map((item) => {
                   const Icon = item.icon;
@@ -195,105 +224,50 @@ const Layout = () => {
           </div>
 
           {/* Other People items */}
-          {peopleItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                data-testid={`nav-${item.path.slice(1)}`}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-indigo-950 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-                }`}
-              >
-                <Icon size={20} />
-                {sidebarOpen && <span className="font-medium">{item.label}</span>}
-              </Link>
-            );
-          })}
+          {peopleItems.map((item) => (
+            <NavLink key={item.path} item={item} />
+          ))}
 
-          {/* Settings - Only for admins */}
+          {/* Admin-only items */}
           {isAdmin && (
             <>
-              <Link
-                to="/settings"
-                data-testid="nav-settings"
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  location.pathname === '/settings'
-                    ? 'bg-indigo-950 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-                }`}
-              >
-                <SettingsIcon size={20} />
-                {sidebarOpen && <span className="font-medium">{t('settings')}</span>}
-              </Link>
-              <Link
-                to="/settings/workflows"
-                data-testid="nav-workflows"
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  location.pathname === '/settings/workflows'
-                    ? 'bg-indigo-950 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-900'
-                }`}
-              >
-                <Workflow size={20} />
-                {sidebarOpen && <span className="font-medium">Workflows</span>}
-              </Link>
+              <div className="pt-4 pb-2 px-4">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Administration</p>
+              </div>
+              <NavLink item={{ path: '/roles', icon: Users, label: t('roles') }} />
+              <NavLink item={{ path: '/workflows', icon: Workflow, label: 'Workflows' }} />
+              <NavLink item={{ path: '/settings', icon: SettingsIcon, label: t('settings') }} />
             </>
           )}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
-          <button
-            onClick={logout}
-            data-testid="logout-button"
-            className="flex items-center gap-3 w-full px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200"
-          >
-            <LogOut size={20} />
-            {sidebarOpen && <span className="font-medium">{t('logout')}</span>}
-          </button>
+        {/* User section */}
+        <div className="p-3 lg:p-4 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-xl p-3 lg:p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-900 truncate text-sm lg:text-base">{user?.full_name || user?.email}</p>
+                <p className="text-xs text-slate-500 capitalize truncate">{user?.role?.replace('_', ' ')}</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              data-testid="logout-button"
+              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm"
+            >
+              <LogOut size={18} />
+              <span>{t('logout')}</span>
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {/* Header */}
-        <header className="bg-white border-b border-slate-100 px-8 py-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                {t('welcome')}, {user?.full_name}
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">{user?.role}</p>
-            </div>
-
-            {/* Language Switcher */}
-            {availableLanguages.length > 1 && (
-              <div className="flex gap-2" data-testid="language-switcher">
-                {availableLanguages.map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => changeLanguage(lang)}
-                    data-testid={`lang-${lang}`}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                      currentLanguage === lang
-                        ? 'bg-indigo-950 text-white shadow-lg'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <div className="p-8">
+      {/* Main content */}
+      <main className="flex-1 min-w-0 pt-16 lg:pt-0">
+        <div className="p-4 lg:p-8">
           <Outlet />
         </div>
       </main>
