@@ -1046,7 +1046,7 @@ const Expenses = () => {
 };
 
 // Expense Table Component
-const ExpenseTable = ({ expenses, employees, onView, onApprove, onReject, onMarkPaid, onEdit, onDelete, formatAmount }) => {
+const ExpenseTable = ({ expenses, employees, onView, onApprove, onReject, onMarkPaid, onEdit, onDelete, formatCurrency }) => {
   const getEmployeeName = (empId) => {
     const emp = employees.find(e => e.id === empId);
     return emp ? emp.full_name : '-';
