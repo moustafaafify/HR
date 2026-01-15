@@ -40,6 +40,8 @@ const Employees = () => {
     fetchEmployees();
     fetchCorporations();
     fetchBranches();
+    fetchDepartments();
+    fetchDivisions();
   }, []);
 
   const fetchEmployees = async () => {
