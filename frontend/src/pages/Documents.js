@@ -530,6 +530,7 @@ const Documents = () => {
       instructions: ''
     });
     setEditingTemplate(null);
+    setTemplateUploadedFile(null);
   };
 
   // Type handlers
