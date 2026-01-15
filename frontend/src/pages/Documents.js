@@ -512,12 +512,49 @@ const Documents = () => {
   const handleSaveTemplate = async (e) => {
     e.preventDefault();
     try {
+      // Validate employee selection if assigning
+      if (templateForm.assign_to_employees && templateForm.employee_ids.length === 0) {
+        toast.error('Please select at least one employee to assign');
+        return;
+      }
+      
       if (editingTemplate) {
         await axios.put(`${API}/document-templates/${editingTemplate.id}`, templateForm);
         toast.success('Template updated');
       } else {
-        await axios.post(`${API}/document-templates`, templateForm);
-        toast.success('Template created');
+        // Create the template first
+        const templateResponse = await axios.post(`${API}/document-templates`, {
+          name: templateForm.name,
+          description: templateForm.description,
+          document_type_id: templateForm.document_type_id,
+          category_id: templateForm.category_id,
+          default_priority: templateForm.default_priority,
+          document_url: templateForm.document_url,
+          instructions: templateForm.instructions
+        });
+        
+        // If assign_to_employees is checked, create documents for each employee
+        if (templateForm.assign_to_employees && templateForm.employee_ids.length > 0) {
+          const assignmentPromises = templateForm.employee_ids.map(empId => 
+            axios.post(`${API}/document-approvals`, {
+              title: templateForm.name,
+              description: templateForm.description || templateForm.instructions || '',
+              document_type: documentTypes.find(t => t.id === templateForm.document_type_id)?.name || 'general',
+              category: documentCategories.find(c => c.id === templateForm.category_id)?.name || 'general',
+              document_url: templateForm.document_url,
+              priority: templateForm.default_priority,
+              assigned_to: empId,
+              acknowledgment_required: true,
+              status: 'assigned'
+            })
+          );
+          await Promise.all(assignmentPromises);
+          toast.success(`Template created and assigned to ${templateForm.employee_ids.length} employee(s)`);
+          fetchDocuments();
+          fetchAssignedDocuments();
+        } else {
+          toast.success('Template created');
+        }
       }
       fetchTemplates();
       setTemplateDialogOpen(false);
