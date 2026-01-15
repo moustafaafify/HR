@@ -385,9 +385,9 @@ const EmployeesNew = () => {
   };
 
   return (
-    <div data-testid="employees-page">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div data-testid="employees-page" className="space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 lg:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {t('employees')}
         </h1>
         {isAdmin && (
@@ -396,30 +396,30 @@ const EmployeesNew = () => {
               <Button 
                 onClick={() => openDialog()} 
                 data-testid="add-employee-button"
-                className="rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl"
+                className="rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl w-full sm:w-auto"
               >
                 <Plus size={20} className="me-2" />
                 {t('addNew')}
               </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
             <DialogHeader>
               <DialogTitle>{editingEmp ? t('edit') : t('addNew')} Employee</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} data-testid="employee-form">
               <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="grid w-full grid-cols-6">
-                  <TabsTrigger value="personal">Personal</TabsTrigger>
-                  <TabsTrigger value="employment">Employment</TabsTrigger>
-                  <TabsTrigger value="payroll">Payroll</TabsTrigger>
-                  <TabsTrigger value="time">Time & Leave</TabsTrigger>
-                  <TabsTrigger value="talent">Talent</TabsTrigger>
-                  <TabsTrigger value="compliance">Compliance</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
+                  <TabsTrigger value="personal" className="text-xs sm:text-sm">Personal</TabsTrigger>
+                  <TabsTrigger value="employment" className="text-xs sm:text-sm">Employment</TabsTrigger>
+                  <TabsTrigger value="payroll" className="text-xs sm:text-sm">Payroll</TabsTrigger>
+                  <TabsTrigger value="time" className="text-xs sm:text-sm">Time & Leave</TabsTrigger>
+                  <TabsTrigger value="talent" className="text-xs sm:text-sm">Talent</TabsTrigger>
+                  <TabsTrigger value="compliance" className="text-xs sm:text-sm">Compliance</TabsTrigger>
                 </TabsList>
 
                 {/* Personal & Contact Information */}
                 <TabsContent value="personal" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-1.5 block">Full Name *</label>
                       <input
