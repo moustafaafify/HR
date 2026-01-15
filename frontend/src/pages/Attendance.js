@@ -566,58 +566,58 @@ const Attendance = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">
+            <div className="min-w-0">
+              <p className="text-blue-100 text-xs lg:text-sm font-medium truncate">
                 {isManager ? 'Present Today' : 'Days This Month'}
               </p>
-              <p className="text-3xl font-black mt-1">
+              <p className="text-2xl lg:text-3xl font-black mt-1">
                 {isManager ? stats.presentToday : stats.monthRecords}
               </p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <Users size={24} />
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <Users size={20} className="lg:w-6 lg:h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-amber-100 text-sm font-medium">
+            <div className="min-w-0">
+              <p className="text-amber-100 text-xs lg:text-sm font-medium truncate">
                 {isManager ? 'Working Now' : 'Hours Today'}
               </p>
-              <p className="text-3xl font-black mt-1">
+              <p className="text-2xl lg:text-3xl font-black mt-1">
                 {isManager ? stats.workingNow : (todayRecord ? formatHours(calculateHours(todayRecord.clock_in, todayRecord.clock_out)) : '0h')}
               </p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <Timer size={24} />
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <Timer size={20} className="lg:w-6 lg:h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-emerald-100 text-sm font-medium">Total Hours (Month)</p>
-              <p className="text-3xl font-black mt-1">{Math.round(stats.totalHoursMonth)}h</p>
+            <div className="min-w-0">
+              <p className="text-emerald-100 text-xs lg:text-sm font-medium truncate">Total Hours</p>
+              <p className="text-2xl lg:text-3xl font-black mt-1">{Math.round(stats.totalHoursMonth)}h</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
-              <TrendingUp size={24} />
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
+              <TrendingUp size={20} className="lg:w-6 lg:h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">Avg Hours/Day</p>
-              <p className="text-3xl font-black mt-1">{stats.avgHours ? stats.avgHours.toFixed(1) : '0'}h</p>
+            <div className="min-w-0">
+              <p className="text-purple-100 text-xs lg:text-sm font-medium truncate">Avg Hours/Day</p>
+              <p className="text-2xl lg:text-3xl font-black mt-1">{stats.avgHours ? stats.avgHours.toFixed(1) : '0'}h</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-3">
+            <div className="bg-white/20 rounded-lg lg:rounded-xl p-2 lg:p-3 flex-shrink-0">
               <BarChart3 size={24} />
             </div>
           </div>
