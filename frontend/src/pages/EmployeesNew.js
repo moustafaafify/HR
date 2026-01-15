@@ -22,8 +22,11 @@ const EmployeesNew = () => {
   const [divisions, setDivisions] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [editingEmp, setEditingEmp] = useState(null);
   const [viewingEmp, setViewingEmp] = useState(null);
+  const [selectedEmpForPassword, setSelectedEmpForPassword] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
   const [formData, setFormData] = useState({
     // Personal & Contact
     full_name: '',
