@@ -824,6 +824,7 @@ const EmployeesNew = () => {
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Employee ID</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('name')}</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Job Title</th>
+                <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Manager</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('email')}</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">Status</th>
                 <th className="px-6 py-4 text-start text-sm font-bold text-slate-700">{t('actions')}</th>
