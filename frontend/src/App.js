@@ -8,6 +8,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Corporations from './pages/Corporations';
 import Branches from './pages/Branches';
+import Departments from './pages/Departments';
+import Divisions from './pages/Divisions';
 import Employees from './pages/Employees';
 import Leaves from './pages/Leaves';
 import Attendance from './pages/Attendance';
