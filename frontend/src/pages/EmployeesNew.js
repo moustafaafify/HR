@@ -901,6 +901,7 @@ const EmployeesNew = () => {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Employee List Table */}
