@@ -187,6 +187,20 @@ class Attendance(BaseModel):
     date: str
     clock_in: Optional[str] = None
     clock_out: Optional[str] = None
+    schedule_id: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Schedule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    start_time: str  # e.g., "09:00"
+    end_time: str    # e.g., "17:00"
+    days: List[str] = Field(default_factory=lambda: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+    break_start: Optional[str] = None  # e.g., "12:00"
+    break_end: Optional[str] = None    # e.g., "13:00"
+    is_default: bool = False
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class PerformanceReview(BaseModel):
