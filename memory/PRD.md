@@ -338,13 +338,21 @@ Build a full-stack HR platform with:
    - Employee: Submit travel requests, track status, start/complete trips with expense reporting
    - Admin: Approve/reject requests, view stats, manage all requests
    - Features: Trip types (domestic/international), purpose categories, transportation, accommodation, budget tracking
-10. **Recognition & Awards Module (NEW)** - Full peer recognition and awards system with:
+10. **Recognition & Awards Module** - Full peer recognition and awards system with:
    - Recognition Wall: Public feed of recognitions with likes and comments
    - Leaderboard: Rankings by points (all time, monthly, quarterly, yearly)
    - 8 pre-seeded categories (Star Performer, Team Player, Innovation, etc.)
    - Points system for gamification
    - Nominations for formal awards (e.g., Employee of the Month) requiring admin approval
    - Admin: Manage categories, review nominations, view all recognitions
+11. **Team Calendar Module (NEW)** - Full team calendar with:
+   - Month/Week view toggle with navigation
+   - Event types: Meeting, Holiday, Leave, Birthday, Anniversary, Company Event, Team Event, Training, Deadline
+   - Auto-display of approved leaves, employee birthdays, and work anniversaries
+   - Department filtering and event type checkboxes
+   - Event creation with location, virtual meeting links, RSVP
+   - Company-wide events (admin only)
+   - Color-coded event legend
 
 ## Upcoming Tasks (P1)
 1. **Test & Finalize Payroll Module** - Create salary structure, run payroll, verify payslips
