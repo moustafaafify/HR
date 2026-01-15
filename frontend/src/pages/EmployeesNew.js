@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Eye, Key, Lock, Unlock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
@@ -15,6 +16,7 @@ const API = `${BACKEND_URL}/api`;
 const EmployeesNew = () => {
   const { t } = useLanguage();
   const { formatCurrency } = useCurrency();
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [corporations, setCorporations] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -28,7 +30,10 @@ const EmployeesNew = () => {
   const [viewingEmp, setViewingEmp] = useState(null);
   const [selectedEmpForPassword, setSelectedEmpForPassword] = useState(null);
   const [newPassword, setNewPassword] = useState('');
-  const [formData, setFormData] = useState({
+  
+  // Role-based access
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
+  const isManager = user?.role === 'branch_manager' || isAdmin;  const [formData, setFormData] = useState({
     // Personal & Contact
     full_name: '',
     employee_id: '',
