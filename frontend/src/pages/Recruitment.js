@@ -707,9 +707,12 @@ const Recruitment = () => {
                         View Details
                       </Button>
                       <Button 
-                        onClick={() => { 
-                          setReferralDialogOpen(true);
+                        type="button"
+                        onClick={(e) => { 
+                          e.preventDefault();
+                          e.stopPropagation();
                           setApplicationForm({ ...applicationForm, job_id: job.id, source: 'referral' });
+                          setReferralDialogOpen(true);
                         }}
                         className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700"
                       >
