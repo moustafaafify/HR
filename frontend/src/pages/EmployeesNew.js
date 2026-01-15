@@ -663,23 +663,6 @@ const EmployeesNew = () => {
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
                       />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700 mb-1.5 block">Role</label>
-                      <Select 
-                        value={formData.role_id} 
-                        onValueChange={(value) => setFormData({ ...formData, role_id: value })}
-                      >
-                        <SelectTrigger data-testid="emp-role-select">
-                          <SelectValue placeholder="Select Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {roles.map((role) => (
-                            <SelectItem key={role.id} value={role.id}>{role.display_name || role.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 </TabsContent>
 
