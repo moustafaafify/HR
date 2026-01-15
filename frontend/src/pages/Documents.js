@@ -1307,24 +1307,13 @@ const Documents = () => {
           </h1>
           <p className="text-slate-500 text-sm sm:text-base mt-1">Create, assign, and manage document approvals</p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => { resetForm(); setCreateDialogOpen(true); }}
-            variant="outline"
-            className="rounded-xl gap-2"
-          >
-            <Plus size={18} />
-            Create Document
-          </Button>
-          <Button 
-            onClick={() => setAssignDialogOpen(true)}
-            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2"
-            data-testid="assign-document-btn"
-          >
-            <Users size={18} />
-            Assign to Employees
-          </Button>
-        </div>
+        <Button 
+          onClick={() => { resetForm(); setCreateDialogOpen(true); }}
+          className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2"
+        >
+          <Plus size={18} />
+          Create Document
+        </Button>
       </div>
 
       {/* Stats */}
