@@ -789,6 +789,66 @@ class Permission(BaseModel):
     category: str
     description: str
 
+# ============= APPRAISAL MODELS =============
+
+class AppraisalCycle(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # e.g., "Q1 2025 Review", "Annual Review 2025"
+    description: Optional[str] = None
+    cycle_type: str = "annual"  # annual, quarterly, mid_year, probation
+    start_date: str
+    end_date: str
+    review_period_start: str  # Period being reviewed
+    review_period_end: str
+    status: str = "draft"  # draft, active, closed
+    questions: List[Dict[str, Any]] = Field(default_factory=list)  # [{id, question, type, required, options}]
+    rating_scale: int = 5  # 1-5 or 1-10
+    self_assessment_required: bool = True
+    manager_review_required: bool = True
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Appraisal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cycle_id: str
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    department: Optional[str] = None
+    reviewer_id: Optional[str] = None
+    reviewer_name: Optional[str] = None
+    
+    status: str = "pending"  # pending, self_assessment, manager_review, completed, rejected
+    
+    # Self Assessment
+    self_assessment_answers: List[Dict[str, Any]] = Field(default_factory=list)  # [{question_id, answer, rating}]
+    self_overall_rating: Optional[float] = None
+    self_achievements: Optional[str] = None
+    self_challenges: Optional[str] = None
+    self_goals: Optional[str] = None
+    self_submitted_at: Optional[str] = None
+    
+    # Manager Review
+    manager_answers: List[Dict[str, Any]] = Field(default_factory=list)  # [{question_id, answer, rating}]
+    manager_overall_rating: Optional[float] = None
+    manager_feedback: Optional[str] = None
+    manager_strengths: Optional[str] = None
+    manager_improvements: Optional[str] = None
+    manager_recommendations: Optional[str] = None
+    manager_submitted_at: Optional[str] = None
+    
+    # Final
+    final_rating: Optional[float] = None
+    final_comments: Optional[str] = None
+    acknowledged_by_employee: bool = False
+    acknowledged_at: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 # ============= AUTHENTICATION =============
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
