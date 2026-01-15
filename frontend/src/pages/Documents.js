@@ -1112,6 +1112,13 @@ const Documents = () => {
             <FileX size={14} />
             Rejected
           </TabsTrigger>
+          <TabsTrigger value="assigned" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <Users size={14} />
+            Assigned
+            {assignedDocs.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs rounded-full">{assignedDocs.length}</span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* All Documents Tab */}
