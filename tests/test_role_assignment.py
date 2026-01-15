@@ -235,8 +235,9 @@ class TestRoleAssignment:
         
         if employees:
             # Check that role_id field exists in response
-            assert "role_id" in employees[0], "role_id field missing from employee list"
-            print(f"Employee list includes role_id field. First employee role_id: {employees[0].get('role_id')}")
+            first_emp = employees[0]
+            assert "role_id" in first_emp, "role_id field missing from employee list"
+            print(f"Employee list includes role_id field. First employee role_id: {first_emp.get('role_id')}")
     
     def test_get_single_role_by_id(self):
         """Test GET /api/roles/{role_id} returns single role"""
