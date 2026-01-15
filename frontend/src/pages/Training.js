@@ -923,6 +923,15 @@ const Training = () => {
             <Users size={14} />
             Assignments
           </TabsTrigger>
+          <TabsTrigger value="requests" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
+            <GraduationCap size={14} />
+            Requests
+            {allTrainingRequests.filter(r => r.status === 'submitted').length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs rounded-full">
+                {allTrainingRequests.filter(r => r.status === 'submitted').length}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-lg flex-1 sm:flex-initial flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm px-2 sm:px-4">
             <Settings size={14} />
             Types & Categories
