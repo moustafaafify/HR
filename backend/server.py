@@ -9684,6 +9684,64 @@ async def get_overtime_requests(
     requests = await db.overtime_requests.find(query, {"_id": 0}).sort("date", -1).to_list(500)
     return requests
 
+# ============= OVERTIME POLICY ENDPOINTS (must be before {request_id} routes) =============
+
+@api_router.get("/overtime/policies")
+async def get_overtime_policies(current_user: User = Depends(get_current_user)):
+    """Get overtime policies"""
+    policies = await db.overtime_policies.find({}, {"_id": 0}).to_list(100)
+    
+    # Create default policy if none exists
+    if not policies:
+        default_policy = OvertimePolicy(
+            name="Standard Overtime Policy",
+            description="Default overtime policy for all employees",
+            regular_rate=1.5,
+            weekend_rate=1.5,
+            holiday_rate=2.0,
+            emergency_rate=2.0,
+            max_daily_hours=4,
+            max_weekly_hours=20,
+            max_monthly_hours=60,
+            is_active=True
+        )
+        await db.overtime_policies.insert_one(default_policy.model_dump())
+        policies = [default_policy.model_dump()]
+    
+    return policies
+
+@api_router.post("/overtime/policies")
+async def create_overtime_policy(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create an overtime policy (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage overtime policies")
+    
+    policy = OvertimePolicy(**data)
+    await db.overtime_policies.insert_one(policy.model_dump())
+    return policy.model_dump()
+
+@api_router.put("/overtime/policies/{policy_id}")
+async def update_overtime_policy(policy_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an overtime policy (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage overtime policies")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.overtime_policies.update_one({"id": policy_id}, {"$set": data})
+    
+    return await db.overtime_policies.find_one({"id": policy_id}, {"_id": 0})
+
+@api_router.delete("/overtime/policies/{policy_id}")
+async def delete_overtime_policy(policy_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an overtime policy (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage overtime policies")
+    
+    await db.overtime_policies.delete_one({"id": policy_id})
+    return {"message": "Policy deleted"}
+
+# ============= OVERTIME REQUEST DETAIL ENDPOINTS =============
+
 @api_router.get("/overtime/{request_id}")
 async def get_overtime_request(request_id: str, current_user: User = Depends(get_current_user)):
     """Get a specific overtime request"""
