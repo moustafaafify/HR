@@ -56,6 +56,7 @@ const EmployeesNew = () => {
     hire_date: '',
     employment_status: 'full-time',
     probation_end_date: '',
+    role: 'employee',
     
     // Payroll & Benefits
     bank_account_number: '',
