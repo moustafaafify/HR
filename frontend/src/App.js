@@ -29,6 +29,7 @@ import Payroll from './pages/Payroll';
 import Assets from './pages/Assets';
 import Communications from './pages/Communications';
 import Complaints from './pages/Complaints';
+import Disciplinary from './pages/Disciplinary';
 import Layout from './components/Layout';
 import './App.css';
 
