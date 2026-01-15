@@ -2256,12 +2256,18 @@ async def delete_training_assignment(assignment_id: str, current_user: User = De
 @api_router.post("/document-approvals")
 async def create_document_approval(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     """Create a new document approval request"""
-    # Get employee ID from current user
+    # Get employee ID from current user - try multiple methods
     employee = await db.employees.find_one({"user_id": current_user.id})
-    if not employee and current_user.role not in ["super_admin", "corp_admin"]:
-        raise HTTPException(status_code=403, detail="Employee profile not found")
+    if not employee:
+        # Fallback: try to find employee by email
+        employee = await db.employees.find_one({"email": current_user.email})
     
-    data["employee_id"] = employee["id"] if employee else current_user.id
+    # Use employee ID if found, otherwise use current user ID
+    if employee:
+        data["employee_id"] = employee["id"]
+    else:
+        data["employee_id"] = current_user.id
+    
     data["status"] = data.get("status", "submitted")
     doc = DocumentApproval(**data)
     await db.document_approvals.insert_one(doc.model_dump())
