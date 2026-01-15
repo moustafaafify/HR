@@ -1312,7 +1312,318 @@ const Attendance = () => {
             )}
           </TabsContent>
         )}
+
+        {/* Time Corrections Tab */}
+        <TabsContent value="corrections" className="mt-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-bold text-slate-900">Time Correction Requests</h2>
+              {!isManager && currentEmployee && (
+                <p className="text-sm text-slate-500">Submit requests to correct your attendance records</p>
+              )}
+            </div>
+            
+            {/* My Correction Requests (Employee View) */}
+            {!isManager && currentEmployee && (
+              <div className="divide-y divide-slate-100">
+                {corrections.filter(c => c.employee_id === currentEmployee.id).length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    <AlertCircle size={40} className="mx-auto mb-3 text-slate-300" />
+                    <p>No correction requests</p>
+                    <p className="text-sm mt-1">Click "Request Correction" on any attendance record to submit a request</p>
+                  </div>
+                ) : (
+                  corrections.filter(c => c.employee_id === currentEmployee.id).map(correction => (
+                    <div key={correction.id} className="p-4 hover:bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-slate-900">{correction.date}</p>
+                          <p className="text-sm text-slate-500">
+                            {correction.original_clock_in} - {correction.original_clock_out} → {correction.requested_clock_in} - {correction.requested_clock_out}
+                          </p>
+                          <p className="text-sm text-slate-400 mt-1">{correction.reason}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          correction.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                          correction.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {correction.status.charAt(0).toUpperCase() + correction.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* All Correction Requests (Manager/Admin View) */}
+            {isManager && (
+              <div className="divide-y divide-slate-100">
+                {corrections.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    <AlertCircle size={40} className="mx-auto mb-3 text-slate-300" />
+                    <p>No correction requests</p>
+                  </div>
+                ) : (
+                  corrections.map(correction => (
+                    <div key={correction.id} className="p-4 hover:bg-slate-50">
+                      <div className="flex items-center gap-4">
+                        {/* Employee Info */}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                          {getEmployeeName(correction.employee_id)?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-slate-900">{getEmployeeName(correction.employee_id)}</p>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              correction.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                              correction.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {correction.status.charAt(0).toUpperCase() + correction.status.slice(1)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-500">{correction.date}</p>
+                          <div className="flex items-center gap-4 mt-1 text-sm">
+                            <span className="text-slate-400">Original: {correction.original_clock_in || '-'} - {correction.original_clock_out || '-'}</span>
+                            <span className="text-indigo-600">→ Requested: {correction.requested_clock_in || '-'} - {correction.requested_clock_out || '-'}</span>
+                          </div>
+                          <p className="text-sm text-slate-500 mt-1">Reason: {correction.reason}</p>
+                        </div>
+                        
+                        {/* Actions */}
+                        {correction.status === 'pending' && (
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              size="sm"
+                              onClick={() => handleApproveCorrection(correction.id)}
+                              className="rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                            >
+                              <CheckCircle2 size={16} className="mr-1" />
+                              Approve
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setSelectedCorrection(correction); setRejectDialogOpen(true); }}
+                              className="rounded-lg border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              <XCircle size={16} className="mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {correction.status !== 'pending' && (
+                          <Button 
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setSelectedCorrection(correction); setViewCorrectionDialogOpen(true); }}
+                            className="rounded-lg"
+                          >
+                            <Eye size={16} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Export Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Export Attendance Report</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Start Date</label>
+                <input
+                  type="date"
+                  value={exportFilters.start_date}
+                  onChange={(e) => setExportFilters({ ...exportFilters, start_date: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">End Date</label>
+                <input
+                  type="date"
+                  value={exportFilters.end_date}
+                  onChange={(e) => setExportFilters({ ...exportFilters, end_date: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Employee</label>
+              <Select value={exportFilters.employee_id} onValueChange={(value) => setExportFilters({ ...exportFilters, employee_id: value })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select Employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Employees</SelectItem>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleExportCSV} className="rounded-xl bg-indigo-950 hover:bg-indigo-900 flex-1">
+                <Download size={18} className="mr-2" />
+                Download CSV
+              </Button>
+              <Button type="button" onClick={() => setExportDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Time Correction Request Dialog */}
+      <Dialog open={correctionDialogOpen} onOpenChange={setCorrectionDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Request Time Correction</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitCorrection} className="space-y-4 mt-4">
+            <div className="bg-slate-50 rounded-xl p-4">
+              <p className="text-sm text-slate-500 mb-1">Date</p>
+              <p className="font-medium text-slate-900">{correctionForm.date}</p>
+              <p className="text-sm text-slate-500 mt-2 mb-1">Original Time</p>
+              <p className="font-medium text-slate-900">{correctionForm.original_clock_in || '-'} - {correctionForm.original_clock_out || '-'}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Corrected Clock In</label>
+                <input
+                  type="time"
+                  value={correctionForm.requested_clock_in}
+                  onChange={(e) => setCorrectionForm({ ...correctionForm, requested_clock_in: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Corrected Clock Out</label>
+                <input
+                  type="time"
+                  value={correctionForm.requested_clock_out}
+                  onChange={(e) => setCorrectionForm({ ...correctionForm, requested_clock_out: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Reason for Correction</label>
+              <textarea
+                value={correctionForm.reason}
+                onChange={(e) => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
+                placeholder="Please explain why you need this correction..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                rows={3}
+                required
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-950 hover:bg-indigo-900 flex-1">
+                <Send size={18} className="mr-2" />
+                Submit Request
+              </Button>
+              <Button type="button" onClick={() => setCorrectionDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Correction Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Reject Time Correction</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleRejectCorrection} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Reason for Rejection</label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Please provide a reason..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                rows={3}
+                required
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" className="rounded-xl bg-red-600 hover:bg-red-700 flex-1">
+                Reject
+              </Button>
+              <Button type="button" onClick={() => setRejectDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Correction Details Dialog */}
+      <Dialog open={viewCorrectionDialogOpen} onOpenChange={setViewCorrectionDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Correction Details</DialogTitle>
+          </DialogHeader>
+          {selectedCorrection && (
+            <div className="space-y-4 mt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                  {getEmployeeName(selectedCorrection.employee_id)?.charAt(0) || '?'}
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900">{getEmployeeName(selectedCorrection.employee_id)}</p>
+                  <p className="text-sm text-slate-500">{selectedCorrection.date}</p>
+                </div>
+                <span className={`ml-auto px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedCorrection.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                  selectedCorrection.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                  'bg-amber-100 text-amber-700'
+                }`}>
+                  {selectedCorrection.status.charAt(0).toUpperCase() + selectedCorrection.status.slice(1)}
+                </span>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-slate-500">Original Time</p>
+                  <p className="font-medium">{selectedCorrection.original_clock_in || '-'} - {selectedCorrection.original_clock_out || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Requested Time</p>
+                  <p className="font-medium text-indigo-600">{selectedCorrection.requested_clock_in || '-'} - {selectedCorrection.requested_clock_out || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Reason</p>
+                  <p className="font-medium">{selectedCorrection.reason}</p>
+                </div>
+                {selectedCorrection.rejection_reason && (
+                  <div>
+                    <p className="text-sm text-slate-500">Rejection Reason</p>
+                    <p className="font-medium text-red-600">{selectedCorrection.rejection_reason}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
