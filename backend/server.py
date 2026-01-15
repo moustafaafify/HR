@@ -191,13 +191,29 @@ class LeaveBalance(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     employee_id: str
     year: int
+    # Annual Leave
     annual_leave: float = 20.0
     annual_used: float = 0.0
+    # Sick Leave
     sick_leave: float = 10.0
     sick_used: float = 0.0
+    # Personal Leave
     personal_leave: float = 5.0
     personal_used: float = 0.0
-    unpaid_leave: float = 0.0
+    # Unpaid Leave (no limit, just track used)
+    unpaid_used: float = 0.0
+    # Maternity Leave
+    maternity_leave: float = 90.0
+    maternity_used: float = 0.0
+    # Paternity Leave
+    paternity_leave: float = 14.0
+    paternity_used: float = 0.0
+    # Bereavement Leave
+    bereavement_leave: float = 5.0
+    bereavement_used: float = 0.0
+    # Other Leave
+    other_used: float = 0.0
+    # Carry over from previous year
     carry_over: float = 0.0
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
