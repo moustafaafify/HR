@@ -1932,6 +1932,312 @@ async def delete_training_request(request_id: str, current_user: User = Depends(
         raise HTTPException(status_code=404, detail="Training request not found")
     return {"message": "Training request deleted"}
 
+# ============= TRAINING TYPES & CATEGORIES =============
+
+@api_router.get("/training-types")
+async def get_training_types(current_user: User = Depends(get_current_user)):
+    types = await db.training_types.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+    return types
+
+@api_router.post("/training-types")
+async def create_training_type(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    training_type = TrainingType(**data)
+    await db.training_types.insert_one(training_type.model_dump())
+    return training_type.model_dump()
+
+@api_router.put("/training-types/{type_id}")
+async def update_training_type(type_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    result = await db.training_types.update_one({"id": type_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training type not found")
+    return await db.training_types.find_one({"id": type_id}, {"_id": 0})
+
+@api_router.delete("/training-types/{type_id}")
+async def delete_training_type(type_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.training_types.delete_one({"id": type_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Training type not found")
+    return {"message": "Training type deleted"}
+
+@api_router.get("/training-categories")
+async def get_training_categories(current_user: User = Depends(get_current_user)):
+    categories = await db.training_categories.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+    return categories
+
+@api_router.post("/training-categories")
+async def create_training_category(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    category = TrainingCategory(**data)
+    await db.training_categories.insert_one(category.model_dump())
+    return category.model_dump()
+
+@api_router.put("/training-categories/{category_id}")
+async def update_training_category(category_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    result = await db.training_categories.update_one({"id": category_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training category not found")
+    return await db.training_categories.find_one({"id": category_id}, {"_id": 0})
+
+@api_router.delete("/training-categories/{category_id}")
+async def delete_training_category(category_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.training_categories.delete_one({"id": category_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Training category not found")
+    return {"message": "Training category deleted"}
+
+# ============= TRAINING COURSES =============
+
+@api_router.get("/training-courses")
+async def get_training_courses(
+    type_id: Optional[str] = None,
+    category_id: Optional[str] = None,
+    is_published: Optional[bool] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if type_id:
+        query["type_id"] = type_id
+    if category_id:
+        query["category_id"] = category_id
+    if is_published is not None:
+        query["is_published"] = is_published
+    courses = await db.training_courses.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return courses
+
+@api_router.get("/training-courses/stats")
+async def get_training_courses_stats(current_user: User = Depends(get_current_user)):
+    courses = await db.training_courses.find({}, {"_id": 0}).to_list(1000)
+    assignments = await db.training_assignments.find({}, {"_id": 0}).to_list(1000)
+    
+    return {
+        "total_courses": len(courses),
+        "published_courses": len([c for c in courses if c.get("is_published")]),
+        "draft_courses": len([c for c in courses if not c.get("is_published")]),
+        "total_assignments": len(assignments),
+        "completed_assignments": len([a for a in assignments if a.get("status") == "completed"]),
+        "in_progress_assignments": len([a for a in assignments if a.get("status") == "in_progress"]),
+        "total_views": sum(c.get("view_count", 0) for c in courses),
+        "total_completions": sum(c.get("completion_count", 0) for c in courses)
+    }
+
+@api_router.get("/training-courses/{course_id}")
+async def get_training_course(course_id: str, current_user: User = Depends(get_current_user)):
+    course = await db.training_courses.find_one({"id": course_id}, {"_id": 0})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    # Increment view count
+    await db.training_courses.update_one({"id": course_id}, {"$inc": {"view_count": 1}})
+    return course
+
+@api_router.post("/training-courses")
+async def create_training_course(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["created_by"] = current_user.id
+    course = TrainingCourse(**data)
+    await db.training_courses.insert_one(course.model_dump())
+    return course.model_dump()
+
+@api_router.put("/training-courses/{course_id}")
+async def update_training_course(course_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.training_courses.update_one({"id": course_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return await db.training_courses.find_one({"id": course_id}, {"_id": 0})
+
+@api_router.put("/training-courses/{course_id}/publish")
+async def publish_training_course(course_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.training_courses.update_one(
+        {"id": course_id}, 
+        {"$set": {"is_published": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return await db.training_courses.find_one({"id": course_id}, {"_id": 0})
+
+@api_router.put("/training-courses/{course_id}/unpublish")
+async def unpublish_training_course(course_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.training_courses.update_one(
+        {"id": course_id}, 
+        {"$set": {"is_published": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return await db.training_courses.find_one({"id": course_id}, {"_id": 0})
+
+@api_router.delete("/training-courses/{course_id}")
+async def delete_training_course(course_id: str, current_user: User = Depends(get_current_user)):
+    # Delete associated assignments
+    await db.training_assignments.delete_many({"course_id": course_id})
+    result = await db.training_courses.delete_one({"id": course_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return {"message": "Course deleted"}
+
+# ============= TRAINING ASSIGNMENTS =============
+
+@api_router.get("/training-assignments")
+async def get_training_assignments(
+    course_id: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if course_id:
+        query["course_id"] = course_id
+    if employee_id:
+        query["employee_id"] = employee_id
+    if status:
+        query["status"] = status
+    assignments = await db.training_assignments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return assignments
+
+@api_router.get("/training-assignments/my")
+async def get_my_training_assignments(current_user: User = Depends(get_current_user)):
+    """Get current user's assigned training courses"""
+    employee = await db.employees.find_one({
+        "$or": [
+            {"email": current_user.email},
+            {"work_email": current_user.email},
+            {"personal_email": current_user.email}
+        ]
+    }, {"_id": 0})
+    if not employee:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    
+    assignments = await db.training_assignments.find({"employee_id": employee["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enrich with course details
+    courses = {c["id"]: c for c in await db.training_courses.find({}, {"_id": 0}).to_list(1000)}
+    for assignment in assignments:
+        course = courses.get(assignment.get("course_id"), {})
+        assignment["course"] = course
+    
+    return assignments
+
+@api_router.post("/training-assignments")
+async def create_training_assignment(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["assigned_by"] = current_user.id
+    assignment = TrainingAssignment(**data)
+    await db.training_assignments.insert_one(assignment.model_dump())
+    return assignment.model_dump()
+
+@api_router.post("/training-assignments/bulk")
+async def bulk_assign_training(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Assign a course to multiple employees"""
+    course_id = data.get("course_id")
+    employee_ids = data.get("employee_ids", [])
+    due_date = data.get("due_date")
+    
+    created = []
+    for emp_id in employee_ids:
+        # Check if already assigned
+        existing = await db.training_assignments.find_one({"course_id": course_id, "employee_id": emp_id})
+        if not existing:
+            assignment = TrainingAssignment(
+                course_id=course_id,
+                employee_id=emp_id,
+                assigned_by=current_user.id,
+                due_date=due_date
+            )
+            await db.training_assignments.insert_one(assignment.model_dump())
+            created.append(assignment.model_dump())
+    
+    return {"created": len(created), "assignments": created}
+
+@api_router.put("/training-assignments/{assignment_id}")
+async def update_training_assignment(assignment_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.training_assignments.update_one({"id": assignment_id}, {"$set": data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return await db.training_assignments.find_one({"id": assignment_id}, {"_id": 0})
+
+@api_router.put("/training-assignments/{assignment_id}/start")
+async def start_training_assignment(assignment_id: str, current_user: User = Depends(get_current_user)):
+    """Mark training as started"""
+    update_data = {
+        "status": "in_progress",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "last_accessed_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    result = await db.training_assignments.update_one({"id": assignment_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return await db.training_assignments.find_one({"id": assignment_id}, {"_id": 0})
+
+@api_router.put("/training-assignments/{assignment_id}/progress")
+async def update_training_progress(assignment_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update progress on a training assignment"""
+    update_data = {
+        "progress": data.get("progress", 0),
+        "time_spent_minutes": data.get("time_spent_minutes", 0),
+        "last_accessed_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if update_data["progress"] >= 100:
+        update_data["status"] = "completed"
+        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+        # Increment course completion count
+        assignment = await db.training_assignments.find_one({"id": assignment_id}, {"_id": 0})
+        if assignment:
+            await db.training_courses.update_one(
+                {"id": assignment["course_id"]}, 
+                {"$inc": {"completion_count": 1}}
+            )
+    
+    result = await db.training_assignments.update_one({"id": assignment_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return await db.training_assignments.find_one({"id": assignment_id}, {"_id": 0})
+
+@api_router.put("/training-assignments/{assignment_id}/complete")
+async def complete_training_assignment(assignment_id: str, data: Dict[str, Any] = {}, current_user: User = Depends(get_current_user)):
+    """Mark training as completed"""
+    update_data = {
+        "status": "completed",
+        "progress": 100,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if data.get("feedback"):
+        update_data["feedback"] = data["feedback"]
+    if data.get("rating"):
+        update_data["rating"] = data["rating"]
+    
+    # Get assignment to update course stats
+    assignment = await db.training_assignments.find_one({"id": assignment_id}, {"_id": 0})
+    if assignment and assignment.get("status") != "completed":
+        await db.training_courses.update_one(
+            {"id": assignment["course_id"]}, 
+            {"$inc": {"completion_count": 1}}
+        )
+        # Update course average rating if rating provided
+        if data.get("rating"):
+            course = await db.training_courses.find_one({"id": assignment["course_id"]}, {"_id": 0})
+            if course:
+                completions = course.get("completion_count", 0) + 1
+                current_avg = course.get("avg_rating", 0)
+                new_avg = ((current_avg * (completions - 1)) + data["rating"]) / completions
+                await db.training_courses.update_one(
+                    {"id": assignment["course_id"]}, 
+                    {"$set": {"avg_rating": round(new_avg, 1)}}
+                )
+    
+    result = await db.training_assignments.update_one({"id": assignment_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return await db.training_assignments.find_one({"id": assignment_id}, {"_id": 0})
+
+@api_router.delete("/training-assignments/{assignment_id}")
+async def delete_training_assignment(assignment_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.training_assignments.delete_one({"id": assignment_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return {"message": "Assignment deleted"}
+
 # ============= DOCUMENT APPROVAL ROUTES =============
 
 @api_router.post("/document-approvals")
