@@ -64,7 +64,9 @@ const STATUS_CONFIG = [
   { value: 'under_review', label: 'Under Review', color: 'bg-amber-100 text-amber-700', icon: Eye },
   { value: 'approved', label: 'Approved', color: 'bg-emerald-100 text-emerald-700', icon: FileCheck },
   { value: 'rejected', label: 'Rejected', color: 'bg-rose-100 text-rose-700', icon: FileX },
-  { value: 'revision_requested', label: 'Revision Requested', color: 'bg-orange-100 text-orange-700', icon: RotateCcw }
+  { value: 'revision_requested', label: 'Revision Requested', color: 'bg-orange-100 text-orange-700', icon: RotateCcw },
+  { value: 'pending_acknowledgment', label: 'Pending Acknowledgment', color: 'bg-purple-100 text-purple-700', icon: Clock },
+  { value: 'acknowledged', label: 'Acknowledged', color: 'bg-teal-100 text-teal-700', icon: FileCheck }
 ];
 
 const Documents = () => {
