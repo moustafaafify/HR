@@ -138,6 +138,38 @@ Build a full-stack HR platform with:
 - Onboarding team contacts display
 - Feedback submission after completion (star rating + comments)
 
+### Offboarding Module (COMPLETED - Jan 15, 2026)
+**Offboarding Templates:**
+- Create reusable templates with customizable tasks
+- Task categories: Asset Return, Access Revocation, Knowledge Transfer, Documentation, Exit Interview, Clearance, Administrative, Other
+- Set task due days, required flag, and assigned department (Employee, Manager, HR, IT)
+- Exit message for departing employees
+- Separation reason-specific templates (Resignation, Termination, Retirement, Contract End, Layoff)
+
+**Offboarding Instances:**
+- Start offboarding for employees with template selection
+- Track separation reason and last working date
+- Tasks copied from template with completion tracking
+- Assign manager and HR contact
+- Track progress with percentage completion
+- Auto-complete when all tasks done
+
+**Admin Features:**
+- Stats dashboard (In Progress, Completed, Overdue Tasks, Avg Completion)
+- Active/Completed/Templates tabs
+- View individual offboarding progress
+- Clearance tracking (HR, IT, Finance, Manager, Admin)
+- Exit interview scheduling and notes
+- Update task and clearance status
+
+**Employee Features:**
+- "My Offboarding" view with exit message
+- Progress bar and quick stats (Completed, Remaining, Clearances, Days Left)
+- Clearance status display (5 departments)
+- Tasks grouped by category with completion checkboxes
+- Offboarding contacts display
+- Feedback submission after completion
+
 ### Responsive Design (COMPLETED)
 - Mobile header with hamburger menu
 - Slide-out sidebar on mobile/tablet
