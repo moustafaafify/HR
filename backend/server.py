@@ -779,6 +779,15 @@ async def get_all_leave_balances(year: Optional[int] = None, current_user: User 
     balances = await db.leave_balances.find({"year": year}, {"_id": 0}).to_list(1000)
     return balances
 
+@api_router.post("/leave-balances")
+async def create_leave_balance(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new leave balance for an employee"""
+    if "year" not in data:
+        data["year"] = datetime.now().year
+    leave_balance = LeaveBalance(**data)
+    await db.leave_balances.insert_one(leave_balance.model_dump())
+    return leave_balance.model_dump()
+
 # ============= WORKFLOW ROUTES =============
 
 @api_router.post("/workflows", response_model=Workflow)
