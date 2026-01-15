@@ -1165,17 +1165,115 @@ async def assign_schedule_to_employee(emp_id: str, data: Dict[str, Any], current
 
 # ============= PERFORMANCE REVIEW ROUTES =============
 
-@api_router.post("/reviews", response_model=PerformanceReview)
+@api_router.post("/reviews")
 async def create_review(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     review = PerformanceReview(**data)
     await db.reviews.insert_one(review.model_dump())
+    return review.model_dump()
+
+@api_router.get("/reviews")
+async def get_reviews(
+    employee_id: Optional[str] = None, 
+    reviewer_id: Optional[str] = None,
+    status: Optional[str] = None,
+    review_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if employee_id:
+        query["employee_id"] = employee_id
+    if reviewer_id:
+        query["reviewer_id"] = reviewer_id
+    if status:
+        query["status"] = status
+    if review_type:
+        query["review_type"] = review_type
+    reviews = await db.reviews.find(query, {"_id": 0}).to_list(1000)
+    return reviews
+
+@api_router.get("/reviews/{review_id}")
+async def get_review(review_id: str, current_user: User = Depends(get_current_user)):
+    review = await db.reviews.find_one({"id": review_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
     return review
 
-@api_router.get("/reviews", response_model=List[PerformanceReview])
-async def get_reviews(employee_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
-    query = {"employee_id": employee_id} if employee_id else {}
-    reviews = await db.reviews.find(query, {"_id": 0}).to_list(1000)
-    return [PerformanceReview(**r) for r in reviews]
+@api_router.put("/reviews/{review_id}")
+async def update_review(review_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.reviews.update_one({"id": review_id}, {"$set": data})
+    review = await db.reviews.find_one({"id": review_id}, {"_id": 0})
+    return review
+
+@api_router.delete("/reviews/{review_id}")
+async def delete_review(review_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.reviews.delete_one({"id": review_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"message": "Review deleted successfully"}
+
+@api_router.post("/reviews/{review_id}/submit-self-assessment")
+async def submit_self_assessment(review_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Employee submits their self-assessment"""
+    update_data = {
+        "self_assessment": data.get("self_assessment"),
+        "self_rating": data.get("self_rating"),
+        "achievements": data.get("achievements"),
+        "challenges": data.get("challenges"),
+        "status": "pending_review",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.reviews.update_one({"id": review_id}, {"$set": update_data})
+    review = await db.reviews.find_one({"id": review_id}, {"_id": 0})
+    return review
+
+@api_router.post("/reviews/{review_id}/complete")
+async def complete_review(review_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Manager completes the review"""
+    # Calculate overall rating from category ratings
+    ratings = [
+        data.get("communication_rating"),
+        data.get("teamwork_rating"),
+        data.get("technical_skills_rating"),
+        data.get("problem_solving_rating"),
+        data.get("leadership_rating"),
+        data.get("punctuality_rating")
+    ]
+    valid_ratings = [r for r in ratings if r is not None]
+    overall_rating = sum(valid_ratings) / len(valid_ratings) if valid_ratings else None
+    
+    update_data = {
+        **data,
+        "overall_rating": overall_rating,
+        "status": "completed",
+        "review_date": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.reviews.update_one({"id": review_id}, {"$set": update_data})
+    review = await db.reviews.find_one({"id": review_id}, {"_id": 0})
+    return review
+
+@api_router.get("/reviews/stats/summary")
+async def get_review_stats(current_user: User = Depends(get_current_user)):
+    """Get performance review statistics"""
+    total = await db.reviews.count_documents({})
+    completed = await db.reviews.count_documents({"status": "completed"})
+    pending = await db.reviews.count_documents({"status": {"$in": ["draft", "pending_self_assessment", "pending_review"]}})
+    
+    # Get average rating
+    pipeline = [
+        {"$match": {"overall_rating": {"$ne": None}}},
+        {"$group": {"_id": None, "avg_rating": {"$avg": "$overall_rating"}}}
+    ]
+    avg_result = await db.reviews.aggregate(pipeline).to_list(1)
+    avg_rating = avg_result[0]["avg_rating"] if avg_result else 0
+    
+    return {
+        "total_reviews": total,
+        "completed_reviews": completed,
+        "pending_reviews": pending,
+        "average_rating": round(avg_rating, 2) if avg_rating else 0
+    }
 
 # ============= DASHBOARD STATS =============
 
