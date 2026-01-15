@@ -269,6 +269,7 @@ const Layout = () => {
               <NavLink item={{ path: '/documents', icon: FileCheck, label: 'Documents' }} />
               <NavLink item={{ path: '/appraisals', icon: ClipboardList, label: 'Appraisals' }} />
               <NavLink item={{ path: '/payroll', icon: Wallet, label: 'Payroll' }} />
+              <NavLink item={{ path: '/assets', icon: Package, label: 'Assets' }} />
               <NavLink item={{ path: '/org-chart', icon: Network, label: 'Org Chart' }} />
               <NavLink item={{ path: '/settings/workflows', icon: Workflow, label: 'Workflows' }} />
               <NavLink item={{ path: '/settings', icon: SettingsIcon, label: t('settings') }} />
