@@ -424,6 +424,42 @@ class DocumentApproval(BaseModel):
     acknowledgment_required: bool = False
     acknowledged: bool = False
     acknowledged_at: Optional[str] = None
+    template_id: Optional[str] = None  # Reference to template if created from one
+
+class DocumentTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    document_type_id: Optional[str] = None  # Reference to DocumentType
+    category_id: Optional[str] = None  # Reference to DocumentCategory
+    default_priority: str = "normal"
+    document_url: Optional[str] = None  # Template file URL
+    instructions: Optional[str] = None  # Instructions for filling out
+    required_fields: Optional[List[str]] = None  # Fields that must be filled
+    is_active: bool = True
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
+
+class DocumentType(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None  # emoji or icon name
+    color: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class DocumentCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OnboardingTask(BaseModel):
     model_config = ConfigDict(extra="ignore")
