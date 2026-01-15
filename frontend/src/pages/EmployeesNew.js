@@ -257,6 +257,12 @@ const EmployeesNew = () => {
     setViewDialogOpen(true);
   };
 
+  const getManagerName = (managerId) => {
+    if (!managerId || managerId === 'none') return '-';
+    const manager = employees.find(emp => emp.id === managerId);
+    return manager ? manager.full_name : '-';
+  };
+
   return (
     <div data-testid="employees-page">
       <div className="flex items-center justify-between mb-8">
