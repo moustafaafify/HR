@@ -29,7 +29,8 @@ import {
   Network,
   Wallet,
   Package,
-  Megaphone
+  Megaphone,
+  AlertOctagon
 } from 'lucide-react';
 
 const Layout = () => {
