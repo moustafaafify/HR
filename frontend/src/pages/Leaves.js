@@ -510,54 +510,145 @@ const Leaves = () => {
             <p className="text-slate-400 text-sm">{new Date().getFullYear()} Allocation</p>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-3">
-                  <Palmtree size={32} className="text-emerald-600" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Annual Leave */}
+              <div className="bg-emerald-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Palmtree size={20} className="text-emerald-600" />
+                  <span className="text-sm font-medium text-slate-700">Annual</span>
                 </div>
-                <p className="text-slate-500 text-sm">Annual Leave</p>
-                <p className="text-2xl font-black text-slate-900">
+                <p className="text-2xl font-black text-emerald-700">
                   {(myBalance.annual_leave || 20) - (myBalance.annual_used || 0)}
                   <span className="text-sm font-normal text-slate-400">/{myBalance.annual_leave || 20}</span>
                 </p>
-                <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
+                <div className="w-full bg-emerald-200 rounded-full h-1.5 mt-2">
                   <div 
-                    className="bg-emerald-500 h-2 rounded-full transition-all"
-                    style={{ width: `${((myBalance.annual_leave - (myBalance.annual_used || 0)) / myBalance.annual_leave) * 100}%` }}
+                    className="bg-emerald-600 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.max(0, ((myBalance.annual_leave - (myBalance.annual_used || 0)) / myBalance.annual_leave) * 100)}%` }}
                   />
                 </div>
+                <p className="text-xs text-slate-500 mt-1">{myBalance.annual_used || 0} used</p>
               </div>
-              <div className="text-center">
-                <div className="w-20 h-20 mx-auto rounded-full bg-rose-100 flex items-center justify-center mb-3">
-                  <Heart size={32} className="text-rose-600" />
+              
+              {/* Sick Leave */}
+              <div className="bg-rose-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart size={20} className="text-rose-600" />
+                  <span className="text-sm font-medium text-slate-700">Sick</span>
                 </div>
-                <p className="text-slate-500 text-sm">Sick Leave</p>
-                <p className="text-2xl font-black text-slate-900">
+                <p className="text-2xl font-black text-rose-700">
                   {(myBalance.sick_leave || 10) - (myBalance.sick_used || 0)}
                   <span className="text-sm font-normal text-slate-400">/{myBalance.sick_leave || 10}</span>
                 </p>
-                <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
+                <div className="w-full bg-rose-200 rounded-full h-1.5 mt-2">
                   <div 
-                    className="bg-rose-500 h-2 rounded-full transition-all"
-                    style={{ width: `${((myBalance.sick_leave - (myBalance.sick_used || 0)) / myBalance.sick_leave) * 100}%` }}
+                    className="bg-rose-600 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.max(0, ((myBalance.sick_leave - (myBalance.sick_used || 0)) / myBalance.sick_leave) * 100)}%` }}
                   />
                 </div>
+                <p className="text-xs text-slate-500 mt-1">{myBalance.sick_used || 0} used</p>
               </div>
-              <div className="text-center">
-                <div className="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-3">
-                  <Briefcase size={32} className="text-blue-600" />
+              
+              {/* Personal Leave */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Briefcase size={20} className="text-blue-600" />
+                  <span className="text-sm font-medium text-slate-700">Personal</span>
                 </div>
-                <p className="text-slate-500 text-sm">Personal Leave</p>
-                <p className="text-2xl font-black text-slate-900">
+                <p className="text-2xl font-black text-blue-700">
                   {(myBalance.personal_leave || 5) - (myBalance.personal_used || 0)}
                   <span className="text-sm font-normal text-slate-400">/{myBalance.personal_leave || 5}</span>
                 </p>
-                <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
+                <div className="w-full bg-blue-200 rounded-full h-1.5 mt-2">
                   <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all"
-                    style={{ width: `${((myBalance.personal_leave - (myBalance.personal_used || 0)) / myBalance.personal_leave) * 100}%` }}
+                    className="bg-blue-600 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.max(0, ((myBalance.personal_leave - (myBalance.personal_used || 0)) / myBalance.personal_leave) * 100)}%` }}
                   />
                 </div>
+                <p className="text-xs text-slate-500 mt-1">{myBalance.personal_used || 0} used</p>
+              </div>
+              
+              {/* Bereavement Leave */}
+              <div className="bg-slate-100 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart size={20} className="text-slate-600" />
+                  <span className="text-sm font-medium text-slate-700">Bereavement</span>
+                </div>
+                <p className="text-2xl font-black text-slate-700">
+                  {(myBalance.bereavement_leave || 5) - (myBalance.bereavement_used || 0)}
+                  <span className="text-sm font-normal text-slate-400">/{myBalance.bereavement_leave || 5}</span>
+                </p>
+                <div className="w-full bg-slate-300 rounded-full h-1.5 mt-2">
+                  <div 
+                    className="bg-slate-600 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.max(0, ((myBalance.bereavement_leave - (myBalance.bereavement_used || 0)) / myBalance.bereavement_leave) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{myBalance.bereavement_used || 0} used</p>
+              </div>
+              
+              {/* Maternity Leave */}
+              <div className="bg-pink-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart size={20} className="text-pink-600" />
+                  <span className="text-sm font-medium text-slate-700">Maternity</span>
+                </div>
+                <p className="text-2xl font-black text-pink-700">
+                  {(myBalance.maternity_leave || 90) - (myBalance.maternity_used || 0)}
+                  <span className="text-sm font-normal text-slate-400">/{myBalance.maternity_leave || 90}</span>
+                </p>
+                <div className="w-full bg-pink-200 rounded-full h-1.5 mt-2">
+                  <div 
+                    className="bg-pink-600 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.max(0, ((myBalance.maternity_leave - (myBalance.maternity_used || 0)) / myBalance.maternity_leave) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{myBalance.maternity_used || 0} used</p>
+              </div>
+              
+              {/* Paternity Leave */}
+              <div className="bg-indigo-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart size={20} className="text-indigo-600" />
+                  <span className="text-sm font-medium text-slate-700">Paternity</span>
+                </div>
+                <p className="text-2xl font-black text-indigo-700">
+                  {(myBalance.paternity_leave || 14) - (myBalance.paternity_used || 0)}
+                  <span className="text-sm font-normal text-slate-400">/{myBalance.paternity_leave || 14}</span>
+                </p>
+                <div className="w-full bg-indigo-200 rounded-full h-1.5 mt-2">
+                  <div 
+                    className="bg-indigo-600 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.max(0, ((myBalance.paternity_leave - (myBalance.paternity_used || 0)) / myBalance.paternity_leave) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{myBalance.paternity_used || 0} used</p>
+              </div>
+              
+              {/* Unpaid Leave */}
+              <div className="bg-amber-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle size={20} className="text-amber-600" />
+                  <span className="text-sm font-medium text-slate-700">Unpaid</span>
+                </div>
+                <p className="text-2xl font-black text-amber-700">
+                  {myBalance.unpaid_used || 0}
+                  <span className="text-sm font-normal text-slate-400"> used</span>
+                </p>
+                <p className="text-xs text-slate-500 mt-3">No limit</p>
+              </div>
+              
+              {/* Other Leave */}
+              <div className="bg-purple-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar size={20} className="text-purple-600" />
+                  <span className="text-sm font-medium text-slate-700">Other</span>
+                </div>
+                <p className="text-2xl font-black text-purple-700">
+                  {myBalance.other_used || 0}
+                  <span className="text-sm font-normal text-slate-400"> used</span>
+                </p>
+                <p className="text-xs text-slate-500 mt-3">As approved</p>
               </div>
             </div>
           </div>
