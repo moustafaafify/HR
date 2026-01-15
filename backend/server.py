@@ -292,8 +292,8 @@ class TrainingRequest(BaseModel):
     provider_url: Optional[str] = None
     cost: float = 0
     currency: str = "USD"
-    start_date: str
-    end_date: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     duration_hours: Optional[int] = None
     location: Optional[str] = None  # online, onsite, offsite, hybrid
     objectives: Optional[str] = None
