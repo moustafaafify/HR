@@ -20,6 +20,7 @@ const EmployeesNew = () => {
   const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [divisions, setDivisions] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
