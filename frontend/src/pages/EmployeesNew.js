@@ -886,6 +886,30 @@ const EmployeesNew = () => {
                   <td className="px-6 py-4 text-slate-600">{getManagerName(emp.reporting_manager_id)}</td>
                   <td className="px-6 py-4 text-slate-600">{emp.personal_email}</td>
                   <td className="px-6 py-4">
+                    <button
+                      onClick={() => handleTogglePortalAccess(emp.id, emp.portal_access_enabled)}
+                      data-testid={`toggle-access-${emp.id}`}
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        emp.portal_access_enabled !== false
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200'
+                      }`}
+                      title={emp.portal_access_enabled !== false ? 'Click to disable' : 'Click to enable'}
+                    >
+                      {emp.portal_access_enabled !== false ? (
+                        <>
+                          <Unlock size={14} />
+                          <span>Enabled</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock size={14} />
+                          <span>Disabled</span>
+                        </>
+                      )}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       emp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                     }`}>
@@ -894,6 +918,14 @@ const EmployeesNew = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
+                      <button
+                        onClick={() => openPasswordDialog(emp)}
+                        data-testid={`reset-password-${emp.id}`}
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Reset Password"
+                      >
+                        <Key size={16} />
+                      </button>
                       <button
                         onClick={() => openViewDialog(emp)}
                         data-testid={`view-emp-${emp.id}`}
