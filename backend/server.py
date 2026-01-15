@@ -482,6 +482,52 @@ async def delete_employee(emp_id: str, current_user: User = Depends(get_current_
         raise HTTPException(status_code=404, detail="Employee not found")
     return {"message": "Employee deleted"}
 
+@api_router.post("/employees/{emp_id}/reset-password")
+async def reset_employee_password(emp_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can reset passwords")
+    
+    new_password = data.get("new_password")
+    if not new_password or len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    emp = await db.employees.find_one({"id": emp_id})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Update user password
+    password_hash = hash_password(new_password)
+    await db.users.update_one(
+        {"id": emp["user_id"]},
+        {"$set": {"password_hash": password_hash}}
+    )
+    
+    # Mark password reset as required on next login
+    await db.employees.update_one(
+        {"id": emp_id},
+        {"$set": {"password_reset_required": True}}
+    )
+    
+    return {"message": "Password reset successfully"}
+
+@api_router.put("/employees/{emp_id}/portal-access")
+async def toggle_portal_access(emp_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can manage portal access")
+    
+    portal_access_enabled = data.get("portal_access_enabled", True)
+    
+    await db.employees.update_one(
+        {"id": emp_id},
+        {"$set": {"portal_access_enabled": portal_access_enabled}}
+    )
+    
+    emp = await db.employees.find_one({"id": emp_id}, {"_id": 0})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return Employee(**emp)
+
 # ============= LEAVE ROUTES =============
 
 @api_router.post("/leaves", response_model=Leave)
