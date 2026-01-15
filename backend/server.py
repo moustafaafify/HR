@@ -10567,6 +10567,13 @@ async def create_time_entry(data: Dict[str, Any], current_user: User = Depends(g
         except:
             hours = 0
     
+    # Get project info if provided
+    project_name = data.get("project_name")
+    if data.get("project_id") and not project_name:
+        project = await db.projects.find_one({"id": data["project_id"]}, {"_id": 0})
+        if project:
+            project_name = project.get("name")
+    
     # Find or create timesheet for this date
     entry_date = data.get("date", datetime.now().strftime("%Y-%m-%d"))
     week_start, week_end = get_week_dates(entry_date)
@@ -10608,6 +10615,7 @@ async def create_time_entry(data: Dict[str, Any], current_user: User = Depends(g
         "timesheet_id": timesheet["id"],
         "employee_id": employee["id"],
         "employee_name": employee.get("full_name"),
+        "project_name": project_name,
         "hours": round(hours, 2)
     }
     
@@ -10617,7 +10625,20 @@ async def create_time_entry(data: Dict[str, Any], current_user: User = Depends(g
     # Update timesheet totals
     await update_timesheet_totals(timesheet["id"])
     
+    # Update project hours if linked to a project
+    if data.get("project_id"):
+        await update_project_hours(data["project_id"])
+    
     return entry.model_dump()
+
+async def update_project_hours(project_id: str):
+    """Update project total hours from time entries"""
+    entries = await db.time_entries.find({"project_id": project_id}, {"_id": 0}).to_list(10000)
+    total_hours = sum(e.get("hours", 0) for e in entries)
+    await db.projects.update_one({"id": project_id}, {"$set": {
+        "total_hours": round(total_hours, 2),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }})
 
 @api_router.put("/time-entries/{entry_id}")
 async def update_time_entry(entry_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
