@@ -233,6 +233,11 @@ const Layout = () => {
           {/* Job Openings for all users */}
           <NavLink item={{ path: '/recruitment', icon: UserPlus, label: isAdmin ? 'Recruitment' : 'Job Openings' }} />
 
+          {/* My Onboarding for employees */}
+          {!isAdmin && (
+            <NavLink item={{ path: '/onboarding', icon: ClipboardCheck, label: 'My Onboarding' }} />
+          )}
+
           {/* Admin-only items */}
           {isAdmin && (
             <>
