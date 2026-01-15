@@ -2493,6 +2493,80 @@ async def delete_document_approval(doc_id: str, current_user: User = Depends(get
     await db.document_approvals.delete_one({"id": doc_id})
     return {"message": "Document deleted successfully"}
 
+@api_router.post("/document-approvals/assign")
+async def assign_document_to_employees(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Admin assigns a document to employees for acknowledgment"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can assign documents")
+    
+    employee_ids = data.get("employee_ids", [])
+    if not employee_ids:
+        raise HTTPException(status_code=400, detail="No employees selected")
+    
+    created_docs = []
+    for emp_id in employee_ids:
+        doc_data = {
+            "employee_id": emp_id,
+            "title": data.get("title"),
+            "description": data.get("description"),
+            "document_type": data.get("document_type", "policy"),
+            "category": data.get("category", "general"),
+            "document_url": data.get("document_url"),
+            "priority": data.get("priority", "normal"),
+            "due_date": data.get("due_date"),
+            "tags": data.get("tags"),
+            "status": "pending_acknowledgment",
+            "is_assigned": True,
+            "assigned_by": current_user.id,
+            "assigned_at": datetime.now(timezone.utc).isoformat(),
+            "acknowledgment_required": True,
+            "acknowledged": False
+        }
+        doc = DocumentApproval(**doc_data)
+        await db.document_approvals.insert_one(doc.model_dump())
+        created_docs.append(doc.model_dump())
+    
+    return {"message": f"Document assigned to {len(employee_ids)} employee(s)", "documents": created_docs}
+
+@api_router.get("/document-approvals/assigned")
+async def get_assigned_documents(current_user: User = Depends(get_current_user)):
+    """Get documents assigned to current employee for acknowledgment"""
+    employee = await db.employees.find_one({"user_id": current_user.id})
+    if not employee:
+        employee = await db.employees.find_one({"email": current_user.email})
+    
+    if employee:
+        docs = await db.document_approvals.find(
+            {"employee_id": employee["id"], "is_assigned": True}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
+    else:
+        docs = await db.document_approvals.find(
+            {"employee_id": current_user.id, "is_assigned": True}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
+    return docs
+
+@api_router.put("/document-approvals/{doc_id}/acknowledge")
+async def acknowledge_document(doc_id: str, current_user: User = Depends(get_current_user)):
+    """Employee acknowledges an assigned document"""
+    doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    if not doc.get("is_assigned"):
+        raise HTTPException(status_code=400, detail="This document does not require acknowledgment")
+    
+    update_data = {
+        "acknowledged": True,
+        "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+        "status": "acknowledged",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.document_approvals.update_one({"id": doc_id}, {"$set": update_data})
+    updated_doc = await db.document_approvals.find_one({"id": doc_id}, {"_id": 0})
+    return updated_doc
+
 # ============= ONBOARDING ROUTES =============
 
 @api_router.post("/onboarding-tasks")
