@@ -810,6 +810,8 @@ async def create_leave(data: Dict[str, Any], current_user: User = Depends(get_cu
         leave_dict["status"] = "pending_approval"
     
     await db.leaves.insert_one(leave_dict)
+    # Remove _id added by MongoDB before creating response model
+    leave_dict.pop("_id", None)
     return Leave(**leave_dict)
 
 @api_router.get("/leaves", response_model=List[Leave])
