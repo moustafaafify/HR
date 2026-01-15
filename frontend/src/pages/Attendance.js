@@ -893,6 +893,7 @@ const Attendance = () => {
               </Dialog>
             )}
           </div>
+        </div>
 
           {/* Attendance Table */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
