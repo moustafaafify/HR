@@ -111,8 +111,8 @@ const Employees = () => {
       setEditingEmp(null);
       setFormData({ 
         full_name: '', email: '', phone: '', position: '', 
-        branch_id: '', corporation_id: '', salary: '', currency: 'USD',
-        hire_date: '', user_id: '' 
+        branch_id: '', corporation_id: '', department_id: '', division_id: '',
+        salary: '', currency: 'USD', hire_date: '', user_id: '' 
       });
       fetchEmployees();
     } catch (error) {
@@ -151,8 +151,8 @@ const Employees = () => {
       setEditingEmp(null);
       setFormData({ 
         full_name: '', email: '', phone: '', position: '', 
-        branch_id: '', corporation_id: '', salary: '', currency: 'USD',
-        hire_date: '', user_id: '' 
+        branch_id: '', corporation_id: '', department_id: '', division_id: '',
+        salary: '', currency: 'USD', hire_date: '', user_id: '' 
       });
     }
     setDialogOpen(true);
