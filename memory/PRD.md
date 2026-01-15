@@ -383,7 +383,8 @@ Build a full-stack HR platform with:
 - `frontend/src/pages/Communications.js` - Announcements, Memos, Surveys UI
 - `frontend/src/pages/Complaints.js` - Complaints Management UI
 - `frontend/src/pages/Disciplinary.js` - Disciplinary Actions UI
-- `frontend/src/pages/Travel.js` - Travel Management UI (NEW)
+- `frontend/src/pages/Travel.js` - Travel Management UI
+- `frontend/src/pages/Recognition.js` - Recognition & Awards UI (NEW)
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
 - `frontend/src/pages/Offboarding.js` - Offboarding UI
