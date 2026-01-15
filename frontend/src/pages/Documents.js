@@ -235,6 +235,33 @@ const Documents = () => {
     }
   };
 
+  const fetchDocumentTypes = async () => {
+    try {
+      const response = await axios.get(`${API}/document-types`);
+      setDocumentTypes(response.data);
+    } catch (error) {
+      console.error('Failed to fetch document types:', error);
+    }
+  };
+
+  const fetchDocumentCategories = async () => {
+    try {
+      const response = await axios.get(`${API}/document-categories`);
+      setDocumentCategories(response.data);
+    } catch (error) {
+      console.error('Failed to fetch document categories:', error);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get(`${API}/document-templates`);
+      setTemplates(response.data);
+    } catch (error) {
+      console.error('Failed to fetch templates:', error);
+    }
+  };
+
   // Handle file upload
   const handleFileUpload = async (e, formType = 'document') => {
     const file = e.target.files[0];
