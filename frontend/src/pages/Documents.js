@@ -308,6 +308,49 @@ const Documents = () => {
     }
   };
 
+  // Admin assign document to employees
+  const handleAssignDocument = async (e) => {
+    e.preventDefault();
+    if (assignForm.employee_ids.length === 0) {
+      toast.error('Please select at least one employee');
+      return;
+    }
+    try {
+      await axios.post(`${API}/document-approvals/assign`, {
+        ...assignForm,
+        tags: assignForm.tags ? assignForm.tags.split(',').map(t => t.trim()) : []
+      });
+      toast.success(`Document assigned to ${assignForm.employee_ids.length} employee(s)`);
+      fetchDocuments();
+      fetchStats();
+      setAssignDialogOpen(false);
+      setAssignForm({
+        title: '',
+        description: '',
+        document_type: 'policy',
+        category: 'hr',
+        document_url: '',
+        priority: 'normal',
+        due_date: '',
+        employee_ids: []
+      });
+    } catch (error) {
+      toast.error('Failed to assign document');
+    }
+  };
+
+  // Employee acknowledge document
+  const handleAcknowledge = async (docId) => {
+    try {
+      await axios.put(`${API}/document-approvals/${docId}/acknowledge`);
+      toast.success('Document acknowledged');
+      fetchAssignedDocuments();
+      fetchMyDocuments();
+    } catch (error) {
+      toast.error('Failed to acknowledge document');
+    }
+  };
+
   const resetForm = () => {
     setDocumentForm({
       title: '',
