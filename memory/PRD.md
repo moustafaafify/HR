@@ -217,6 +217,41 @@ Build a full-stack HR platform with:
 - Complete training with certificate and rating
 - View request status and rejection reasons
 
+### Training Course Management (COMPLETED - Jan 15, 2026)
+**Training Courses:**
+- Create courses with video URL, document URL, external links
+- Content types: Video, Document, External Link, Mixed
+- Difficulty levels: Beginner, Intermediate, Advanced
+- Learning objectives, prerequisites, tags
+- Mandatory training flag
+- Publish/unpublish courses
+- Thumbnail support
+- Duration tracking
+- View and completion statistics
+- Average rating tracking
+
+**Admin - Types & Categories Management:**
+- Create, edit, delete training types (Course, Certification, Workshop, Webinar, Tutorial)
+- Create, edit, delete training categories (Professional Development, Technical Skills, Leadership, Compliance, Soft Skills, Onboarding)
+- Custom colors for types and categories
+- Add default types/categories with one click
+
+**Admin - Course Assignment:**
+- Assign courses to individual or multiple employees
+- Set due dates for assignments
+- Track assignment status (Assigned, In Progress, Completed, Overdue)
+- View progress percentage
+- Remove assignments
+
+**Employee - Learning Portal:**
+- View assigned training courses
+- Quick stats (Assigned, In Progress, Completed, Overdue)
+- Start assigned training
+- Access video, document, and external links
+- Track progress
+- Complete training with rating and feedback
+- Overdue task highlighting
+
 ### Responsive Design (COMPLETED)
 - Mobile header with hamburger menu
 - Slide-out sidebar on mobile/tablet
