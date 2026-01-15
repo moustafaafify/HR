@@ -36,7 +36,8 @@ import {
   Plane,
   Award,
   Target,
-  Code
+  Code,
+  Timer
 } from 'lucide-react';
 
 const Layout = () => {
