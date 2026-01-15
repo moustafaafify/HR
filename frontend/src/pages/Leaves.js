@@ -972,6 +972,17 @@ const Leaves = () => {
         {/* Leave Balances Tab - Admin Only */}
         {isAdmin && (
           <TabsContent value="balances" className="mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">{new Date().getFullYear()} Leave Balances</h3>
+              <Button 
+                variant="outline" 
+                onClick={() => setExportBalancesDialogOpen(true)}
+                className="rounded-xl"
+              >
+                <Download size={18} className="mr-2" />
+                Export Balances
+              </Button>
+            </div>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
