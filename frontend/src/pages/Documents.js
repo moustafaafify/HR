@@ -1590,7 +1590,410 @@ const Documents = () => {
             )}
           </div>
         </TabsContent>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="mt-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                <Copy size={18} />
+                Document Templates
+              </h3>
+              <Button onClick={() => { resetTemplateForm(); setTemplateDialogOpen(true); }} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 gap-2">
+                <Plus size={16} />
+                New Template
+              </Button>
+            </div>
+            
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              {templates.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Copy size={48} className="mx-auto mb-4 text-slate-300" />
+                  <p className="text-slate-500">No document templates yet</p>
+                  <Button onClick={() => setTemplateDialogOpen(true)} variant="outline" className="mt-4 rounded-xl">
+                    <Plus size={16} className="mr-2" />
+                    Create First Template
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {templates.map((template) => (
+                    <div key={template.id} className="p-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="font-bold text-slate-900">{template.name}</h4>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${template.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {template.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-500 line-clamp-2 mb-2">{template.description || 'No description'}</p>
+                          <div className="flex items-center gap-3 text-xs text-slate-400">
+                            <span>Priority: {template.default_priority}</span>
+                            {template.document_url && <><span>•</span><span>Has template file</span></>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button 
+                            onClick={() => { 
+                              setEditingTemplate(template); 
+                              setTemplateForm({
+                                name: template.name,
+                                description: template.description || '',
+                                document_type_id: template.document_type_id || '',
+                                category_id: template.category_id || '',
+                                default_priority: template.default_priority || 'normal',
+                                document_url: template.document_url || '',
+                                instructions: template.instructions || ''
+                              });
+                              setTemplateDialogOpen(true); 
+                            }} 
+                            size="sm" 
+                            variant="ghost" 
+                            className="rounded-lg"
+                          >
+                            <Edit2 size={16} />
+                          </Button>
+                          <Button onClick={() => handleDeleteTemplate(template.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Types & Categories Tab */}
+        <TabsContent value="settings" className="mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Document Types */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Layers size={18} />
+                  Document Types
+                </h3>
+                <div className="flex gap-2">
+                  {documentTypes.length === 0 && (
+                    <Button onClick={addDefaultTypes} size="sm" variant="outline" className="rounded-lg text-xs">
+                      Add Defaults
+                    </Button>
+                  )}
+                  <Button onClick={() => { setEditingType(null); setTypeForm({ name: '', icon: '📄', color: 'bg-slate-100 text-slate-700' }); setTypeDialogOpen(true); }} size="sm" className="rounded-lg bg-indigo-600 hover:bg-indigo-700">
+                    <Plus size={14} />
+                  </Button>
+                </div>
+              </div>
+              {documentTypes.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Layers size={32} className="mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm text-slate-500">No document types defined</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {documentTypes.map((type) => (
+                    <div key={type.id} className="p-3 flex items-center justify-between hover:bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{type.icon || '📄'}</span>
+                        <span className="font-medium text-slate-700">{type.name}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${type.color || 'bg-slate-100 text-slate-600'}`}>
+                          {type.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button 
+                          onClick={() => { 
+                            setEditingType(type); 
+                            setTypeForm({ name: type.name, icon: type.icon || '📄', color: type.color || 'bg-slate-100 text-slate-700' }); 
+                            setTypeDialogOpen(true); 
+                          }} 
+                          size="sm" 
+                          variant="ghost" 
+                          className="rounded-lg"
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button onClick={() => handleDeleteType(type.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Document Categories */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Layers size={18} />
+                  Document Categories
+                </h3>
+                <div className="flex gap-2">
+                  {documentCategories.length === 0 && (
+                    <Button onClick={addDefaultCategories} size="sm" variant="outline" className="rounded-lg text-xs">
+                      Add Defaults
+                    </Button>
+                  )}
+                  <Button onClick={() => { setEditingCategory(null); setCategoryForm({ name: '', color: 'bg-slate-100 text-slate-700' }); setCategoryDialogOpen(true); }} size="sm" className="rounded-lg bg-indigo-600 hover:bg-indigo-700">
+                    <Plus size={14} />
+                  </Button>
+                </div>
+              </div>
+              {documentCategories.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Layers size={32} className="mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm text-slate-500">No categories defined</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {documentCategories.map((cat) => (
+                    <div key={cat.id} className="p-3 flex items-center justify-between hover:bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${cat.color || 'bg-slate-100 text-slate-600'}`}>
+                          {cat.name}
+                        </span>
+                        {!cat.is_active && <span className="text-xs text-slate-400">(Inactive)</span>}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button 
+                          onClick={() => { 
+                            setEditingCategory(cat); 
+                            setCategoryForm({ name: cat.name, color: cat.color || 'bg-slate-100 text-slate-700' }); 
+                            setCategoryDialogOpen(true); 
+                          }} 
+                          size="sm" 
+                          variant="ghost" 
+                          className="rounded-lg"
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button onClick={() => handleDeleteCategory(cat.id)} size="sm" variant="ghost" className="rounded-lg text-rose-600">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Template Dialog */}
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Copy className="text-indigo-600" size={24} />
+              {editingTemplate ? 'Edit Template' : 'Create Template'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveTemplate} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Template Name *</label>
+              <Input 
+                value={templateForm.name} 
+                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="e.g. Employee NDA Template" 
+                required 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Document Type</label>
+                <Select value={templateForm.document_type_id} onValueChange={(v) => setTemplateForm({ ...templateForm, document_type_id: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {documentTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.icon} {t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category</label>
+                <Select value={templateForm.category_id} onValueChange={(v) => setTemplateForm({ ...templateForm, category_id: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {documentCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Default Priority</label>
+              <Select value={templateForm.default_priority} onValueChange={(v) => setTemplateForm({ ...templateForm, default_priority: v })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITIES.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Template File URL</label>
+              <Input 
+                value={templateForm.document_url} 
+                onChange={(e) => setTemplateForm({ ...templateForm, document_url: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="https://drive.google.com/..." 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
+              <textarea 
+                value={templateForm.description} 
+                onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })} 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" 
+                rows={2} 
+                placeholder="What is this template for..." 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Instructions</label>
+              <textarea 
+                value={templateForm.instructions} 
+                onChange={(e) => setTemplateForm({ ...templateForm, instructions: e.target.value })} 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none" 
+                rows={2} 
+                placeholder="Instructions for filling out this template..." 
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                {editingTemplate ? 'Update Template' : 'Create Template'}
+              </Button>
+              <Button type="button" onClick={() => setTemplateDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Type Dialog */}
+      <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Layers className="text-indigo-600" size={24} />
+              {editingType ? 'Edit Document Type' : 'Create Document Type'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveType} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Type Name *</label>
+              <Input 
+                value={typeForm.name} 
+                onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="e.g. Policy" 
+                required 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Icon (emoji)</label>
+              <Input 
+                value={typeForm.icon} 
+                onChange={(e) => setTypeForm({ ...typeForm, icon: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="📄" 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Color</label>
+              <Select value={typeForm.color} onValueChange={(v) => setTypeForm({ ...typeForm, color: v })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bg-slate-100 text-slate-700">Gray</SelectItem>
+                  <SelectItem value="bg-blue-100 text-blue-700">Blue</SelectItem>
+                  <SelectItem value="bg-emerald-100 text-emerald-700">Green</SelectItem>
+                  <SelectItem value="bg-amber-100 text-amber-700">Amber</SelectItem>
+                  <SelectItem value="bg-rose-100 text-rose-700">Red</SelectItem>
+                  <SelectItem value="bg-purple-100 text-purple-700">Purple</SelectItem>
+                  <SelectItem value="bg-teal-100 text-teal-700">Teal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                {editingType ? 'Update Type' : 'Create Type'}
+              </Button>
+              <Button type="button" onClick={() => setTypeDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Dialog */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Layers className="text-indigo-600" size={24} />
+              {editingCategory ? 'Edit Category' : 'Create Category'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveCategory} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Category Name *</label>
+              <Input 
+                value={categoryForm.name} 
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} 
+                className="rounded-xl" 
+                placeholder="e.g. Human Resources" 
+                required 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Color</label>
+              <Select value={categoryForm.color} onValueChange={(v) => setCategoryForm({ ...categoryForm, color: v })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bg-slate-100 text-slate-700">Gray</SelectItem>
+                  <SelectItem value="bg-blue-100 text-blue-700">Blue</SelectItem>
+                  <SelectItem value="bg-emerald-100 text-emerald-700">Green</SelectItem>
+                  <SelectItem value="bg-amber-100 text-amber-700">Amber</SelectItem>
+                  <SelectItem value="bg-rose-100 text-rose-700">Red</SelectItem>
+                  <SelectItem value="bg-purple-100 text-purple-700">Purple</SelectItem>
+                  <SelectItem value="bg-teal-100 text-teal-700">Teal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
+                {editingCategory ? 'Update Category' : 'Create Category'}
+              </Button>
+              <Button type="button" onClick={() => setCategoryDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Document Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
