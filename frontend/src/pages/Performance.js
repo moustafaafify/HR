@@ -305,14 +305,14 @@ const Performance = () => {
   const pendingSelfAssessment = myReviews.filter(r => r.status === 'pending_self_assessment');
 
   return (
-    <div data-testid="performance-page" className="space-y-6">
+    <div data-testid="performance-page" className="space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Performance Reviews
           </h1>
-          <p className="text-slate-500 mt-1">Track and manage employee performance</p>
+          <p className="text-slate-500 mt-1 text-sm lg:text-base">Track and manage employee performance</p>
         </div>
         {isManager && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
