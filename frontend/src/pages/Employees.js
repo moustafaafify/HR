@@ -28,6 +28,8 @@ const Employees = () => {
     position: '',
     branch_id: '',
     corporation_id: '',
+    department_id: '',
+    division_id: '',
     salary: '',
     currency: 'USD',
     hire_date: '',
