@@ -1314,6 +1314,127 @@ const Leaves = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Export Leave Requests Dialog */}
+      <Dialog open={exportRequestsDialogOpen} onOpenChange={setExportRequestsDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Export Leave Requests</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Start Date</label>
+                <input
+                  type="date"
+                  value={exportRequestsFilters.start_date}
+                  onChange={(e) => setExportRequestsFilters({ ...exportRequestsFilters, start_date: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">End Date</label>
+                <input
+                  type="date"
+                  value={exportRequestsFilters.end_date}
+                  onChange={(e) => setExportRequestsFilters({ ...exportRequestsFilters, end_date: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Employee</label>
+              <Select value={exportRequestsFilters.employee_id} onValueChange={(value) => setExportRequestsFilters({ ...exportRequestsFilters, employee_id: value })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select Employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Employees</SelectItem>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Status</label>
+                <Select value={exportRequestsFilters.status} onValueChange={(value) => setExportRequestsFilters({ ...exportRequestsFilters, status: value })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Leave Type</label>
+                <Select value={exportRequestsFilters.leave_type} onValueChange={(value) => setExportRequestsFilters({ ...exportRequestsFilters, leave_type: value })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Leave Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {LEAVE_TYPES.map(type => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleExportRequests} className="rounded-xl bg-indigo-950 hover:bg-indigo-900 flex-1">
+                <Download size={18} className="mr-2" />
+                Download CSV
+              </Button>
+              <Button type="button" onClick={() => setExportRequestsDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Leave Balances Dialog */}
+      <Dialog open={exportBalancesDialogOpen} onOpenChange={setExportBalancesDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Export Leave Balances</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Year</label>
+              <Select value={exportBalancesYear.toString()} onValueChange={(value) => setExportBalancesYear(parseInt(value))}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                  <SelectItem value="2027">2027</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-slate-500">
+              This will export leave balances for all employees including their allocation and usage for each leave type.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleExportBalances} className="rounded-xl bg-indigo-950 hover:bg-indigo-900 flex-1">
+                <Download size={18} className="mr-2" />
+                Download CSV
+              </Button>
+              <Button type="button" onClick={() => setExportBalancesDialogOpen(false)} variant="outline" className="rounded-xl">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
