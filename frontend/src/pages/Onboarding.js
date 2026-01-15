@@ -624,7 +624,7 @@ const Onboarding = () => {
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1.5 block">Department</label>
-                <Select value={templateForm.department_id} onValueChange={(v) => setTemplateForm({ ...templateForm, department_id: v })}>
+                <Select value={templateForm.department_id || 'all'} onValueChange={(v) => setTemplateForm({ ...templateForm, department_id: v === 'all' ? '' : v })}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder="All departments" />
                   </SelectTrigger>
