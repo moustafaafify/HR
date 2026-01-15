@@ -484,12 +484,16 @@ async def get_reviews(employee_id: Optional[str] = None, current_user: User = De
 async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
     total_corps = await db.corporations.count_documents({})
     total_branches = await db.branches.count_documents({})
+    total_departments = await db.departments.count_documents({})
+    total_divisions = await db.divisions.count_documents({})
     total_employees = await db.employees.count_documents({})
     pending_leaves = await db.leaves.count_documents({"status": "pending"})
     
     return {
         "total_corporations": total_corps,
         "total_branches": total_branches,
+        "total_departments": total_departments,
+        "total_divisions": total_divisions,
         "total_employees": total_employees,
         "pending_leaves": pending_leaves
     }
