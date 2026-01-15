@@ -1863,15 +1863,58 @@ const Documents = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Template File URL</label>
+            
+            {/* File Upload Section */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-slate-700 block">Upload Template File</label>
+              <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors">
+                <input 
+                  type="file" 
+                  id="template-file-upload"
+                  className="hidden" 
+                  onChange={(e) => handleFileUpload(e, 'template')}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.png,.jpg,.jpeg,.gif,.csv"
+                />
+                {uploadingFile ? (
+                  <div className="py-2">
+                    <RefreshCw size={24} className="mx-auto mb-2 text-indigo-500 animate-spin" />
+                    <p className="text-sm text-slate-600">Uploading...</p>
+                  </div>
+                ) : templateUploadedFile ? (
+                  <div className="py-2">
+                    <FileCheck size={24} className="mx-auto mb-2 text-emerald-500" />
+                    <p className="text-sm font-medium text-slate-700">{templateUploadedFile.file_name}</p>
+                    <p className="text-xs text-slate-500">{formatFileSize(templateUploadedFile.file_size)}</p>
+                    <button 
+                      type="button"
+                      onClick={() => { setTemplateUploadedFile(null); setTemplateForm(prev => ({ ...prev, document_url: '' })); }}
+                      className="text-xs text-rose-500 hover:text-rose-600 mt-1"
+                    >
+                      Remove file
+                    </button>
+                  </div>
+                ) : (
+                  <label htmlFor="template-file-upload" className="cursor-pointer py-2 block">
+                    <Upload size={24} className="mx-auto mb-2 text-slate-400" />
+                    <p className="text-sm text-slate-600">Click to upload</p>
+                    <p className="text-xs text-slate-400 mt-1">PDF, DOC, XLS, PPT, Images (max 10MB)</p>
+                  </label>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 border-t border-slate-200"></div>
+                <span className="text-xs text-slate-400 font-medium">OR PASTE A LINK</span>
+                <div className="flex-1 border-t border-slate-200"></div>
+              </div>
               <Input 
-                value={templateForm.document_url} 
-                onChange={(e) => setTemplateForm({ ...templateForm, document_url: e.target.value })} 
+                value={templateUploadedFile ? '' : templateForm.document_url} 
+                onChange={(e) => { setTemplateForm({ ...templateForm, document_url: e.target.value }); setTemplateUploadedFile(null); }} 
                 className="rounded-xl" 
-                placeholder="https://drive.google.com/..." 
+                placeholder="https://drive.google.com/..."
+                disabled={!!templateUploadedFile}
               />
             </div>
+            
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Description</label>
               <textarea 
@@ -1892,9 +1935,53 @@ const Documents = () => {
                 placeholder="Instructions for filling out this template..." 
               />
             </div>
+            
+            {/* Assign to Employees Section */}
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={templateForm.assign_to_employees}
+                  onChange={(e) => setTemplateForm({ ...templateForm, assign_to_employees: e.target.checked, employee_ids: e.target.checked ? templateForm.employee_ids : [] })}
+                  className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                />
+                <div>
+                  <span className="font-medium text-slate-700">Assign to Employees</span>
+                  <p className="text-xs text-slate-500">Assign this template as a document to employees for acknowledgement</p>
+                </div>
+              </label>
+              
+              {templateForm.assign_to_employees && (
+                <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <label className="text-sm font-medium text-slate-700 mb-2 block">Select Employees *</label>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {employees.map((emp) => (
+                      <label key={emp.id} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={templateForm.employee_ids.includes(emp.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setTemplateForm({ ...templateForm, employee_ids: [...templateForm.employee_ids, emp.id] });
+                            } else {
+                              setTemplateForm({ ...templateForm, employee_ids: templateForm.employee_ids.filter(id => id !== emp.id) });
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 text-indigo-600"
+                        />
+                        <span className="text-sm text-slate-700">{emp.first_name} {emp.last_name}</span>
+                        <span className="text-xs text-slate-400">{emp.work_email || emp.personal_email}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{templateForm.employee_ids.length} employee(s) selected</p>
+                </div>
+              )}
+            </div>
+            
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 flex-1">
-                {editingTemplate ? 'Update Template' : 'Create Template'}
+                {editingTemplate ? 'Update Template' : (templateForm.assign_to_employees ? 'Create & Assign' : 'Create Template')}
               </Button>
               <Button type="button" onClick={() => setTemplateDialogOpen(false)} variant="outline" className="rounded-xl">
                 Cancel
