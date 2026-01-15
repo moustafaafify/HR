@@ -1006,6 +1006,38 @@ async def get_workflow_instance(instance_id: str, current_user: User = Depends(g
         raise HTTPException(status_code=404, detail="Workflow instance not found")
     return instance
 
+@api_router.get("/workflow-instances/{instance_id}/details")
+async def get_workflow_instance_details(instance_id: str, current_user: User = Depends(get_current_user)):
+    """Get workflow instance with enriched details including the referenced document"""
+    instance = await db.workflow_instances.find_one({"id": instance_id}, {"_id": 0})
+    if not instance:
+        raise HTTPException(status_code=404, detail="Workflow instance not found")
+    
+    # Get the workflow template
+    workflow = await db.workflows.find_one({"id": instance["workflow_id"]}, {"_id": 0})
+    instance["workflow"] = workflow
+    
+    # Get the referenced document based on module
+    collection_map = {
+        "leave": "leaves",
+        "expense": "expenses",
+        "training": "training_requests",
+        "document": "document_approvals",
+        "time_correction": "time_corrections"
+    }
+    
+    if instance["module"] in collection_map:
+        ref_doc = await db[collection_map[instance["module"]]].find_one(
+            {"id": instance["reference_id"]}, {"_id": 0}
+        )
+        instance["reference_document"] = ref_doc
+    
+    # Get requester info
+    requester = await db.employees.find_one({"id": instance["requester_id"]}, {"_id": 0, "id": 1, "full_name": 1})
+    instance["requester"] = requester
+    
+    return instance
+
 @api_router.put("/workflow-instances/{instance_id}/action")
 async def workflow_action(instance_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     action = data.get("action")  # "approve", "reject", "skip"
