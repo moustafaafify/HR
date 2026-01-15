@@ -260,6 +260,40 @@ const Employees = () => {
                   </Select>
                 </div>
                 <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Department (Optional)</label>
+                  <Select 
+                    value={formData.department_id} 
+                    onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                  >
+                    <SelectTrigger data-testid="emp-department-select">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {departments.filter(d => d.branch_id === formData.branch_id).map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Division (Optional)</label>
+                  <Select 
+                    value={formData.division_id} 
+                    onValueChange={(value) => setFormData({ ...formData, division_id: value })}
+                  >
+                    <SelectTrigger data-testid="emp-division-select">
+                      <SelectValue placeholder="Select Division" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {divisions.filter(dv => dv.department_id === formData.department_id).map((div) => (
+                        <SelectItem key={div.id} value={div.id}>{div.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <label className="text-sm font-medium text-slate-700 mb-1.5 block">Salary</label>
                   <input
                     type="number"
