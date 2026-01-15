@@ -390,6 +390,7 @@ const Documents = () => {
         due_date: '',
         employee_ids: []
       });
+      setAssignUploadedFile(null);
     } catch (error) {
       toast.error('Failed to assign document');
     }
