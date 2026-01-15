@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Workflow,
   UserPlus,
-  ClipboardCheck
+  ClipboardCheck,
+  UserMinus
 } from 'lucide-react';
 
 const Layout = () => {
