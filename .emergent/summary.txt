@@ -14,22 +14,26 @@ The user wants to create a full-stack HR platform.
 -   **Responsive Design:** The entire platform must be usable on mobile, tablet, and desktop devices.
 -   **Performance Reviews:** A comprehensive module for creating, managing, and tracking employee performance reviews.
 -   **Time Corrections:** A system for employees to request corrections to their attendance records, with admin approval.
+-   **Recruitment Module:** A system for posting jobs, managing applications, and tracking candidates.
+-   **Onboarding Module:** A system to create and manage onboarding workflows for new hires.
 
 **User's preferred language**: English
 
 **what currently exists?**
 A full-stack HR platform (React/FastAPI/MongoDB) with a responsive UI. Key features implemented include:
--   **User Authentication & RBAC:** JWT-based login with role-based access control determining UI visibility and actions.
+-   **User Authentication & RBAC:** JWT-based login with role-based access control. The Roles management UI has been moved into the Settings page.
 -   **Organizational Hierarchy Management:** UI for managing Corporations, Branches, Departments, and Divisions.
 -   **Employee Management:** A multi-tab form for creating/editing detailed employee profiles.
--   **Attendance Module:** Features for admin-side record management, scheduling, employee clock-in/out, **CSV export**, and a **time correction request/approval system**.
--   **Leave Module:** A comprehensive system with multiple leave types, balance tracking, admin approvals, and **CSV export for both leave requests and balances**.
--   **Performance Reviews Module:** A fully enhanced system for admins to create and manage reviews, and for employees to view their reviews and submit self-assessments.
--   **Workflow System Foundation:** Backend models and API endpoints for workflow templates exist, with a functional UI for creating and managing these templates.
--   **Responsive Design:** The entire application, including the main layout, dashboard, and all major pages (Login, Attendance, Leaves, Performance), has been updated to be responsive across mobile, tablet, and desktop viewports.
+-   **Attendance Module:** Features for admin-side record management, scheduling, employee clock-in/out, CSV export, and a time correction request/approval system.
+-   **Leave Module:** A comprehensive system with multiple leave types, balance tracking, admin approvals, and CSV export for both leave requests and balances.
+-   **Performance Reviews Module:** A system for admins to create and manage reviews, and for employees to view their reviews and submit self-assessments.
+-   **Workflow System:** A functional system for creating workflow templates. It is now connected to the **Leave** and **Time Correction** modules, automatically triggering approval flows. The UI has been enhanced to show detailed request information.
+-   **Recruitment Module (New & Enhanced):** A comprehensive module for both admins and employees. Admins can manage job postings, track applications through a Kanban-style pipeline, schedule interviews, and manually add candidates. Employees can view open positions, refer candidates, and track their referrals.
+-   **Onboarding Module (New):** A foundational module has been created with a sidebar link and a dedicated page. Admins can create onboarding templates with custom tasks. The agent was in the process of enhancing this module.
+-   **Responsive Design:** The platform is usable on mobile, tablet, and desktop devices.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the core logic to connect the Workflow system to other modules. The goal is to automatically trigger an approval workflow when an action, such as a leave request or a time correction request, is submitted. The agent had planned the changes but had not yet started coding.
+-   **Last item agent was working:** Enhancing the **Onboarding** module for both admins and employees based on the user request: Fix, enhance, improve, and expand onboarding for admin and employees. do what is needed. The agent updated the backend models and API endpoints in  and overwrote  with a completely enhanced version. The backend service was restarted, but the changes have not been tested.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
 -   **Which testing method agent to use?** both
@@ -38,7 +42,7 @@ A full-stack HR platform (React/FastAPI/MongoDB) with a responsive UI. Key featu
 **All Pending/In progress Issue list**:
 -   **Issue 1: Screenshot tool instability (P2).**
     -   **Description:** The screenshot tool frequently fails after login, often timing out or capturing the wrong page. This slows down visual verification.
-    -   **Attempted fixes:** The previous agent tried various wait times and eventually relied on the testing agent or manual  checks.
+    -   **Attempted fixes:** The agent encountered this, with screenshots showing blank pages or failing to navigate correctly. The agent had to retry with different selectors or wait times.
     -   **Next debug checklist:** This appears to be a tool limitation. The next agent should prioritize using the  for feature verification and  for backend checks, minimizing reliance on the screenshot tool for complex flows.
     -   **Why fix this issue and what will be achieved with the fix?** Reduces debugging time and provides more reliable verification of frontend changes.
     -   **Status:** NOT STARTED
@@ -47,43 +51,42 @@ A full-stack HR platform (React/FastAPI/MongoDB) with a responsive UI. Key featu
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Connect Workflow System to Live Modules (P0)**
-    -   **Where to resume:** Backend () and Frontend (, ).
-    -   **What will be achieved with this?** This will make the workflow system functional. When a user submits a leave or time correction request, it will automatically find the relevant active workflow, create an instance, and route it for approval according to the defined steps, instead of being auto-approved or using a separate logic.
+-   **Task 1: Test and Finalize the Enhanced Onboarding Module (P0)**
+    -   **Where to resume:** Test the newly implemented enhancements in  and the corresponding backend endpoints in .
+    -   **What will be achieved with this?** A fully functional and enhanced Onboarding module that allows admins to manage onboarding processes, and employees to see their onboarding journey, complete tasks, and access resources.
     -   **Next Steps:**
-        1.  **Backend ():**
-            -   In the  endpoints for creating leave requests and time correction requests, add logic to find an active workflow for the corresponding module (, ).
-            -   If a workflow is found, create a new document in the  collection, linking it to the request.
-            -   Change the initial status of the leave/time correction request to .
-        2.  **Frontend ():**
-            -   Enhance the UI to display and manage active , allowing designated approvers to approve or reject them.
+        1.  Restart the backend service to ensure all changes from  are live.
+        2.  Thoroughly test the Onboarding page from an admin's perspective: create templates, assign onboarding to employees, update task statuses, view progress dashboards.
+        3.  Test the Onboarding page from an employee's perspective: view assigned onboarding plan, check off tasks, see due dates.
+        4.  Fix any bugs discovered during testing.
+        5.  Use the  to perform a comprehensive test of the entire module.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Implement New Workflow-driven Modules (P1):** Build the frontend and backend for the remaining modules defined in the product requirements that will use the workflow system (e.g., Expense Claims, Training Requests, Document Approvals, Onboarding/Offboarding).
+    -   **Implement New Workflow-driven Modules (P1):** Build the frontend and backend for the remaining modules defined in the product requirements that will use the workflow system (e.g., Expense Claims, Training Requests, Document Approvals, Offboarding).
 -   **Future Tasks:**
     -   Implement budget allocation per department/division.
     -   Add a comprehensive reporting and analytics dashboard.
     -   Create a bulk employee import feature using CSV files.
     -   Add an employment history timeline view to the employee profile.
-    -   Refactor large frontend components (, , ) into smaller, more manageable sub-components.
+    -   Refactor large frontend components (, , , , , ) into smaller, more manageable sub-components.
 
 **Completed work in this session**
--   **Recently completed:**
-    -   Fixed a critical bug preventing admins from saving updated leave balances for employees. (DONE)
-    -   Resolved a data discrepancy issue where the employee's leave balance view was not matching the values set by the admin, which was traced back to a data loading problem in the edit form. (DONE)
-    -   Fixed a UI-breaking  error that occurred when using dropdowns on the Attendance and Leave pages. (DONE)
-    -   **Feature:** Implemented a full enhancement of the **Performance Reviews** module, including admin management, employee self-assessments, and detailed views. (DONE)
-    -   **Feature:** Added **CSV Export** and **Time Correction Request** functionalities to the **Attendance** module. (DONE)
-    -   **Feature:** Added **CSV Export** functionality for both leave requests and balances to the **Leave** module. (DONE)
-    -   **Feature:** Implemented a site-wide **responsive design**, ensuring the platform is usable on mobile, tablet, and desktop devices. (DONE)
+-   **Feature:** Connected the **Workflow System** to the **Leave** and **Time Correction** modules. Requests now trigger approval workflows automatically.
+-   **Feature:** Created and fully enhanced the **Recruitment Module**, including admin job/application management, a candidate pipeline, employee job board, and a referral system.
+-   **Feature:** Added the ability for HR/Admins to manually create candidate applications in the Recruitment module.
+-   **Feature:** Created the foundational **Onboarding Module** with a page, sidebar link, and backend APIs for creating onboarding templates.
+-   **UI/UX:** Moved the Roles management link from the main sidebar into the Settings page to streamline navigation.
+-   **Bug Fix:** Resolved a critical  serialization error in the  and  endpoints that caused 5xx errors.
+-   **Bug Fix:** Corrected the navigation link for the Workflows page in the sidebar ( -> ).
+-   **Bug Fix:** Fixed issues in the enhanced Recruitment module where the Refer button was not working correctly and the  was not being set.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Lack of a proper data migration strategy.**
-    -   **Debug checklist:** The schema is evolving (e.g., new leave types, expanded performance reviews), but there are no scripts to update existing database documents. This forces the agent to write defensive code in the API to handle missing fields, which is not a scalable solution. A proper fix involves creating a data migration script (e.g., in a  directory) that can be run to update all existing database documents to match new Pydantic model schemas.
+    -   **Debug checklist:** The schema is evolving (new models for Jobs, Applications, Onboarding), but there are no scripts to update existing database documents. This forces the agent to write defensive code in the API to handle missing fields, which is not a scalable solution. A proper fix involves creating a data migration script (e.g., in a  directory) that can be run to update all existing database documents to match new Pydantic model schemas.
     -   **Why to solve this issue and what will be achieved with this?** This will ensure data integrity, prevent future validation errors, and simplify the API code.
     -   **Should Test frontend/backend/both after fix:** Backend
     -   **Is recurring issue?** Y
@@ -104,70 +107,78 @@ A full-stack HR platform (React/FastAPI/MongoDB) with a responsive UI. Key featu
 
 **key DB schema**
 -   **employees:** { , ,  }
--   **attendance:** { uid=0(root) gid=0(root) groups=0(root), , , , ,  }
--   **leaves:** { uid=0(root) gid=0(root) groups=0(root), , , , , ,  }
--   **leave_balances:** { , , , , , ,  }
+-   **attendance:** {  }
+-   **leaves:** {  }
+-   **leave_balances:** {  }
 -   **workflows:** { uid=0(root) gid=0(root) groups=0(root), , , ,  }
 -   **workflow_instances:** { uid=0(root) gid=0(root) groups=0(root), , , ,  }
--   **performance_reviews (New/Enhanced):** { uid=0(root) gid=0(root) groups=0(root), , , , ,  { , , ... }, , , ,  }
--   **time_corrections (New):** { uid=0(root) gid=0(root) groups=0(root), , , , , , ,  }
+-   **performance_reviews:** {  }
+-   **time_corrections:** {  }
+-   **jobs (New):** { uid=0(root) gid=0(root) groups=0(root), , , , , , ... }
+-   **applications (New):** { uid=0(root) gid=0(root) groups=0(root), , , , , , , ... }
+-   **onboarding_templates (New):** { uid=0(root) gid=0(root) groups=0(root), , , , , ... }
+-   **onboardings (New):** { uid=0(root) gid=0(root) groups=0(root), , , , , , ... }
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   ****: The entire backend, modified with new models and endpoints for performance, time corrections, and exports.
--   ****: Completely rewritten to be a feature-rich module.
--   ****: Heavily modified to include export and time correction features, plus responsive design.
--   ****: Heavily modified to include export features, plus responsive design.
--   ****: Completely rewritten to support a responsive layout with a mobile sidebar.
--   ****: The next target for implementation.
--   ****: Modified to fix leave balance editing.
--   ** & **: Modified to apply a fix for the  error.
+-   ****: Heavily modified with new models and endpoints for workflows, recruitment, and onboarding.
+-   ****: Rewritten to connect to the backend, display workflow instances, and enhance the UI.
+-   ****: New file, created and enhanced to be a full-featured module.
+-   ****: New file, created and enhanced to be a full-featured module.
+-   ****: Modified to add sidebar links for Recruitment and Onboarding, and to remove the Roles link.
+-   ****: Modified to add routes for the new Recruitment and Onboarding pages.
 
 **Areas that need refactoring**:
--   The large frontend page components (, , ) have grown even larger and more complex. They urgently need to be broken down into smaller, single-responsibility components to improve maintainability. For example,  now handles stats, multiple tables, multiple tabs, and several complex dialogs.
+-   The large frontend page components (, , , , , ) have grown even larger and more complex. They urgently need to be broken down into smaller, single-responsibility components to improve maintainability.
 
 **key api endpoints**
--   **/api/reviews/**: Full CRUD for Performance Reviews.
--   **/api/reviews/stats**: Get performance review statistics.
--   **/api/time-corrections/**: Full CRUD for Time Correction Requests.
--   **/api/attendance/export**: Export attendance records to CSV.
--   **/api/leaves/export**: Export leave requests to CSV.
--   **/api/leave-balances/export**: Export leave balances to CSV.
+-   **/api/jobs/**: Full CRUD for Job Postings.
+-   **/api/applications/**: Full CRUD for Applications.
+-   **/api/recruitment/stats**: Get recruitment statistics.
+-   **/api/recruitment/pipeline**: Get application data for the Kanban pipeline.
+-   **/api/onboarding-templates/**: Full CRUD for Onboarding Templates.
+-   **/api/onboardings/**: Full CRUD for Onboarding instances.
+-   **/api/onboarding/stats**: Get onboarding statistics.
+-   **/api/workflow-instances/{instance_id}/details**: Get enriched details for a workflow instance.
 
 **Critical Info for New Agent**
 -   **User Focus:** The user is highly focused on visual correctness and data consistency. Bugs where the UI shows something different from the backend data will be caught quickly.
--   **Browser Caching:** Browser caching has been a recurring source of confusion. Always remind the user to perform a hard refresh (Ctrl+Shift+R) after frontend changes are deployed.
 -   **Component Size:** The main page components are now extremely large and difficult to work with. Be prepared for long file reads and be extra careful when making changes to avoid introducing new bugs. Prioritize breaking them down when possible.
--   **Error Workaround:** The fix for the ResizeObserver error is a workaround patched into  and . While it seems to work, it might be brittle. If similar UI-breaking errors appear, this patch is the first place to investigate.
+-   **Error Workaround:** The fix for the ResizeObserver error is a workaround patched into  and . If similar UI-breaking errors appear, this patch is the first place to investigate.
+-   **Testing:** The agent successfully used  to validate the Workflow and Recruitment modules. This should be the preferred method for testing large features.
 
 **documents and test reports created in this job**
--    (Updated multiple times)
+-    (Updated)
+-    (Workflow test report)
+-    (Recruitment test report)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  ** (In Progress):** User requested the agent to make the workflow system functional by connecting it to modules. This is the current task.
-2.  ** (Completed):** User requested a full responsive design overhaul, which the agent implemented.
-3.  ** (Completed):** User requested CSV export functionality for the Leave module, which the agent built.
-4.  ** (Completed):** User requested CSV export and time correction features for the Attendance module, which the agent implemented.
-5.  ** (Completed):** User requested a full enhancement of the Performance Reviews module, which the agent built.
-6.  ** (Resolved):** User reported that the  error was still present. The agent applied a more robust fix.
-7.  ** (Resolved):** User reported a UI-breaking error when using dropdowns. Agent identified and fixed the  issue.
-8.  ** (Resolved):** User reported continued discrepancy in leave balances. Agent identified it was likely a caching issue and confirmed the live version was correct.
-9.  ** (Resolved):** User reported a bug with leave balance display. Agent investigated and fixed the data loading in the employee edit form.
-10. ** (Resolved):** User reported the initial bug for this session, which the agent fixed.
+1.  ** (In Progress):** User requested a full enhancement of the Onboarding module. The agent began implementation.
+2.  ** (Completed):** User requested the creation of the Onboarding module.
+3.  ** (Completed):** User asked how HR can add candidates. Agent implemented the Add Candidate feature.
+4.  ** (Completed):** User requested a full enhancement of the Recruitment module.
+5.  ** (Completed):** User requested the creation of the Recruitment module.
+6.  ** (Completed):** User chose option C to merge the Roles tab into the Settings page.
+7.  ** (Completed):** User asked about the Roles tab. Agent explained its purpose and offered options.
+8.  ** (Completed):** User reported the workflow link was broken. Agent investigated and fixed the incorrect path in the sidebar.
+9.  ** (Completed):** User's initial instruction to connect the workflow system.
+10. ** (Completed):** User's initial instruction to connect the workflow system.
 
 **Project Health Check:**
--   **Broken:** None. All reported bugs have been resolved.
--   **Mocked:** The **Workflow System** is partially mocked. While the UI for creating workflow *templates* is functional, the logic to trigger those workflows from modules (like Leave/Attendance) and the UI to manage active *instances* of those workflows are not yet implemented.
+-   **Broken:** None confirmed, but the new Onboarding enhancements have not been tested.
+-   **Mocked:** The **Onboarding System** is partially implemented. The UI and backend for enhancements have been written but are not tested or verified.
 
 **3rd Party Integrations**
 -   None.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO (Agent relied on extensive manual testing via  and  tool for all features).
+-   **Testing agent used after significant changes:** YES
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None
+-   **Test files created:**
+    -   
+    -   
 -   **Known regressions:** The underlying cause of data inconsistency (lack of a data migration strategy) has not been addressed, posing a risk for future schema changes.
 
 **Credentials to test flow:**
@@ -177,5 +188,5 @@ A full-stack HR platform (React/FastAPI/MongoDB) with a responsive UI. Key featu
 -   **Employee Password:** 
 
 **What agent forgot to execute**
--   The agent did not refactor the large monolithic frontend components as recommended in the initial handoff. Instead, it added significant amounts of new code to them, making the problem worse.
--   The agent did not create a robust data seeding or migration script, continuing to rely on API calls for testing and seeding. The underlying risk of data inconsistency due to schema changes without migration remains unaddressed.</analysis>
+-   The agent did not refactor the large monolithic frontend components, and in fact created more large components (, ).
+-   The agent did not create a data seeding or migration script. The risk of data inconsistency due to schema changes without migration remains unaddressed.</analysis>
