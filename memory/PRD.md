@@ -333,12 +333,18 @@ Build a full-stack HR platform with:
 5. **Asset Management Module** - Full CRUD for assets, categories, assignments, and requests.
 6. **Communications Module** - Announcements, Memos (with acknowledgment), and Surveys (with results aggregation).
 7. **Complaints Management Module** - Submit/track complaints (anonymous supported), assign, investigate, resolve workflow.
+8. **Disciplinary Actions Module** - Full implementation with admin/employee views, action types, notes, and appeals workflow.
+9. **Travel Module (NEW)** - Full travel request management with:
+   - Employee: Submit travel requests, track status, start/complete trips with expense reporting
+   - Admin: Approve/reject requests, view stats, manage all requests
+   - Features: Trip types (domestic/international), purpose categories, transportation, accommodation, budget tracking
 
 ## Upcoming Tasks (P1)
 1. **Test & Finalize Payroll Module** - Create salary structure, run payroll, verify payslips
 2. **Test & Finalize Document Module Refactor** - Test new assignment and file upload features
 3. **Comprehensive Testing of Expense Claims Module** - End-to-end testing needed
 4. **Comprehensive Testing of Training Module** - E2E testing with course management and requests
+5. **Comprehensive Testing of New Modules** - Test Disciplinary Actions, Travel modules
 
 ## Future/Backlog (P2+)
 - Comprehensive Reporting Dashboard
@@ -363,12 +369,14 @@ Build a full-stack HR platform with:
 ## Key Files
 - `backend/server.py` - All API endpoints
 - `backend/seed_data.py` - Data seeding script (NEW - fixes employee/user linking)
-- `frontend/src/pages/Payroll.js` - Payroll UI (NEW)
-- `frontend/src/pages/OrgChart.js` - Organization Chart UI (NEW)
-- `frontend/src/pages/Appraisals.js` - Appraisals UI (NEW)
-- `frontend/src/pages/Assets.js` - Asset Management UI (NEW)
-- `frontend/src/pages/Communications.js` - Announcements, Memos, Surveys UI (NEW)
-- `frontend/src/pages/Complaints.js` - Complaints Management UI (NEW)
+- `frontend/src/pages/Payroll.js` - Payroll UI
+- `frontend/src/pages/OrgChart.js` - Organization Chart UI
+- `frontend/src/pages/Appraisals.js` - Appraisals UI
+- `frontend/src/pages/Assets.js` - Asset Management UI
+- `frontend/src/pages/Communications.js` - Announcements, Memos, Surveys UI
+- `frontend/src/pages/Complaints.js` - Complaints Management UI
+- `frontend/src/pages/Disciplinary.js` - Disciplinary Actions UI
+- `frontend/src/pages/Travel.js` - Travel Management UI (NEW)
 - `frontend/src/pages/Recruitment.js` - Recruitment UI
 - `frontend/src/pages/Onboarding.js` - Onboarding UI
 - `frontend/src/pages/Offboarding.js` - Offboarding UI
