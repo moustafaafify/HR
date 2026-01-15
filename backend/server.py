@@ -2361,7 +2361,10 @@ async def get_assigned_documents(current_user: User = Depends(get_current_user))
     """Get documents assigned to current employee for acknowledgment"""
     employee = await db.employees.find_one({"user_id": current_user.id})
     if not employee:
-        employee = await db.employees.find_one({"email": current_user.email})
+        # Try to find by personal_email or work_email
+        employee = await db.employees.find_one({"personal_email": current_user.email})
+    if not employee:
+        employee = await db.employees.find_one({"work_email": current_user.email})
     
     if employee:
         docs = await db.document_approvals.find(
