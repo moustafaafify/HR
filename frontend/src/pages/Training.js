@@ -81,6 +81,7 @@ const Training = () => {
   const [myAssignments, setMyAssignments] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState(null);
+  const [allTrainingRequests, setAllTrainingRequests] = useState([]);
   
   // Dialogs
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
