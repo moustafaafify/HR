@@ -2139,6 +2139,7 @@ async def create_onboarding_template(data: Dict[str, Any], current_user: User = 
 
 @api_router.put("/onboarding-templates/{template_id}")
 async def update_onboarding_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
     result = await db.onboarding_templates.update_one({"id": template_id}, {"$set": data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -2161,6 +2162,55 @@ async def get_onboardings(status: Optional[str] = None, employee_id: Optional[st
     onboardings = await db.onboardings.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return onboardings
 
+@api_router.get("/onboardings/my")
+async def get_my_onboarding(current_user: User = Depends(get_current_user)):
+    """Get the current user's onboarding (for employees)"""
+    # Find employee by user email
+    employee = await db.employees.find_one({"email": current_user.email}, {"_id": 0})
+    if not employee:
+        return None
+    # Get active onboarding for this employee
+    onboarding = await db.onboardings.find_one(
+        {"employee_id": employee["id"], "status": {"$in": ["in_progress", "not_started"]}},
+        {"_id": 0}
+    )
+    return onboarding
+
+@api_router.get("/onboardings/stats")
+async def get_onboarding_stats(current_user: User = Depends(get_current_user)):
+    """Get onboarding statistics"""
+    onboardings = await db.onboardings.find({}, {"_id": 0}).to_list(1000)
+    
+    # Calculate stats
+    total_tasks = 0
+    completed_tasks = 0
+    overdue_tasks = 0
+    today = datetime.now(timezone.utc).date()
+    
+    for ob in onboardings:
+        if ob.get("status") == "in_progress":
+            start_date = datetime.fromisoformat(ob.get("start_date", "").replace("Z", "+00:00")).date() if ob.get("start_date") else today
+            for task in ob.get("tasks", []):
+                total_tasks += 1
+                if task.get("completed"):
+                    completed_tasks += 1
+                else:
+                    due_date = start_date + timedelta(days=task.get("due_day", 1))
+                    if due_date < today:
+                        overdue_tasks += 1
+    
+    return {
+        "total": len(onboardings),
+        "in_progress": len([o for o in onboardings if o.get("status") == "in_progress"]),
+        "completed": len([o for o in onboardings if o.get("status") == "completed"]),
+        "on_hold": len([o for o in onboardings if o.get("status") == "on_hold"]),
+        "not_started": len([o for o in onboardings if o.get("status") == "not_started"]),
+        "total_tasks": total_tasks,
+        "completed_tasks": completed_tasks,
+        "overdue_tasks": overdue_tasks,
+        "avg_completion_rate": round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
+    }
+
 @api_router.get("/onboardings/{onboarding_id}")
 async def get_onboarding(onboarding_id: str, current_user: User = Depends(get_current_user)):
     onboarding = await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
@@ -2175,14 +2225,24 @@ async def create_onboarding(data: Dict[str, Any], current_user: User = Depends(g
     if template_id:
         template = await db.onboarding_templates.find_one({"id": template_id}, {"_id": 0})
         if template:
-            data["tasks"] = template.get("tasks", [])
+            data["tasks"] = [dict(t) for t in template.get("tasks", [])]  # Deep copy tasks
             data["duration_days"] = template.get("duration_days", 30)
             data["department_id"] = data.get("department_id") or template.get("department_id")
+            data["template_name"] = template.get("name")
+            data["welcome_message"] = template.get("welcome_message")
     
-    # Mark tasks as not completed
+    # Calculate target end date
+    if data.get("start_date") and data.get("duration_days"):
+        start = datetime.fromisoformat(data["start_date"].replace("Z", "+00:00"))
+        end = start + timedelta(days=data["duration_days"])
+        data["target_end_date"] = end.date().isoformat()
+    
+    # Mark tasks as not completed and add tracking fields
     for task in data.get("tasks", []):
         task["completed"] = False
         task["completed_at"] = None
+        task["completed_by"] = None
+        task["completion_notes"] = None
     
     onboarding = Onboarding(**data)
     await db.onboardings.insert_one(onboarding.model_dump())
@@ -2190,9 +2250,11 @@ async def create_onboarding(data: Dict[str, Any], current_user: User = Depends(g
 
 @api_router.put("/onboardings/{onboarding_id}")
 async def update_onboarding(onboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
     # Check if completing
     if data.get("status") == "completed":
         data["completed_at"] = datetime.now(timezone.utc).isoformat()
+        data["actual_end_date"] = datetime.now(timezone.utc).date().isoformat()
     result = await db.onboardings.update_one({"id": onboarding_id}, {"$set": data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Onboarding not found")
@@ -2212,17 +2274,40 @@ async def update_onboarding_task(onboarding_id: str, task_index: int, data: Dict
     tasks[task_index]["completed"] = data.get("completed", tasks[task_index].get("completed", False))
     if tasks[task_index]["completed"]:
         tasks[task_index]["completed_at"] = datetime.now(timezone.utc).isoformat()
+        tasks[task_index]["completed_by"] = current_user.id
+        tasks[task_index]["completion_notes"] = data.get("completion_notes")
     else:
         tasks[task_index]["completed_at"] = None
+        tasks[task_index]["completed_by"] = None
+        tasks[task_index]["completion_notes"] = None
     
-    # Check if all tasks completed to auto-complete onboarding
+    # Check if all required tasks completed to auto-complete onboarding
+    required_tasks = [t for t in tasks if t.get("is_required", True)]
+    all_required_completed = all(t.get("completed", False) for t in required_tasks) if required_tasks else False
     all_completed = all(t.get("completed", False) for t in tasks)
-    update_data = {"tasks": tasks}
+    
+    update_data = {"tasks": tasks, "updated_at": datetime.now(timezone.utc).isoformat()}
     if all_completed:
         update_data["status"] = "completed"
         update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["actual_end_date"] = datetime.now(timezone.utc).date().isoformat()
     
     await db.onboardings.update_one({"id": onboarding_id}, {"$set": update_data})
+    return await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
+
+@api_router.post("/onboardings/{onboarding_id}/feedback")
+async def submit_onboarding_feedback(onboarding_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Submit feedback for completed onboarding"""
+    result = await db.onboardings.update_one(
+        {"id": onboarding_id},
+        {"$set": {
+            "feedback": data.get("feedback"),
+            "feedback_rating": data.get("rating"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Onboarding not found")
     return await db.onboardings.find_one({"id": onboarding_id}, {"_id": 0})
 
 @api_router.delete("/onboardings/{onboarding_id}")
