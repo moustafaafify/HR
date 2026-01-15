@@ -207,6 +207,23 @@ class Settings(BaseModel):
     exchange_rates: Dict[str, float] = Field(default_factory=lambda: {"USD": 1.0})
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+class Role(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    display_name: str
+    description: Optional[str] = None
+    permissions: List[str] = Field(default_factory=list)
+    is_system_role: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Permission(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    category: str
+    description: str
+
 # ============= AUTHENTICATION =============
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
