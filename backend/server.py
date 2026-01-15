@@ -388,13 +388,26 @@ class DocumentApproval(BaseModel):
     employee_id: str
     title: str
     description: Optional[str] = None
-    document_type: str  # "policy", "contract", "report", "proposal", "other"
+    document_type: str  # "policy", "contract", "report", "proposal", "invoice", "certificate", "other"
+    category: str = "general"  # "hr", "finance", "legal", "operations", "technical", "general"
     document_url: Optional[str] = None
-    status: str = "pending"
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    version: int = 1
+    priority: str = "normal"  # "low", "normal", "high", "urgent"
+    due_date: Optional[str] = None
+    department_id: Optional[str] = None
+    tags: Optional[List[str]] = None
+    status: str = "submitted"  # "draft", "submitted", "under_review", "approved", "rejected", "revision_requested"
+    reviewer_id: Optional[str] = None
+    reviewed_at: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[str] = None
     rejection_reason: Optional[str] = None
+    revision_notes: Optional[str] = None
+    comments: Optional[List[Dict[str, Any]]] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
 
 class OnboardingTask(BaseModel):
     model_config = ConfigDict(extra="ignore")
