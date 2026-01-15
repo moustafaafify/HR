@@ -137,6 +137,132 @@ const Attendance = () => {
     }
   };
 
+  const fetchCorrections = async () => {
+    try {
+      const response = await axios.get(`${API}/time-corrections`);
+      setCorrections(response.data);
+    } catch (error) {
+      console.error('Failed to fetch time corrections:', error);
+    }
+  };
+
+  // Time Correction handlers
+  const openCorrectionDialog = (record) => {
+    setCorrectionForm({
+      attendance_id: record.id,
+      date: record.date,
+      original_clock_in: record.clock_in || '',
+      original_clock_out: record.clock_out || '',
+      requested_clock_in: record.clock_in || '',
+      requested_clock_out: record.clock_out || '',
+      reason: ''
+    });
+    setCorrectionDialogOpen(true);
+  };
+
+  const handleSubmitCorrection = async (e) => {
+    e.preventDefault();
+    if (!currentEmployee) {
+      toast.error('Employee profile not found');
+      return;
+    }
+    try {
+      await axios.post(`${API}/time-corrections`, {
+        ...correctionForm,
+        employee_id: currentEmployee.id
+      });
+      toast.success('Time correction request submitted');
+      setCorrectionDialogOpen(false);
+      setCorrectionForm({
+        attendance_id: '',
+        date: '',
+        original_clock_in: '',
+        original_clock_out: '',
+        requested_clock_in: '',
+        requested_clock_out: '',
+        reason: ''
+      });
+      fetchCorrections();
+    } catch (error) {
+      toast.error('Failed to submit correction request');
+    }
+  };
+
+  const handleApproveCorrection = async (correctionId) => {
+    try {
+      await axios.put(`${API}/time-corrections/${correctionId}/approve`);
+      toast.success('Time correction approved');
+      fetchCorrections();
+      fetchAttendance();
+    } catch (error) {
+      toast.error('Failed to approve correction');
+    }
+  };
+
+  const handleRejectCorrection = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`${API}/time-corrections/${selectedCorrection.id}/reject`, {
+        rejection_reason: rejectionReason
+      });
+      toast.success('Time correction rejected');
+      setRejectDialogOpen(false);
+      setRejectionReason('');
+      setSelectedCorrection(null);
+      fetchCorrections();
+    } catch (error) {
+      toast.error('Failed to reject correction');
+    }
+  };
+
+  // Export handlers
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (exportFilters.start_date) params.append('start_date', exportFilters.start_date);
+      if (exportFilters.end_date) params.append('end_date', exportFilters.end_date);
+      if (exportFilters.employee_id !== 'all') params.append('employee_id', exportFilters.employee_id);
+      
+      const response = await axios.get(`${API}/attendance/export?${params.toString()}`);
+      const records = response.data.records;
+      
+      if (records.length === 0) {
+        toast.error('No records found for the selected filters');
+        return;
+      }
+      
+      // Convert to CSV
+      const headers = ['Date', 'Employee', 'Clock In', 'Clock Out', 'Status'];
+      const csvContent = [
+        headers.join(','),
+        ...records.map(r => [
+          r.date,
+          `"${r.employee_name || 'Unknown'}"`,
+          r.clock_in || '-',
+          r.clock_out || '-',
+          r.status || 'present'
+        ].join(','))
+      ].join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `attendance_report_${exportFilters.start_date}_to_${exportFilters.end_date}.csv`;
+      link.click();
+      
+      toast.success(`Exported ${records.length} records`);
+      setExportDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to export attendance');
+    }
+  };
+
+  const getEmployeeName = (empId) => {
+    const emp = employees.find(e => e.id === empId);
+    return emp ? emp.full_name : '-';
+  };
+
   // Get week dates
   const getWeekDates = () => {
     const today = new Date();
