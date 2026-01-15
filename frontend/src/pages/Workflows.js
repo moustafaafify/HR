@@ -116,6 +116,15 @@ const Workflows = () => {
     }
   };
 
+  const fetchInstanceDetails = async (instanceId) => {
+    try {
+      const response = await axios.get(`${API}/workflow-instances/${instanceId}/details`);
+      setInstanceDetails(response.data);
+    } catch (error) {
+      console.error('Failed to fetch instance details:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
