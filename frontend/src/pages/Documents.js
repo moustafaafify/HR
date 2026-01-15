@@ -112,6 +112,10 @@ const Documents = () => {
     tags: ''
   });
   
+  // File upload state
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  
   // Assignment form for admin
   const [assignForm, setAssignForm] = useState({
     title: '',
@@ -123,6 +127,7 @@ const Documents = () => {
     due_date: '',
     employee_ids: []
   });
+  const [assignUploadedFile, setAssignUploadedFile] = useState(null);
   
   const [rejectReason, setRejectReason] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
