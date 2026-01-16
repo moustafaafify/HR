@@ -152,7 +152,8 @@ const Profile = () => {
       });
 
       if (response.data.profile_picture) {
-        setEmployee(prev => ({ ...prev, profile_picture: response.data.profile_picture }));
+        const fullUrl = getFullImageUrl(response.data.profile_picture);
+        setEmployee(prev => ({ ...prev, profile_picture: fullUrl }));
         toast.success('Profile picture updated successfully');
         await refreshUser();
       }
