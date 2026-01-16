@@ -107,6 +107,17 @@ const Layout = () => {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [recentNotifications, setRecentNotifications] = useState([]);
 
+  // Apply dark mode on mount and when changed
+  useEffect(() => {
+    applyDarkMode(darkMode);
+    localStorage.setItem('darkMode', darkMode.toString());
+  }, [darkMode]);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(prev => !prev);
+  };
+
   // Fetch unread notification count
   const fetchUnreadCount = useCallback(async () => {
     if (!token) return;
