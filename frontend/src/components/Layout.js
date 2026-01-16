@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import axios from 'axios';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -48,8 +49,11 @@ import {
   DollarSign,
   HelpCircle,
   ChevronLeft,
-  Ticket
+  Ticket,
+  Bell
 } from 'lucide-react';
+
+const API = process.env.REACT_APP_BACKEND_URL;
 
 const Layout = () => {
   const { user, logout } = useAuth();
