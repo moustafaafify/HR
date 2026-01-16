@@ -67,6 +67,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="corporations" element={<Corporations />} />
         <Route path="branches" element={<Branches />} />
         <Route path="departments" element={<Departments />} />
