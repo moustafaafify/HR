@@ -119,6 +119,34 @@ A comprehensive compliance and legal management module:
 **Dark Mode Support:**
 - All dialogs and forms properly styled for light and dark modes
 
+#### 7. Visitor Management Module ✅ **NEW**
+A comprehensive visitor management system for tracking guests:
+
+**Admin Features:**
+- **Dashboard Overview**: 5 summary cards (Today's Visitors, Checked In, Checked Out, Expected, On Site)
+- **Tabs**: Today, Upcoming, All Visitors, On Site, History
+- **Pre-register Visitor**: Full form with name, contact, company, visit type, host, date/time, location
+- **Walk-in Registration**: Quick registration for unscheduled visitors
+- **Check-in Process**: 
+  - ID verification (Driver's License, Passport, National ID, Employee ID)
+  - ID number recording
+  - Item tracking (Laptop, Camera, Other items)
+  - NDA signing checkbox
+- **Check-out**: Record visitor departure time
+- **Badge Printing**: 
+  - Generate unique badge numbers (VYYYYMMDD-XXX format)
+  - Badge preview dialog with visitor info, company, host, QR code placeholder
+  - Print badge functionality
+- **Visitor Details Dialog**: Complete visitor information view with actions
+- **History Tab**: Table view with date filters for visitor tracking
+
+**Employee Features:**
+- **My Visitors Dashboard**: 4 summary cards (Today's, Checked In, Awaiting, Upcoming)
+- **Tabs**: Today, Upcoming, All Visitors (filtered to user's visitors only)
+- **Pre-register Visitor**: Register visitors for themselves
+- **View Own Visitors**: See only visitors they registered or are hosting
+- **Visitor Details**: View full information of their visitors
+
 ---
 
 ## Key API Endpoints
