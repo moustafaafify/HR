@@ -53,6 +53,13 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Helper to get full URL for relative paths
+const getFullImageUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${BACKEND_URL}${path}`;
+};
+
 const Profile = () => {
   const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
