@@ -58,7 +58,8 @@ import {
   Moon,
   Shield,
   UserCheck,
-  CalendarClock
+  CalendarClock,
+  BookOpen
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -283,6 +284,7 @@ const Layout = () => {
         { path: '/tickets', icon: Ticket, label: isAdmin ? 'Tickets' : 'My Tickets' },
         { path: '/complaints', icon: AlertOctagon, label: 'Complaints' },
         ...(isAdmin ? [
+          { path: '/wiki', icon: BookOpen, label: 'Wiki / Docs' },
           { path: '/settings/workflows', icon: Workflow, label: 'Workflows' },
           { path: '/settings/mobile-apps', icon: Smartphone, label: 'Mobile Apps' },
           { path: '/settings', icon: SettingsIcon, label: 'Settings' },
