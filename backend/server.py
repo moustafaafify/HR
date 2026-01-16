@@ -14861,6 +14861,498 @@ async def get_dynamic_manifest():
     })
 
 
+# ============= HR ANALYTICS ENDPOINTS =============
+
+@api_router.get("/analytics/overview")
+async def get_analytics_overview(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get HR analytics overview - key metrics"""
+    user = await get_current_user(credentials)
+    
+    # Get current date info
+    now = datetime.now(timezone.utc)
+    current_year = now.year
+    current_month = now.month
+    
+    # Get all employees
+    employees = await db.employees.find({"status": {"$ne": "terminated"}}).to_list(10000)
+    all_employees = await db.employees.find({}).to_list(10000)
+    
+    # Get offboardings (terminations)
+    offboardings = await db.offboarding.find({}).to_list(10000)
+    
+    # Get candidates/hires
+    candidates = await db.candidates.find({}).to_list(10000)
+    
+    # Calculate headcount
+    total_headcount = len(employees)
+    
+    # Calculate headcount by month for the last 12 months
+    headcount_trend = []
+    for i in range(11, -1, -1):
+        month_date = now - timedelta(days=i*30)
+        month_name = month_date.strftime("%b %Y")
+        
+        # Count employees hired before or during this month
+        count = 0
+        for emp in all_employees:
+            hire_date_str = emp.get("hire_date") or emp.get("created_at", "")
+            if hire_date_str:
+                try:
+                    if "T" in hire_date_str:
+                        hire_date = datetime.fromisoformat(hire_date_str.replace("Z", "+00:00"))
+                    else:
+                        hire_date = datetime.strptime(hire_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                    
+                    if hire_date <= month_date:
+                        # Check if terminated before this month
+                        terminated = False
+                        for off in offboardings:
+                            if off.get("employee_id") == emp.get("id"):
+                                term_date_str = off.get("last_working_date", "")
+                                if term_date_str:
+                                    try:
+                                        term_date = datetime.strptime(term_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                                        if term_date < month_date:
+                                            terminated = True
+                                    except:
+                                        pass
+                        if not terminated:
+                            count += 1
+                except:
+                    pass
+        
+        headcount_trend.append({
+            "month": month_name,
+            "headcount": count if count > 0 else total_headcount
+        })
+    
+    # Calculate turnover rate
+    terminations_this_year = len([o for o in offboardings if o.get("last_working_date", "").startswith(str(current_year))])
+    avg_headcount = total_headcount if total_headcount > 0 else 1
+    turnover_rate = round((terminations_this_year / avg_headcount) * 100, 1)
+    
+    # Calculate hiring trends
+    hires_by_month = {}
+    for emp in all_employees:
+        hire_date_str = emp.get("hire_date") or emp.get("created_at", "")
+        if hire_date_str:
+            try:
+                month_key = hire_date_str[:7]  # YYYY-MM
+                hires_by_month[month_key] = hires_by_month.get(month_key, 0) + 1
+            except:
+                pass
+    
+    hiring_trend = []
+    for i in range(11, -1, -1):
+        month_date = now - timedelta(days=i*30)
+        month_key = month_date.strftime("%Y-%m")
+        month_name = month_date.strftime("%b")
+        hiring_trend.append({
+            "month": month_name,
+            "hires": hires_by_month.get(month_key, 0)
+        })
+    
+    # Calculate salary statistics by department
+    departments = await db.departments.find({}).to_list(1000)
+    dept_map = {d["id"]: d["name"] for d in departments}
+    
+    salary_by_dept = {}
+    for emp in employees:
+        salary = emp.get("salary", 0) or 0
+        dept_id = emp.get("department_id", "unknown")
+        dept_name = dept_map.get(dept_id, "Other")
+        
+        if dept_name not in salary_by_dept:
+            salary_by_dept[dept_name] = {"total": 0, "count": 0, "salaries": []}
+        
+        if salary > 0:
+            salary_by_dept[dept_name]["total"] += salary
+            salary_by_dept[dept_name]["count"] += 1
+            salary_by_dept[dept_name]["salaries"].append(salary)
+    
+    salary_benchmarks = []
+    for dept, data in salary_by_dept.items():
+        if data["count"] > 0:
+            avg = data["total"] / data["count"]
+            salaries = sorted(data["salaries"])
+            min_sal = salaries[0] if salaries else 0
+            max_sal = salaries[-1] if salaries else 0
+            median = salaries[len(salaries)//2] if salaries else 0
+            
+            salary_benchmarks.append({
+                "department": dept,
+                "average": round(avg, 0),
+                "median": round(median, 0),
+                "min": round(min_sal, 0),
+                "max": round(max_sal, 0),
+                "count": data["count"]
+            })
+    
+    # Turnover by reason
+    turnover_reasons = {}
+    for off in offboardings:
+        reason = off.get("reason", "other")
+        turnover_reasons[reason] = turnover_reasons.get(reason, 0) + 1
+    
+    turnover_by_reason = [{"reason": k.replace("_", " ").title(), "count": v} for k, v in turnover_reasons.items()]
+    
+    # Headcount by department
+    headcount_by_dept = {}
+    for emp in employees:
+        dept_id = emp.get("department_id", "unknown")
+        dept_name = dept_map.get(dept_id, "Other")
+        headcount_by_dept[dept_name] = headcount_by_dept.get(dept_name, 0) + 1
+    
+    dept_distribution = [{"department": k, "count": v} for k, v in headcount_by_dept.items()]
+    
+    # New hires this month
+    new_hires_this_month = 0
+    for emp in all_employees:
+        hire_date_str = emp.get("hire_date") or emp.get("created_at", "")
+        if hire_date_str:
+            try:
+                if hire_date_str.startswith(f"{current_year}-{current_month:02d}"):
+                    new_hires_this_month += 1
+            except:
+                pass
+    
+    # Terminations this month
+    terminations_this_month = len([o for o in offboardings 
+                                   if o.get("last_working_date", "").startswith(f"{current_year}-{current_month:02d}")])
+    
+    # Open positions
+    open_positions = await db.jobs.count_documents({"status": "open"})
+    
+    # Pending candidates
+    pending_candidates = await db.candidates.count_documents({"status": {"$in": ["new", "screening", "interview"]}})
+    
+    return {
+        "summary": {
+            "total_headcount": total_headcount,
+            "new_hires_this_month": new_hires_this_month,
+            "terminations_this_month": terminations_this_month,
+            "turnover_rate": turnover_rate,
+            "open_positions": open_positions,
+            "pending_candidates": pending_candidates,
+            "avg_salary": round(sum(e.get("salary", 0) or 0 for e in employees) / max(len(employees), 1), 0)
+        },
+        "headcount_trend": headcount_trend,
+        "hiring_trend": hiring_trend,
+        "salary_benchmarks": sorted(salary_benchmarks, key=lambda x: x["average"], reverse=True),
+        "turnover_by_reason": turnover_by_reason,
+        "department_distribution": sorted(dept_distribution, key=lambda x: x["count"], reverse=True)
+    }
+
+@api_router.get("/analytics/turnover")
+async def get_turnover_analytics(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get detailed turnover analytics"""
+    user = await get_current_user(credentials)
+    
+    now = datetime.now(timezone.utc)
+    
+    # Get all employees and offboardings
+    employees = await db.employees.find({}).to_list(10000)
+    offboardings = await db.offboarding.find({}).to_list(10000)
+    departments = await db.departments.find({}).to_list(1000)
+    dept_map = {d["id"]: d["name"] for d in departments}
+    
+    # Monthly turnover for past 12 months
+    monthly_turnover = []
+    for i in range(11, -1, -1):
+        month_date = now - timedelta(days=i*30)
+        month_key = month_date.strftime("%Y-%m")
+        month_name = month_date.strftime("%b %Y")
+        
+        terminations = len([o for o in offboardings if o.get("last_working_date", "").startswith(month_key)])
+        monthly_turnover.append({
+            "month": month_name,
+            "terminations": terminations
+        })
+    
+    # Turnover by department
+    turnover_by_dept = {}
+    for off in offboardings:
+        emp = next((e for e in employees if e.get("id") == off.get("employee_id")), None)
+        if emp:
+            dept_id = emp.get("department_id", "unknown")
+            dept_name = dept_map.get(dept_id, "Other")
+            turnover_by_dept[dept_name] = turnover_by_dept.get(dept_name, 0) + 1
+    
+    # Turnover by tenure
+    tenure_buckets = {"0-1 year": 0, "1-2 years": 0, "2-5 years": 0, "5+ years": 0}
+    for off in offboardings:
+        emp = next((e for e in employees if e.get("id") == off.get("employee_id")), None)
+        if emp:
+            hire_date_str = emp.get("hire_date", "")
+            term_date_str = off.get("last_working_date", "")
+            if hire_date_str and term_date_str:
+                try:
+                    hire_date = datetime.strptime(hire_date_str[:10], "%Y-%m-%d")
+                    term_date = datetime.strptime(term_date_str[:10], "%Y-%m-%d")
+                    tenure_years = (term_date - hire_date).days / 365
+                    
+                    if tenure_years < 1:
+                        tenure_buckets["0-1 year"] += 1
+                    elif tenure_years < 2:
+                        tenure_buckets["1-2 years"] += 1
+                    elif tenure_years < 5:
+                        tenure_buckets["2-5 years"] += 1
+                    else:
+                        tenure_buckets["5+ years"] += 1
+                except:
+                    pass
+    
+    return {
+        "monthly_turnover": monthly_turnover,
+        "by_department": [{"department": k, "count": v} for k, v in turnover_by_dept.items()],
+        "by_tenure": [{"tenure": k, "count": v} for k, v in tenure_buckets.items()],
+        "total_terminations": len(offboardings)
+    }
+
+@api_router.get("/analytics/hiring")
+async def get_hiring_analytics(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get detailed hiring analytics"""
+    user = await get_current_user(credentials)
+    
+    now = datetime.now(timezone.utc)
+    
+    # Get candidates and jobs
+    candidates = await db.candidates.find({}).to_list(10000)
+    jobs = await db.jobs.find({}).to_list(1000)
+    employees = await db.employees.find({}).to_list(10000)
+    
+    # Hiring funnel
+    funnel = {
+        "applied": len([c for c in candidates if c.get("status") in ["new", "screening", "interview", "offer", "hired", "rejected"]]),
+        "screening": len([c for c in candidates if c.get("status") in ["screening", "interview", "offer", "hired"]]),
+        "interview": len([c for c in candidates if c.get("status") in ["interview", "offer", "hired"]]),
+        "offer": len([c for c in candidates if c.get("status") in ["offer", "hired"]]),
+        "hired": len([c for c in candidates if c.get("status") == "hired"])
+    }
+    
+    # Time to hire (average days from application to hire)
+    hire_times = []
+    for c in candidates:
+        if c.get("status") == "hired":
+            applied = c.get("applied_at") or c.get("created_at", "")
+            hired = c.get("hired_at") or c.get("updated_at", "")
+            if applied and hired:
+                try:
+                    applied_date = datetime.fromisoformat(applied.replace("Z", "+00:00"))
+                    hired_date = datetime.fromisoformat(hired.replace("Z", "+00:00"))
+                    days = (hired_date - applied_date).days
+                    if days > 0:
+                        hire_times.append(days)
+                except:
+                    pass
+    
+    avg_time_to_hire = round(sum(hire_times) / max(len(hire_times), 1), 1)
+    
+    # Hires by source
+    source_counts = {}
+    for c in candidates:
+        if c.get("status") == "hired":
+            source = c.get("source", "Direct")
+            source_counts[source] = source_counts.get(source, 0) + 1
+    
+    # Monthly hires
+    monthly_hires = []
+    for i in range(11, -1, -1):
+        month_date = now - timedelta(days=i*30)
+        month_key = month_date.strftime("%Y-%m")
+        month_name = month_date.strftime("%b")
+        
+        hires = 0
+        for emp in employees:
+            hire_date = emp.get("hire_date") or emp.get("created_at", "")
+            if hire_date.startswith(month_key):
+                hires += 1
+        
+        monthly_hires.append({"month": month_name, "hires": hires})
+    
+    # Open positions by department
+    departments = await db.departments.find({}).to_list(1000)
+    dept_map = {d["id"]: d["name"] for d in departments}
+    
+    open_by_dept = {}
+    for job in jobs:
+        if job.get("status") == "open":
+            dept_id = job.get("department_id", "unknown")
+            dept_name = dept_map.get(dept_id, "Other")
+            open_by_dept[dept_name] = open_by_dept.get(dept_name, 0) + 1
+    
+    return {
+        "funnel": funnel,
+        "avg_time_to_hire": avg_time_to_hire,
+        "by_source": [{"source": k, "count": v} for k, v in source_counts.items()],
+        "monthly_hires": monthly_hires,
+        "open_positions_by_dept": [{"department": k, "count": v} for k, v in open_by_dept.items()],
+        "total_open_positions": len([j for j in jobs if j.get("status") == "open"]),
+        "total_candidates": len(candidates)
+    }
+
+@api_router.get("/analytics/salary")
+async def get_salary_analytics(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get salary benchmarking analytics"""
+    user = await get_current_user(credentials)
+    
+    employees = await db.employees.find({"status": {"$ne": "terminated"}}).to_list(10000)
+    departments = await db.departments.find({}).to_list(1000)
+    dept_map = {d["id"]: d["name"] for d in departments}
+    
+    # Overall salary distribution
+    salaries = [e.get("salary", 0) or 0 for e in employees if (e.get("salary") or 0) > 0]
+    
+    if salaries:
+        sorted_salaries = sorted(salaries)
+        total_salary = sum(salaries)
+        avg_salary = total_salary / len(salaries)
+        median_salary = sorted_salaries[len(sorted_salaries)//2]
+        min_salary = sorted_salaries[0]
+        max_salary = sorted_salaries[-1]
+    else:
+        total_salary = avg_salary = median_salary = min_salary = max_salary = 0
+    
+    # Salary by department
+    salary_by_dept = {}
+    for emp in employees:
+        salary = emp.get("salary", 0) or 0
+        if salary > 0:
+            dept_id = emp.get("department_id", "unknown")
+            dept_name = dept_map.get(dept_id, "Other")
+            
+            if dept_name not in salary_by_dept:
+                salary_by_dept[dept_name] = []
+            salary_by_dept[dept_name].append(salary)
+    
+    dept_stats = []
+    for dept, sals in salary_by_dept.items():
+        sorted_sals = sorted(sals)
+        dept_stats.append({
+            "department": dept,
+            "average": round(sum(sals) / len(sals), 0),
+            "median": sorted_sals[len(sorted_sals)//2],
+            "min": sorted_sals[0],
+            "max": sorted_sals[-1],
+            "count": len(sals)
+        })
+    
+    # Salary distribution buckets
+    buckets = {"0-30k": 0, "30k-50k": 0, "50k-75k": 0, "75k-100k": 0, "100k-150k": 0, "150k+": 0}
+    for s in salaries:
+        if s < 30000:
+            buckets["0-30k"] += 1
+        elif s < 50000:
+            buckets["30k-50k"] += 1
+        elif s < 75000:
+            buckets["50k-75k"] += 1
+        elif s < 100000:
+            buckets["75k-100k"] += 1
+        elif s < 150000:
+            buckets["100k-150k"] += 1
+        else:
+            buckets["150k+"] += 1
+    
+    # Salary by job level/position
+    salary_by_position = {}
+    for emp in employees:
+        salary = emp.get("salary", 0) or 0
+        if salary > 0:
+            position = emp.get("position", "Other")
+            if position not in salary_by_position:
+                salary_by_position[position] = []
+            salary_by_position[position].append(salary)
+    
+    position_stats = []
+    for pos, sals in salary_by_position.items():
+        if len(sals) >= 1:
+            position_stats.append({
+                "position": pos,
+                "average": round(sum(sals) / len(sals), 0),
+                "count": len(sals)
+            })
+    
+    return {
+        "overall": {
+            "total_payroll": round(total_salary, 0),
+            "average": round(avg_salary, 0),
+            "median": round(median_salary, 0),
+            "min": round(min_salary, 0),
+            "max": round(max_salary, 0),
+            "employee_count": len(salaries)
+        },
+        "by_department": sorted(dept_stats, key=lambda x: x["average"], reverse=True),
+        "distribution": [{"range": k, "count": v} for k, v in buckets.items()],
+        "by_position": sorted(position_stats, key=lambda x: x["average"], reverse=True)[:10]
+    }
+
+@api_router.get("/analytics/forecast")
+async def get_headcount_forecast(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get headcount forecasting based on historical trends"""
+    user = await get_current_user(credentials)
+    
+    now = datetime.now(timezone.utc)
+    
+    employees = await db.employees.find({}).to_list(10000)
+    offboardings = await db.offboarding.find({}).to_list(10000)
+    
+    # Calculate historical monthly data
+    historical = []
+    monthly_hires = []
+    monthly_terms = []
+    
+    for i in range(11, -1, -1):
+        month_date = now - timedelta(days=i*30)
+        month_key = month_date.strftime("%Y-%m")
+        month_name = month_date.strftime("%b %Y")
+        
+        hires = len([e for e in employees if (e.get("hire_date") or e.get("created_at", "")).startswith(month_key)])
+        terms = len([o for o in offboardings if o.get("last_working_date", "").startswith(month_key)])
+        
+        monthly_hires.append(hires)
+        monthly_terms.append(terms)
+        historical.append({
+            "month": month_name,
+            "hires": hires,
+            "terminations": terms,
+            "net_change": hires - terms
+        })
+    
+    # Simple linear forecast for next 6 months
+    avg_monthly_hires = sum(monthly_hires[-6:]) / 6 if monthly_hires else 0
+    avg_monthly_terms = sum(monthly_terms[-6:]) / 6 if monthly_terms else 0
+    avg_net_change = avg_monthly_hires - avg_monthly_terms
+    
+    current_headcount = len([e for e in employees if e.get("status") != "terminated"])
+    
+    forecast = []
+    projected_headcount = current_headcount
+    for i in range(1, 7):
+        month_date = now + timedelta(days=i*30)
+        month_name = month_date.strftime("%b %Y")
+        projected_headcount = max(0, projected_headcount + avg_net_change)
+        
+        forecast.append({
+            "month": month_name,
+            "projected_headcount": round(projected_headcount),
+            "projected_hires": round(avg_monthly_hires),
+            "projected_terminations": round(avg_monthly_terms),
+            "is_forecast": True
+        })
+    
+    return {
+        "current_headcount": current_headcount,
+        "historical": historical,
+        "forecast": forecast,
+        "trends": {
+            "avg_monthly_hires": round(avg_monthly_hires, 1),
+            "avg_monthly_terminations": round(avg_monthly_terms, 1),
+            "avg_net_change": round(avg_net_change, 1),
+            "projected_year_end_headcount": round(current_headcount + (avg_net_change * 12))
+        }
+    }
+
+
 # ============= PUSH NOTIFICATION ENDPOINTS =============
 
 @api_router.get("/push/vapid-public-key")
