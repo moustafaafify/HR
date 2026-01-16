@@ -53,6 +53,7 @@ import {
   Ticket,
   Bell,
   Smartphone,
+  Activity,
   Sun,
   Moon
 } from 'lucide-react';
