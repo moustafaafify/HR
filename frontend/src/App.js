@@ -49,6 +49,7 @@ import Reports from './pages/Reports';
 import MobileApps from './pages/MobileApps';
 import Analytics from './pages/Analytics';
 import WorkforcePlanning from './pages/WorkforcePlanning';
+import ComplianceLegal from './pages/ComplianceLegal';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -110,6 +111,7 @@ function AppRoutes() {
         <Route path="reports" element={<Reports />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="workforce-planning" element={<WorkforcePlanning />} />
+        <Route path="compliance" element={<ComplianceLegal />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
