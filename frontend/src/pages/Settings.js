@@ -49,6 +49,21 @@ const Settings = () => {
     primary_color: '#2D4F38',
     accent_color: '#4A7C59',
     dark_mode: false,
+    // Push Notification Settings
+    push_notifications: {
+      leave_request_new: true,
+      leave_request_approved: true,
+      leave_request_rejected: true,
+      ticket_assigned: true,
+      ticket_updated: true,
+      expense_approved: true,
+      expense_rejected: true,
+      announcement_new: true,
+      payroll_processed: true,
+      training_reminder: true,
+      birthday_reminder: false,
+      performance_review_due: true
+    },
     // SMTP Settings
     smtp: {
       enabled: false,
