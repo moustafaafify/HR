@@ -1510,6 +1510,72 @@ async def update_my_employee_profile(data: Dict[str, Any], current_user: User = 
     
     return await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
 
+# Create employee photos directory
+EMPLOYEE_PHOTOS_DIR = ROOT_DIR / "uploads" / "employee_photos"
+EMPLOYEE_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+
+@api_router.post("/employees/me/photo")
+async def upload_employee_photo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload profile picture for current employee"""
+    # Validate file type
+    allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload PNG, JPG, or WebP")
+    
+    # Validate file size (max 5MB)
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB")
+    
+    # Generate unique filename
+    file_ext = Path(file.filename).suffix or ".jpg"
+    filename = f"{current_user.id}_{uuid.uuid4().hex}{file_ext}"
+    file_path = EMPLOYEE_PHOTOS_DIR / filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Generate URL
+    photo_url = f"/api/uploads/employee_photos/{filename}"
+    
+    # Update employee record
+    await db.employees.update_one(
+        {"user_id": current_user.id},
+        {"$set": {"profile_picture": photo_url, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Also update user record
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"profile_picture": photo_url}}
+    )
+    
+    return {"profile_picture": photo_url}
+
+@api_router.get("/uploads/employee_photos/{filename}")
+async def get_employee_photo(filename: str):
+    """Serve employee profile photos"""
+    from fastapi.responses import FileResponse
+    
+    file_path = EMPLOYEE_PHOTOS_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+    
+    content_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp"
+    }
+    ext = Path(filename).suffix.lower()
+    content_type = content_types.get(ext, "image/jpeg")
+    
+    return FileResponse(file_path, media_type=content_type)
+
 @api_router.get("/employees", response_model=List[Employee])
 async def get_employees(branch_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
     query = {"branch_id": branch_id} if branch_id else {}
