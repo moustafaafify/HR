@@ -13,6 +13,30 @@ Build a full-stack HR platform with:
 
 ## Latest Updates (Jan 16, 2026)
 
+### Ticket Management Module (NEW)
+**Problem:** Employees need a centralized way to submit support requests to IT, HR, Payroll, and other departments.
+
+**Employee Features:**
+- Create support tickets with subject, description, category, and priority
+- Track ticket status (Open → In Progress → Pending → Resolved → Closed)
+- View all their submitted tickets
+- Add comments to tickets
+- Rate resolved tickets (1-5 stars)
+- Auto-generated ticket numbers (TKT-00001, TKT-00002, etc.)
+
+**Admin Features:**
+- View all tickets across the organization
+- Filter by status, priority, category, assignee
+- Assign tickets to team members
+- Change ticket status
+- Add internal notes (not visible to requesters)
+- Delete tickets
+- View unassigned tickets tab
+- SLA tracking with auto-calculated due dates
+
+**Categories:** IT, HR, Facilities, Payroll, Benefits, Leave, Onboarding, Other
+**Priorities:** Low, Medium, High, Urgent (with SLA: 72h, 48h, 24h, 4h)
+
 ### Sidebar Redesign (NEW)
 **Problem:** Previous sidebar had 25+ flat navigation items causing visual clutter and cognitive overload.
 
