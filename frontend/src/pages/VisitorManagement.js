@@ -108,6 +108,13 @@ const VisitorManagement = () => {
     search: ''
   });
   
+  // History
+  const [history, setHistory] = useState([]);
+  const [historyFilters, setHistoryFilters] = useState({
+    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end_date: new Date().toISOString().split('T')[0]
+  });
+  
   const badgeRef = useRef(null);
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin' || user?.role === 'branch_manager';
   
