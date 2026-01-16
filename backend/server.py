@@ -828,6 +828,10 @@ class Settings(BaseModel):
     app_name: str = "HR Portal"
     logo_url: Optional[str] = None
     favicon_url: Optional[str] = None
+    # Theme settings
+    primary_color: str = "#2D4F38"
+    accent_color: str = "#4A7C59"
+    dark_mode: bool = False
     # Integration settings
     smtp: Optional[SmtpSettings] = Field(default_factory=SmtpSettings)
     sms: Optional[SmsSettings] = Field(default_factory=SmsSettings)
