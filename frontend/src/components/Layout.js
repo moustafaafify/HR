@@ -59,7 +59,8 @@ import {
   Shield,
   UserCheck,
   CalendarClock,
-  BookOpen
+  BookOpen,
+  MessagesSquare
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
