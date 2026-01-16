@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useBranding } from '../contexts/BrandingContext';
 import { toast } from 'sonner';
 import { Building2 } from 'lucide-react';
 
