@@ -60,6 +60,7 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const Layout = () => {
   const { user, logout, token } = useAuth();
   const { t } = useLanguage();
+  const { branding } = useBranding();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
