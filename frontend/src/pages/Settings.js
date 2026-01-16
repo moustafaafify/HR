@@ -6,7 +6,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Shield, ChevronRight } from 'lucide-react';
+import { Shield, ChevronRight, Plus, X, Globe, DollarSign } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -19,6 +19,7 @@ const Settings = () => {
     language_1: 'en',
     language_2: '',
     currency: 'USD',
+    enabled_currencies: ['USD'],
     exchange_rates: { USD: 1.0 }
   });
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,12 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       const response = await axios.get(`${API}/settings`);
-      setSettings(response.data);
+      // Ensure enabled_currencies exists
+      const data = {
+        ...response.data,
+        enabled_currencies: response.data.enabled_currencies || [response.data.currency || 'USD']
+      };
+      setSettings(data);
     } catch (error) {
       console.error('Failed to fetch settings:', error);
     }
@@ -60,15 +66,141 @@ const Settings = () => {
     }));
   };
 
-  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'AED', 'CNY', 'CAD', 'AUD'];
+  const toggleCurrency = (currencyCode) => {
+    setSettings(prev => {
+      const enabled = prev.enabled_currencies || [];
+      if (enabled.includes(currencyCode)) {
+        // Don't allow removing the default currency
+        if (currencyCode === prev.currency) {
+          toast.error('Cannot disable the default currency');
+          return prev;
+        }
+        return {
+          ...prev,
+          enabled_currencies: enabled.filter(c => c !== currencyCode)
+        };
+      } else {
+        return {
+          ...prev,
+          enabled_currencies: [...enabled, currencyCode],
+          exchange_rates: {
+            ...prev.exchange_rates,
+            [currencyCode]: prev.exchange_rates[currencyCode] || 1.0
+          }
+        };
+      }
+    });
+  };
+
+  // Top 50 most used languages worldwide
   const languages = [
     { code: 'en', name: 'English' },
+    { code: 'zh', name: 'Chinese (中文)' },
+    { code: 'hi', name: 'Hindi (हिन्दी)' },
     { code: 'es', name: 'Spanish (Español)' },
-    { code: 'fr', name: 'French (Français)' },
+    { code: 'ar', name: 'Arabic (العربية)' },
+    { code: 'bn', name: 'Bengali (বাংলা)' },
+    { code: 'pt', name: 'Portuguese (Português)' },
+    { code: 'ru', name: 'Russian (Русский)' },
+    { code: 'ja', name: 'Japanese (日本語)' },
+    { code: 'pa', name: 'Punjabi (ਪੰਜਾਬੀ)' },
     { code: 'de', name: 'German (Deutsch)' },
-    { code: 'ar', name: 'Arabic (عربي)' },
-    { code: 'zh', name: 'Chinese (中文)' }
+    { code: 'jv', name: 'Javanese (Basa Jawa)' },
+    { code: 'ko', name: 'Korean (한국어)' },
+    { code: 'fr', name: 'French (Français)' },
+    { code: 'te', name: 'Telugu (తెలుగు)' },
+    { code: 'vi', name: 'Vietnamese (Tiếng Việt)' },
+    { code: 'mr', name: 'Marathi (मराठी)' },
+    { code: 'ta', name: 'Tamil (தமிழ்)' },
+    { code: 'tr', name: 'Turkish (Türkçe)' },
+    { code: 'ur', name: 'Urdu (اردو)' },
+    { code: 'it', name: 'Italian (Italiano)' },
+    { code: 'th', name: 'Thai (ไทย)' },
+    { code: 'gu', name: 'Gujarati (ગુજરાતી)' },
+    { code: 'pl', name: 'Polish (Polski)' },
+    { code: 'uk', name: 'Ukrainian (Українська)' },
+    { code: 'ml', name: 'Malayalam (മലയാളം)' },
+    { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' },
+    { code: 'or', name: 'Odia (ଓଡ଼ିଆ)' },
+    { code: 'my', name: 'Burmese (မြန်မာ)' },
+    { code: 'fa', name: 'Persian (فارسی)' },
+    { code: 'sw', name: 'Swahili (Kiswahili)' },
+    { code: 'ro', name: 'Romanian (Română)' },
+    { code: 'nl', name: 'Dutch (Nederlands)' },
+    { code: 'hu', name: 'Hungarian (Magyar)' },
+    { code: 'el', name: 'Greek (Ελληνικά)' },
+    { code: 'cs', name: 'Czech (Čeština)' },
+    { code: 'sv', name: 'Swedish (Svenska)' },
+    { code: 'he', name: 'Hebrew (עברית)' },
+    { code: 'id', name: 'Indonesian (Bahasa Indonesia)' },
+    { code: 'ms', name: 'Malay (Bahasa Melayu)' },
+    { code: 'tl', name: 'Filipino (Tagalog)' },
+    { code: 'da', name: 'Danish (Dansk)' },
+    { code: 'fi', name: 'Finnish (Suomi)' },
+    { code: 'no', name: 'Norwegian (Norsk)' },
+    { code: 'sk', name: 'Slovak (Slovenčina)' },
+    { code: 'bg', name: 'Bulgarian (Български)' },
+    { code: 'sr', name: 'Serbian (Српски)' },
+    { code: 'hr', name: 'Croatian (Hrvatski)' },
+    { code: 'lt', name: 'Lithuanian (Lietuvių)' },
+    { code: 'sl', name: 'Slovenian (Slovenščina)' }
   ];
+
+  // Comprehensive currency list (50+ currencies)
+  const allCurrencies = [
+    { code: 'USD', name: 'US Dollar', symbol: '$' },
+    { code: 'EUR', name: 'Euro', symbol: '€' },
+    { code: 'GBP', name: 'British Pound', symbol: '£' },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+    { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+    { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+    { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+    { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+    { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+    { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+    { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
+    { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+    { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
+    { code: 'TWD', name: 'Taiwan Dollar', symbol: 'NT$' },
+    { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+    { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+    { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
+    { code: 'PLN', name: 'Polish Złoty', symbol: 'zł' },
+    { code: 'THB', name: 'Thai Baht', symbol: '฿' },
+    { code: 'ILS', name: 'Israeli Shekel', symbol: '₪' },
+    { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp' },
+    { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč' },
+    { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
+    { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
+    { code: 'HUF', name: 'Hungarian Forint', symbol: 'Ft' },
+    { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
+    { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼' },
+    { code: 'PHP', name: 'Philippine Peso', symbol: '₱' },
+    { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
+    { code: 'COP', name: 'Colombian Peso', symbol: '$' },
+    { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+    { code: 'RON', name: 'Romanian Leu', symbol: 'lei' },
+    { code: 'PEN', name: 'Peruvian Sol', symbol: 'S/' },
+    { code: 'BGN', name: 'Bulgarian Lev', symbol: 'лв' },
+    { code: 'ARS', name: 'Argentine Peso', symbol: '$' },
+    { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
+    { code: 'EGP', name: 'Egyptian Pound', symbol: 'E£' },
+    { code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'د.ك' },
+    { code: 'QAR', name: 'Qatari Riyal', symbol: '﷼' },
+    { code: 'VND', name: 'Vietnamese Dong', symbol: '₫' },
+    { code: 'BDT', name: 'Bangladeshi Taka', symbol: '৳' },
+    { code: 'NGN', name: 'Nigerian Naira', symbol: '₦' },
+    { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' },
+    { code: 'UAH', name: 'Ukrainian Hryvnia', symbol: '₴' },
+    { code: 'GHS', name: 'Ghanaian Cedi', symbol: '₵' },
+    { code: 'MAD', name: 'Moroccan Dirham', symbol: 'د.م.' },
+    { code: 'LKR', name: 'Sri Lankan Rupee', symbol: '₨' }
+  ];
+
+  const enabledCurrencies = settings.enabled_currencies || ['USD'];
 
   return (
     <div data-testid="settings-page">
