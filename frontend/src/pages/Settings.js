@@ -31,6 +31,10 @@ const Settings = () => {
     app_name: 'HR Portal',
     logo_url: '',
     favicon_url: '',
+    // Theme Settings
+    primary_color: '#2D4F38',
+    accent_color: '#4A7C59',
+    dark_mode: false,
     // SMTP Settings
     smtp: {
       enabled: false,
