@@ -1158,15 +1158,15 @@ const Tickets = () => {
               <label className="block text-sm font-medium text-stone-700 mb-1">Assign To *</label>
               <Select value={ruleForm.assignee_id} onValueChange={(v) => setRuleForm({ ...ruleForm, assignee_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
-                <SelectContent>{employees.map(emp => (<SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>))}</SelectContent>
+                <SelectContent>{employees.filter(emp => emp.id).map(emp => (<SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Priority Filter (Optional)</label>
-              <Select value={ruleForm.priority_filter} onValueChange={(v) => setRuleForm({ ...ruleForm, priority_filter: v })}>
+              <Select value={ruleForm.priority_filter || "all"} onValueChange={(v) => setRuleForm({ ...ruleForm, priority_filter: v === "all" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="All priorities" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Priorities</SelectItem>
+                  <SelectItem value="all">All Priorities</SelectItem>
                   {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (<SelectItem key={value} value={value}>{config.label}</SelectItem>))}
                 </SelectContent>
               </Select>
