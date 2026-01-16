@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Shield, ChevronRight, Plus, X, Globe, DollarSign, Mail, MessageSquare, Eye, EyeOff, TestTube, CheckCircle2, XCircle } from 'lucide-react';
+import { Shield, ChevronRight, Plus, X, Globe, DollarSign, Mail, MessageSquare, Eye, EyeOff, TestTube, CheckCircle2, XCircle, Languages, Search, FileText, Edit2, Save } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
