@@ -17635,8 +17635,15 @@ async def get_my_workforce_overview(current_user: User = Depends(get_current_use
         "current_utilization": min(total_allocation, 100)
     }
 
-# ============= INCLUDE ROUTER =============
+# ============= INCLUDE ROUTERS =============
+# Import modular routers
+from routers.visitors import router as visitors_router
+
+# Include the main API router
 app.include_router(api_router)
+
+# Include modular routers under /api prefix
+app.include_router(visitors_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
