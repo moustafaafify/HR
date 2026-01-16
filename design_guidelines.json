@@ -1,138 +1,144 @@
 {
-  "identity": {
-    "persona": "E1",
-    "philosophy": "Fusion over Imitation. Emotion First. Content is King.",
-    "anti_patterns": [
-      "Purple/Teal generic SaaS gradients",
-      "Inter font everywhere",
-      "Center-aligned everything",
-      "Gradient overload (>20%)"
-    ]
-  },
-  "typography": {
-    "primary_font": "Manrope",
-    "secondary_font": "Cairo",
-    "weights": {
-      "light": 300,
-      "regular": 400,
-      "medium": 500,
-      "bold": 700,
-      "black": 900
+  "design_system": {
+    "identity": {
+      "name": "E1 Anti-AI HR Platform",
+      "archetype": "Organic & Earthy (Human-Centric)",
+      "core_values": ["Humanity over Bureaucracy", "Clarity over Density", "Calm over Clutter"],
+      "visual_mood": "Grounded, Matte, Physical, Organized"
     },
-    "usage": {
-      "headings": "Manrope (English) / Cairo (Arabic) - Bold/Black, Tight Tracking",
-      "body": "Manrope (English) / Cairo (Arabic) - Regular/Medium, Relaxed Leading",
-      "ui_elements": "Manrope (English) / Cairo (Arabic) - Medium/Bold"
+    "typography": {
+      "font_family": {
+        "headings": "Manrope, sans-serif",
+        "body": "IBM Plex Sans, Inter, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+        "h2": "text-3xl font-semibold tracking-tight",
+        "h3": "text-2xl font-medium",
+        "body_lg": "text-lg leading-relaxed",
+        "body": "text-base leading-relaxed text-muted-foreground",
+        "caption": "text-sm font-medium tracking-wide uppercase text-muted-foreground/70"
+      }
     },
-    "scale": {
-      "h1": "text-4xl md:text-5xl font-black tracking-tight",
-      "h2": "text-3xl md:text-4xl font-bold tracking-tight",
-      "h3": "text-2xl md:text-3xl font-bold",
-      "body_lg": "text-lg leading-relaxed",
-      "body_base": "text-base leading-relaxed",
-      "caption": "text-sm text-muted-foreground"
-    }
-  },
-  "colors": {
-    "palette_name": "Human-Centric Professional",
-    "primary": {
-      "name": "Deep Indigo",
-      "hex": "#1e1b4b",
-      "tailwind": "bg-indigo-950 text-white"
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#2D4F38",
+          "foreground": "#FFFFFF",
+          "hover": "#1F3A29",
+          "description": "Deep Forest Green - Professional, calm, growth-oriented"
+        },
+        "secondary": {
+          "DEFAULT": "#F2F0E9",
+          "foreground": "#2D3436",
+          "description": "Bone/Stone White - Warm background, avoids sterile clinical white"
+        },
+        "accent": {
+          "DEFAULT": "#D97757",
+          "foreground": "#FFFFFF",
+          "description": "Terracotta - Warmth for actions, alerts, and highlights"
+        },
+        "background": "#FCFCFA",
+        "surface": "#FFFFFF",
+        "border": "#E5E5E0",
+        "muted": "#F5F5F0"
+      },
+      "gradients": {
+        "subtle_mesh": "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-stone-100 via-background to-background"
+      }
     },
-    "secondary": {
-      "name": "Vibrant Coral",
-      "hex": "#f97316",
-      "tailwind": "bg-orange-500 text-white"
+    "layout": {
+      "spacing": {
+        "container_padding": "p-6 md:p-10",
+        "section_gap": "gap-8",
+        "item_gap": "gap-4"
+      },
+      "radius": {
+        "default": "rounded-xl",
+        "button": "rounded-lg",
+        "card": "rounded-2xl"
+      },
+      "shadows": {
+        "card": "shadow-[0_2px_12px_-4px_rgba(45,79,56,0.08)]",
+        "hover": "shadow-[0_8px_24px_-6px_rgba(45,79,56,0.12)]",
+        "dropdown": "shadow-xl border border-stone-100"
+      }
     },
-    "background": {
-      "app_bg": "#f8fafc",
-      "card_bg": "#ffffff",
-      "sidebar_bg": "#ffffff"
-    },
-    "text": {
-      "primary": "#0f172a",
-      "secondary": "#64748b",
-      "muted": "#94a3b8"
-    },
-    "status": {
-      "success": "#10b981",
-      "warning": "#f59e0b",
-      "error": "#ef4444",
-      "info": "#3b82f6"
-    },
-    "gradients": "NONE. Use solid colors or subtle noise textures."
-  },
-  "layout": {
-    "grid_system": "Bento Grid (Mode B)",
-    "spacing_scale": [
-      "p-1", "p-2", "p-4", "p-6", "p-8", "p-12", "p-16", "p-20", "p-24", "p-32"
-    ],
-    "container_padding": "p-6 or p-8 for internal content",
-    "rtl_strategy": "Use logical properties (ms-, me-, ps-, pe-) instead of left/right. Ensure flex-direction: row-reverse is NOT manually applied; let the dir='rtl' attribute handle it naturally.",
-    "sidebar": {
-      "width": "w-64",
-      "collapsed_width": "w-20",
-      "behavior": "Collapsible, Sticky"
+    "sidebar_strategy": {
+      "problem": "25+ modules causing visual clutter and cognitive load.",
+      "solution": "Categorized Accordion Navigation with Search-First approach.",
+      "structure": {
+        "search": "Prominent 'Cmd+K' search bar at top of sidebar.",
+        "groups": [
+          {
+            "label": "Core",
+            "items": ["Dashboard", "Team Calendar", "Communications", "Documents"]
+          },
+          {
+            "label": "People",
+            "items": ["Employee List", "Recruitment", "Onboarding", "Offboarding", "Succession Planning"]
+          },
+          {
+            "label": "Work",
+            "items": ["Projects", "Timesheets", "Overtime", "Attendance", "Travel", "Assets"]
+          },
+          {
+            "label": "Growth",
+            "items": ["Performance Reviews", "Appraisals", "Training", "Skills", "Recognition", "Disciplinary"]
+          },
+          {
+            "label": "Finance",
+            "items": ["Payroll", "Expenses", "Benefits"]
+          },
+          {
+            "label": "Support",
+            "items": ["Complaints", "User Profile", "Settings"]
+          }
+        ]
+      },
+      "visual_style": "Ghost-style accordions. Active state uses a subtle left border strip (primary color) + light bg tint. Inactive items are muted."
     }
   },
   "components": {
     "buttons": {
-      "primary": "rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl transition-all duration-300",
-      "secondary": "rounded-full bg-white text-indigo-950 border border-slate-200 hover:bg-slate-50 hover:border-indigo-200 transition-all duration-300",
-      "ghost": "rounded-full hover:bg-slate-100 text-slate-600 hover:text-indigo-900"
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm h-10 px-6 rounded-lg font-medium transition-all active:scale-95",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-6 rounded-lg font-medium",
+      "ghost": "hover:bg-muted hover:text-foreground text-muted-foreground"
     },
     "cards": {
-      "style": "bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300",
-      "padding": "p-6"
+      "base": "bg-white border border-border/60 shadow-sm rounded-2xl p-6 transition-all hover:shadow-md",
+      "interactive": "cursor-pointer hover:border-primary/20 hover:shadow-lg group"
     },
     "inputs": {
-      "style": "rounded-lg border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200",
-      "label": "text-sm font-medium text-slate-700 mb-1.5 block"
-    },
-    "tables": {
-      "style": "w-full caption-bottom text-sm",
-      "header": "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "row": "border-b transition-colors hover:bg-slate-50/50 data-[state=selected]:bg-slate-50",
-      "cell": "p-4 align-middle [&:has([role=checkbox])]:pr-0"
+      "base": "h-10 rounded-lg border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
     }
-  },
-  "visual_enhancers": {
-    "shadows": "Layered shadows (ambient + direct). Example: shadow-[0_2px_8px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.08)]",
-    "borders": "Crisp edges via semi-transparent borders (border-slate-200)",
-    "radius": "Nested radii: child <= parent. Standard: rounded-xl for containers, rounded-lg for inner elements.",
-    "micro_interactions": "Hover states on ALL interactive elements. Scale up slightly (scale-[1.02]) on cards.",
-    "textures": "Subtle noise overlay on the main background (opacity 0.02) to reduce digital flatness."
   },
   "assets": {
     "images": {
-      "team_office": [
-        "https://images.unsplash.com/photo-1758691736975-9f7f643d178e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwxfHxkaXZlcnNlJTIwcHJvZmVzc2lvbmFsJTIwdGVhbSUyMG9mZmljZXxlbnwwfHx8fDE3Njg0NTM5ODV8MA&ixlib=rb-4.1.0&q=85",
-        "https://images.unsplash.com/photo-1758873268663-5a362616b5a7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwyfHxkaXZlcnNlJTIwcHJvZmVzc2lvbmFsJTIwdGVhbSUyMG9mZmljZXxlbnwwfHx8fDE3Njg0NTM5ODV8MA&ixlib=rb-4.1.0&q=85",
-        "https://images.unsplash.com/photo-1758518731468-98e90ffd7430?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwzfHxkaXZlcnNlJTIwcHJvZmVzc2lvbmFsJTIwdGVhbSUyMG9mZmljZXxlbnwwfHx8fDE3Njg0NTM5ODV8MA&ixlib=rb-4.1.0&q=85"
-      ],
-      "logos": [
-        "https://images.unsplash.com/photo-1762939079730-23708c0dd337?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwY29tcGFueSUyMGxvZ28lMjB2ZWN0b3J8ZW58MHx8fHwxNzY4NDUzOTg3fDA&ixlib=rb-4.1.0&q=85",
-        "https://images.unsplash.com/photo-1628760584600-6c31148991e9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwY29tcGFueSUyMGxvZ28lMjB2ZWN0b3J8ZW58MHx8fHwxNzY4NDUzOTg3fDA&ixlib=rb-4.1.0&q=85"
+      "login_hero": "https://images.unsplash.com/photo-1650843897691-03500f1f2b40?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "dashboard_bg_texture": "Use subtle noise texture opacity 0.02",
+      "avatars": [
+        "https://images.unsplash.com/photo-1650784854945-264d5b0b6b07?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "https://images.unsplash.com/photo-1758518730523-c9f6336ebdae?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "https://images.unsplash.com/photo-1624555130296-e551faf8969b?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "https://images.unsplash.com/photo-1650784855038-9f4d5ed154a9?crop=entropy&cs=srgb&fm=jpg&q=85"
       ]
     },
-    "icons": "Use Lucide React (default). For specific HR metaphors, use Phosphor Icons if needed."
+    "icons": "Use Lucide React icons. Stroke width 1.5px for elegance."
   },
-  "universal_guidelines": [
-    "Do NOT use gradients for backgrounds. Use solid colors or subtle noise.",
-    "Do NOT use generic centered layouts. Use the Bento Grid.",
-    "Do NOT use AI assistant emojis (🤖, 🚀, etc.).",
-    "ALWAYS add data-testid to interactive elements.",
-    "ALWAYS use 'sonner' for toasts.",
-    "ALWAYS use Shadcn 'Calendar' for dates and 'Select' for dropdowns.",
-    "Ensure contrast ratios meet APCA standards.",
-    "Use 2-3x more spacing than typical designs."
+  "instructions_to_main_agent": [
+    "1. IMPLEMENT SIDEBAR FIRST: Refactor the sidebar to use the 'Categorized Accordion' strategy defined above. Do not list 25 items flat.",
+    "2. THEME SETUP: Update tailwind.config.js with the 'Organic & Earthy' color palette. Replace the default 'zinc/slate' grays with 'stone' (warm grays).",
+    "3. LAYOUT: Use a 'Bento Grid' layout for the Dashboard. Mix 2x2 squares (stats) with 4x2 rectangles (charts).",
+    "4. TYPOGRAPHY: Ensure 'Manrope' is used for all headings. It gives a modern, friendly, yet technical feel.",
+    "5. INTERACTION: Add 'sonner' for toasts. Add 'framer-motion' for smooth sidebar expansion/collapse.",
+    "6. DATA-TESTID: Add data-testid to all sidebar items (e.g., 'nav-item-recruitment') and major buttons."
   ],
-  "tech_stack": {
-    "framework": "React (JS) + FastAPI",
-    "styling": "Tailwind CSS",
-    "components": "Shadcn/UI",
-    "icons": "Lucide React"
-  },
-  "instructions_to_main_agent": "You are building a professional, multi-language HR platform. Prioritize clarity, hierarchy, and human-centric design. Use the provided image URLs for the 'About' or 'Team' sections. Ensure the dashboard is widget-based and customizable. Strictly follow the RTL strategy for Arabic support."
+  "universal_guidelines": [
+    "Avoid 'AI Slop': Do not use generic blue gradients. Use solid, matte colors.",
+    "Spacing: Use p-6 or p-8 for cards. Don't cram content.",
+    "Motion: Sidebar transitions must be smooth (bezier curve).",
+    "Accessibility: Ensure text contrast on the 'Stone' background is sufficient (use dark charcoal, not light gray)."
+  ]
 }
