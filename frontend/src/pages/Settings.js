@@ -187,9 +187,16 @@ const Settings = () => {
     { code: 'BGN', name: 'Bulgarian Lev', symbol: 'лв' },
     { code: 'ARS', name: 'Argentine Peso', symbol: '$' },
     { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
-    { code: 'EGP', name: 'Egyptian Pound', symbol: 'E£' },
+    // Egyptian Currency
+    { code: 'EGP', name: 'Egyptian Pound', symbol: 'ج.م' },
+    // Gulf (GCC) Currencies
+    { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
+    { code: 'SAR', name: 'Saudi Riyal', symbol: 'ر.س' },
     { code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'د.ك' },
-    { code: 'QAR', name: 'Qatari Riyal', symbol: '﷼' },
+    { code: 'QAR', name: 'Qatari Riyal', symbol: 'ر.ق' },
+    { code: 'BHD', name: 'Bahraini Dinar', symbol: 'د.ب' },
+    { code: 'OMR', name: 'Omani Rial', symbol: 'ر.ع' },
+    // Other currencies
     { code: 'VND', name: 'Vietnamese Dong', symbol: '₫' },
     { code: 'BDT', name: 'Bangladeshi Taka', symbol: '৳' },
     { code: 'NGN', name: 'Nigerian Naira', symbol: '₦' },
@@ -197,7 +204,16 @@ const Settings = () => {
     { code: 'UAH', name: 'Ukrainian Hryvnia', symbol: '₴' },
     { code: 'GHS', name: 'Ghanaian Cedi', symbol: '₵' },
     { code: 'MAD', name: 'Moroccan Dirham', symbol: 'د.م.' },
-    { code: 'LKR', name: 'Sri Lankan Rupee', symbol: '₨' }
+    { code: 'LKR', name: 'Sri Lankan Rupee', symbol: '₨' },
+    { code: 'JOD', name: 'Jordanian Dinar', symbol: 'د.أ' },
+    { code: 'LBP', name: 'Lebanese Pound', symbol: 'ل.ل' },
+    { code: 'IQD', name: 'Iraqi Dinar', symbol: 'ع.د' },
+    { code: 'SYP', name: 'Syrian Pound', symbol: 'ل.س' },
+    { code: 'YER', name: 'Yemeni Rial', symbol: 'ر.ي' },
+    { code: 'LYD', name: 'Libyan Dinar', symbol: 'ل.د' },
+    { code: 'TND', name: 'Tunisian Dinar', symbol: 'د.ت' },
+    { code: 'DZD', name: 'Algerian Dinar', symbol: 'د.ج' },
+    { code: 'SDG', name: 'Sudanese Pound', symbol: 'ج.س' }
   ];
 
   const enabledCurrencies = settings.enabled_currencies || ['USD'];
