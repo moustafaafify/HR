@@ -103,7 +103,7 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+              <label className="text-sm font-medium mb-1.5 block" style={{ color: 'var(--foreground, #334155)' }}>
                 {t('password')}
               </label>
               <input
@@ -111,7 +111,8 @@ const Login = () => {
                 data-testid="password-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none text-base"
+                className="w-full px-4 py-3 rounded-lg border transition-all duration-200 outline-none text-base"
+                style={{ borderColor: 'var(--border, #e2e8f0)', backgroundColor: 'var(--muted, #f8fafc)', color: 'var(--foreground, #0f172a)' }}
                 required
               />
             </div>
@@ -119,7 +120,8 @@ const Login = () => {
             <button
               type="submit"
               data-testid="submit-button"
-              className="w-full py-3 bg-indigo-950 text-white rounded-full font-medium hover:bg-indigo-900 shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+              className="w-full py-3 text-white rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+              style={{ backgroundColor: 'var(--primary, #1e1b4b)' }}
             >
               {isLogin ? t('login') : t('register')}
             </button>
@@ -129,7 +131,8 @@ const Login = () => {
             <button
               onClick={() => setIsLogin(!isLogin)}
               data-testid="toggle-auth-mode"
-              className="text-sm text-slate-600 hover:text-indigo-950 transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: 'var(--muted-foreground, #64748b)' }}
             >
               {isLogin
                 ? "Don't have an account? Register"
