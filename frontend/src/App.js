@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { MobileConfigProvider } from './contexts/MobileConfigContext';
 import { Toaster } from './components/ui/sonner';
 import InstallPWA from './components/InstallPWA';
 import Login from './pages/Login';
