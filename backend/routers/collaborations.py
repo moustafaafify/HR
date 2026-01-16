@@ -173,6 +173,81 @@ class Task(BaseModel):
     completed_at: Optional[str] = None
 
 
+class Poll(BaseModel):
+    """Poll in a channel"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    channel_id: str
+    message_id: Optional[str] = None
+    
+    question: str
+    options: List[Dict[str, Any]] = Field(default_factory=list)
+    # [{"id": "opt1", "text": "Option 1", "votes": ["user1", "user2"]}]
+    
+    allow_multiple: bool = False
+    is_anonymous: bool = False
+    ends_at: Optional[str] = None
+    is_closed: bool = False
+    
+    created_by: str
+    created_by_name: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class UserStatus(BaseModel):
+    """User presence/status"""
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    status: str = "online"  # online, away, dnd, offline
+    status_text: Optional[str] = None  # Custom status message
+    status_emoji: Optional[str] = None  # Custom emoji
+    clear_at: Optional[str] = None  # When to auto-clear status
+    last_active: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class ChannelCategory(BaseModel):
+    """Category/folder for organizing channels"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    order: int = 0
+    is_collapsed: bool = False
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class QuickReply(BaseModel):
+    """Quick reply template"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    title: str
+    content: str
+    shortcut: Optional[str] = None  # e.g., "/thanks"
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class ReadReceipt(BaseModel):
+    """Track read status per user per channel"""
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    channel_id: str
+    last_read_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_read_message_id: Optional[str] = None
+
+
+class NotificationPreference(BaseModel):
+    """Per-channel notification settings"""
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    channel_id: str
+    muted: bool = False
+    mute_until: Optional[str] = None
+    notify_all: bool = True
+    notify_mentions: bool = True
+    notify_replies: bool = True
+
+
 # ============= HELPER FUNCTIONS =============
 
 def get_file_type(filename: str) -> str:
