@@ -10,6 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Progress } from '../components/ui/progress';
 import {
+  WorkforceStatsCard,
+  HeadcountPlanCard,
+  AllocationCard,
+  ScenarioCard,
+  MyAllocationCard,
+  HeadcountPlanDialog,
+  AllocationDialog,
+  ScenarioDialog,
+  PreferencesDialog
+} from '../components/workforce';
+import {
   Users,
   TrendingUp,
   Target,
