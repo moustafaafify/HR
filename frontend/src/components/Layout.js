@@ -387,9 +387,14 @@ const Layout = () => {
         >
           <Menu size={22} className="text-stone-700" />
         </button>
-        <h1 className="text-lg font-bold text-[#2D4F38]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          HR Platform
-        </h1>
+        <div className="flex items-center gap-2">
+          {branding.logo_url && (
+            <img src={branding.logo_url} alt="Logo" className="w-7 h-7 object-contain" />
+          )}
+          <h1 className="text-lg font-bold text-[#2D4F38]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {branding.app_name || 'HR Platform'}
+          </h1>
+        </div>
         <div className="flex items-center gap-1">
           <NotificationBell />
           <Link to="/profile" className="w-8 h-8 rounded-full bg-[#2D4F38] flex items-center justify-center text-white text-sm font-medium">
