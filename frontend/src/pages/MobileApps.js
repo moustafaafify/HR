@@ -866,8 +866,8 @@ const MobileApps = () => {
                   <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
                     <li>Open Safari and navigate to the app URL</li>
                     <li>Tap the Share button</li>
-                    <li>Select "Add to Home Screen"</li>
-                    <li>Tap "Add" to install</li>
+                    <li>Select &ldquo;Add to Home Screen&rdquo;</li>
+                    <li>Tap &ldquo;Add&rdquo; to install</li>
                   </ol>
                 </div>
 
@@ -879,8 +879,8 @@ const MobileApps = () => {
                   <ol className="text-sm text-green-800 space-y-1 list-decimal list-inside">
                     <li>Open Chrome and navigate to the app URL</li>
                     <li>Tap the menu (three dots)</li>
-                    <li>Select "Install app" or "Add to Home screen"</li>
-                    <li>Tap "Install" to confirm</li>
+                    <li>Select &ldquo;Install app&rdquo; or &ldquo;Add to Home screen&rdquo;</li>
+                    <li>Tap &ldquo;Install&rdquo; to confirm</li>
                   </ol>
                 </div>
 
