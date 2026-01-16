@@ -662,36 +662,38 @@ const WorkforcePlanning = () => {
         
         {/* Availability Dialog */}
         <Dialog open={availabilityDialog} onOpenChange={setAvailabilityDialog}>
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             <DialogHeader>
-              <DialogTitle>Set Availability</DialogTitle>
+              <DialogTitle className="text-slate-900 dark:text-white">Set Availability</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Date</label>
                 <Input
                   type="date"
                   value={availabilityForm.date}
                   onChange={(e) => setAvailabilityForm({ ...availabilityForm, date: e.target.value })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Available Hours</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Available Hours</label>
                 <Input
                   type="number"
                   min="0"
                   max="12"
                   value={availabilityForm.available_hours}
                   onChange={(e) => setAvailabilityForm({ ...availabilityForm, available_hours: parseFloat(e.target.value) })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Status</label>
                 <Select value={availabilityForm.status} onValueChange={(v) => setAvailabilityForm({ ...availabilityForm, status: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="available">Available</SelectItem>
                     <SelectItem value="partial">Partially Available</SelectItem>
                     <SelectItem value="unavailable">Unavailable</SelectItem>
@@ -700,15 +702,16 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Reason (Optional)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Reason (Optional)</label>
                 <Input
                   value={availabilityForm.reason}
                   onChange={(e) => setAvailabilityForm({ ...availabilityForm, reason: e.target.value })}
                   placeholder="e.g., Working from home, Conference..."
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setAvailabilityDialog(false)}>Cancel</Button>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <Button variant="outline" onClick={() => setAvailabilityDialog(false)} className="dark:border-slate-600 dark:text-slate-200">Cancel</Button>
                 <Button onClick={handleSaveAvailability}>Save</Button>
               </div>
             </div>
@@ -717,13 +720,13 @@ const WorkforcePlanning = () => {
         
         {/* Preferences Dialog */}
         <Dialog open={preferencesDialog} onOpenChange={setPreferencesDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             <DialogHeader>
-              <DialogTitle>Update Preferences</DialogTitle>
+              <DialogTitle className="text-slate-900 dark:text-white">Update Preferences</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Interested Roles</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Interested Roles</label>
                 <Input
                   placeholder="Enter roles separated by commas"
                   value={preferencesForm.interested_roles.join(', ')}
@@ -731,8 +734,9 @@ const WorkforcePlanning = () => {
                     ...preferencesForm, 
                     interested_roles: e.target.value.split(',').map(r => r.trim()).filter(Boolean)
                   })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
                 />
-                <p className="text-xs text-slate-500 mt-1">e.g., Team Lead, Senior Developer, Product Manager</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">e.g., Team Lead, Senior Developer, Product Manager</p>
               </div>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -740,22 +744,22 @@ const WorkforcePlanning = () => {
                     type="checkbox"
                     checked={preferencesForm.open_to_relocation}
                     onChange={(e) => setPreferencesForm({ ...preferencesForm, open_to_relocation: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-700"
                   />
-                  <span className="text-sm text-slate-700">Open to Relocation</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-200">Open to Relocation</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={preferencesForm.open_to_travel}
                     onChange={(e) => setPreferencesForm({ ...preferencesForm, open_to_travel: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-700"
                   />
-                  <span className="text-sm text-slate-700">Open to Travel</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-200">Open to Travel</span>
                 </label>
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setPreferencesDialog(false)}>Cancel</Button>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <Button variant="outline" onClick={() => setPreferencesDialog(false)} className="dark:border-slate-600 dark:text-slate-200">Cancel</Button>
                 <Button onClick={handleSavePreferences}>Save Preferences</Button>
               </div>
             </div>
