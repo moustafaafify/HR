@@ -885,6 +885,82 @@ const Settings = () => {
   // All languages available for translation (excluding English which is base)
   const availableTranslationLanguages = languages.filter(lang => lang.code !== 'en');
 
+  // Handle logo upload
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'logo');
+
+      const response = await axios.post(`${API}/settings/upload-branding`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.data.url) {
+        setSettings(prev => ({ ...prev, logo_url: response.data.url }));
+        toast.success('Logo uploaded successfully');
+      }
+    } catch (error) {
+      toast.error('Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  // Handle favicon upload
+  const handleFaviconUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 500KB for favicon)
+    if (file.size > 500 * 1024) {
+      toast.error('Favicon must be less than 500KB');
+      return;
+    }
+
+    setUploadingFavicon(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'favicon');
+
+      const response = await axios.post(`${API}/settings/upload-branding`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.data.url) {
+        setSettings(prev => ({ ...prev, favicon_url: response.data.url }));
+        toast.success('Favicon uploaded successfully');
+      }
+    } catch (error) {
+      toast.error('Failed to upload favicon');
+    } finally {
+      setUploadingFavicon(false);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -892,6 +968,7 @@ const Settings = () => {
       toast.success('Settings updated successfully');
       await refreshSettings();
       await refreshCurrencySettings();
+      await refreshBranding();
     } catch (error) {
       toast.error('Failed to update settings');
     } finally {
