@@ -168,6 +168,105 @@ const Employees = () => {
     setDialogOpen(true);
   };
 
+  // ===== BULK IMPORT FUNCTIONS =====
+  const parseCSV = (text) => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+    const data = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+      if (values.length === headers.length) {
+        const row = {};
+        headers.forEach((header, idx) => {
+          row[header] = values[idx];
+        });
+        data.push(row);
+      }
+    }
+    return data;
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please upload a CSV file');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      const parsed = parseCSV(text);
+      if (parsed.length === 0) {
+        toast.error('Could not parse CSV file. Make sure it has headers and data.');
+        return;
+      }
+      setCsvData(parsed);
+      setImportStep('preview');
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadTemplate = () => {
+    const template = `email,full_name,job_title,phone,department_id,hire_date
+john.doe@example.com,John Doe,Software Engineer,+1234567890,,2024-01-15
+jane.smith@example.com,Jane Smith,Product Manager,+0987654321,,2024-02-01`;
+    
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'employee_import_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Template downloaded');
+  };
+
+  const handleBulkImport = async () => {
+    if (csvData.length === 0) {
+      toast.error('No data to import');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const response = await axios.post(
+        `${API}/employees/bulk-import`,
+        { employees: csvData },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setImportResults(response.data);
+      setImportStep('results');
+      if (response.data.success > 0) {
+        fetchEmployees();
+        toast.success(`Successfully imported ${response.data.success} employees`);
+      }
+    } catch (error) {
+      toast.error('Import failed: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetBulkImport = () => {
+    setCsvData([]);
+    setImportResults(null);
+    setImportStep('upload');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const copyTempPassword = (password) => {
+    navigator.clipboard.writeText(password);
+    toast.success('Password copied to clipboard');
+  };
+
   return (
     <div data-testid="employees-page">
       <div className="flex items-center justify-between mb-8">
