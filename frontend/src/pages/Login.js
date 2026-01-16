@@ -49,30 +49,30 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 noise-texture flex items-center justify-center p-4">
+    <div className="min-h-screen noise-texture flex items-center justify-center p-4" style={{ backgroundColor: 'var(--background, #f8fafc)' }}>
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-lg p-6 sm:p-8">
+        <div className="rounded-xl sm:rounded-2xl border shadow-lg p-6 sm:p-8" style={{ backgroundColor: 'var(--card, white)', borderColor: 'var(--border, #e2e8f0)' }}>
           <div className="flex items-center justify-center mb-6 sm:mb-8">
             {branding.logo_url ? (
               <img src={branding.logo_url} alt="Logo" className="w-14 h-14 object-contain" />
             ) : (
-              <div className="p-3 sm:p-4 bg-indigo-950 rounded-full">
+              <div className="p-3 sm:p-4 rounded-full" style={{ backgroundColor: 'var(--primary, #2D4F38)' }}>
                 <Building2 className="text-white" size={28} />
               </div>
             )}
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black text-center text-indigo-950 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl font-black text-center mb-2" style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--primary, #1e1b4b)' }}>
             {branding.app_name || 'HR Platform'}
           </h1>
-          <p className="text-center text-slate-500 mb-6 sm:mb-8 text-sm sm:text-base">
+          <p className="text-center mb-6 sm:mb-8 text-sm sm:text-base" style={{ color: 'var(--muted-foreground, #64748b)' }}>
             {isLogin ? t('login') : t('register')}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="auth-form">
             {!isLogin && (
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                <label className="text-sm font-medium mb-1.5 block" style={{ color: 'var(--foreground, #334155)' }}>
                   {t('fullName')}
                 </label>
                 <input
@@ -80,14 +80,15 @@ const Login = () => {
                   data-testid="fullname-input"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none text-base"
+                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 outline-none text-base"
+                  style={{ borderColor: 'var(--border, #e2e8f0)', backgroundColor: 'var(--muted, #f8fafc)', color: 'var(--foreground, #0f172a)' }}
                   required={!isLogin}
                 />
               </div>
             )}
 
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+              <label className="text-sm font-medium mb-1.5 block" style={{ color: 'var(--foreground, #334155)' }}>
                 {t('email')}
               </label>
               <input
@@ -95,7 +96,8 @@ const Login = () => {
                 data-testid="email-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none text-base"
+                className="w-full px-4 py-3 rounded-lg border transition-all duration-200 outline-none text-base"
+                style={{ borderColor: 'var(--border, #e2e8f0)', backgroundColor: 'var(--muted, #f8fafc)', color: 'var(--foreground, #0f172a)' }}
                 required
               />
             </div>
