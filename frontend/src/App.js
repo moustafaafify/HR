@@ -47,6 +47,7 @@ import Tickets from './pages/Tickets';
 import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
 import MobileApps from './pages/MobileApps';
+import Analytics from './pages/Analytics';
 import Layout from './components/Layout';
 import './App.css';
 
