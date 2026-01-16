@@ -1260,6 +1260,65 @@ async def test_sms_connection(sms_config: Dict[str, Any], current_user: User = D
     except Exception as e:
         return {"success": False, "message": f"Validation failed: {str(e)}"}
 
+# ============= MOBILE APP SETTINGS =============
+
+@api_router.get("/settings/mobile")
+async def get_mobile_settings():
+    """Get mobile app configuration"""
+    settings = await db.mobile_settings.find_one({"id": "mobile_config"}, {"_id": 0})
+    if not settings:
+        # Return default settings
+        return {
+            "id": "mobile_config",
+            "appName": "HR Portal",
+            "appDescription": "Your complete HR management solution",
+            "primaryColor": "#2D4F38",
+            "secondaryColor": "#4F7942",
+            "accentColor": "#FFB800",
+            "logoUrl": "",
+            "splashColor": "#2D4F38",
+            "enabledModules": {
+                "dashboard": True,
+                "employees": True,
+                "leaves": True,
+                "attendance": True,
+                "payroll": True,
+                "expenses": True,
+                "tickets": True,
+                "notifications": True,
+                "training": True,
+                "benefits": True,
+                "documents": True,
+                "profile": True
+            },
+            "pushNotifications": {
+                "enabled": True,
+                "leaveApprovals": True,
+                "expenseApprovals": True,
+                "announcements": True,
+                "ticketUpdates": True,
+                "payrollAlerts": True
+            }
+        }
+    return settings
+
+@api_router.put("/settings/mobile")
+async def update_mobile_settings(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update mobile app configuration"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can update mobile settings")
+    
+    data['id'] = 'mobile_config'
+    data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.mobile_settings.update_one(
+        {"id": "mobile_config"},
+        {"$set": data},
+        upsert=True
+    )
+    
+    return {"message": "Mobile settings updated successfully"}
+
 # ============= CORPORATION ROUTES =============
 
 @api_router.post("/corporations", response_model=Corporation)
