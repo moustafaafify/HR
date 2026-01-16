@@ -155,13 +155,6 @@ const Settings = () => {
       sms: { ...prev.sms, [key]: value, verified: false }
     }));
   };
-      await refreshCurrencySettings();
-    } catch (error) {
-      toast.error('Failed to update settings');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const updateExchangeRate = (currency, rate) => {
     setSettings(prev => ({
