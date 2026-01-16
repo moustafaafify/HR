@@ -703,7 +703,7 @@ const Recruitment = () => {
                       {job.show_salary && job.salary_min && (
                         <span className="flex items-center gap-1 text-xs text-slate-500">
                           <DollarSign size={12} />
-                          {job.salary_min.toLocaleString()}{job.salary_max ? ` - ${job.salary_max.toLocaleString()}` : '+'} {job.salary_currency}
+                          {formatCurrency(job.salary_min)}{job.salary_max ? ` - ${formatCurrency(job.salary_max)}` : '+'}
                         </span>
                       )}
                     </div>
