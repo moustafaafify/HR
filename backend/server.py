@@ -1291,6 +1291,202 @@ async def test_smtp_connection(smtp_config: Dict[str, Any], current_user: User =
     except Exception as e:
         return {"success": False, "message": f"Connection failed: {str(e)}"}
 
+
+@api_router.post("/settings/send-test-email")
+async def send_test_email(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Send a test email to a custom address"""
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can send test emails")
+    
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    try:
+        smtp_config = data.get('smtp_config', {})
+        recipient = data.get('recipient', '')
+        subject = data.get('subject', 'HR Platform - Test Email')
+        message = data.get('message', 'This is a test email from HR Platform.')
+        
+        if not recipient:
+            return {"success": False, "message": "Recipient email is required"}
+        
+        host = smtp_config.get('host', '')
+        port = smtp_config.get('port', 587)
+        username = smtp_config.get('username', '')
+        password = smtp_config.get('password', '')
+        encryption = smtp_config.get('encryption', 'tls')
+        from_email = smtp_config.get('from_email', username)
+        from_name = smtp_config.get('from_name', 'HR Platform')
+        
+        if not host or not username or not password:
+            return {"success": False, "message": "Missing required SMTP configuration"}
+        
+        # Create email
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"{from_name} <{from_email}>"
+        msg['To'] = recipient
+        
+        # HTML content
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .content {{ background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; }}
+                .footer {{ text-align: center; padding: 20px; color: #64748b; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin:0;">HR Platform</h1>
+                    <p style="margin:10px 0 0 0; opacity: 0.9;">Email Configuration Test</p>
+                </div>
+                <div class="content">
+                    <h2>Test Email Successful! ✅</h2>
+                    <p>{message}</p>
+                    <p style="margin-top: 20px; padding: 15px; background: #e0f2fe; border-radius: 8px;">
+                        <strong>Configuration Details:</strong><br>
+                        SMTP Host: {host}<br>
+                        Port: {port}<br>
+                        Encryption: {encryption.upper()}<br>
+                        From: {from_email}
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>This email was sent from HR Platform to verify your SMTP configuration.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"{message}\n\nConfiguration: {host}:{port} ({encryption})"
+        
+        msg.attach(MIMEText(text_content, 'plain'))
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        # Connect and send
+        if encryption == 'ssl':
+            server = smtplib.SMTP_SSL(host, port, timeout=15)
+        else:
+            server = smtplib.SMTP(host, port, timeout=15)
+            if encryption == 'tls':
+                server.starttls()
+        
+        server.login(username, password)
+        server.sendmail(from_email, [recipient], msg.as_string())
+        server.quit()
+        
+        # Log the email
+        email_log = {
+            "id": str(uuid.uuid4()),
+            "type": "test",
+            "recipient": recipient,
+            "subject": subject,
+            "status": "sent",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "sent_by": current_user.id
+        }
+        await db.email_logs.insert_one(email_log)
+        
+        return {"success": True, "message": f"Test email sent successfully to {recipient}"}
+    except smtplib.SMTPAuthenticationError:
+        return {"success": False, "message": "Authentication failed. Check username and password."}
+    except smtplib.SMTPConnectError:
+        return {"success": False, "message": "Could not connect to SMTP server. Check host and port."}
+    except Exception as e:
+        return {"success": False, "message": f"Failed to send email: {str(e)}"}
+
+
+@api_router.get("/settings/email-logs")
+async def get_email_logs(
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Get email send logs"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view email logs")
+    
+    logs = await db.email_logs.find({}, {"_id": 0}).sort("sent_at", -1).to_list(limit)
+    return logs
+
+
+@api_router.get("/settings/smtp-presets")
+async def get_smtp_presets():
+    """Get pre-configured SMTP presets for popular providers"""
+    return [
+        {
+            "id": "gmail",
+            "name": "Gmail",
+            "icon": "gmail",
+            "host": "smtp.gmail.com",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Use App Password (not regular password). Enable 2FA first, then create App Password in Google Account settings."
+        },
+        {
+            "id": "outlook",
+            "name": "Outlook / Microsoft 365",
+            "icon": "microsoft",
+            "host": "smtp.office365.com",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Use your Microsoft account email and password. May require App Password if 2FA is enabled."
+        },
+        {
+            "id": "sendgrid",
+            "name": "SendGrid",
+            "icon": "sendgrid",
+            "host": "smtp.sendgrid.net",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Username is 'apikey'. Password is your SendGrid API key. Free tier: 100 emails/day."
+        },
+        {
+            "id": "mailgun",
+            "name": "Mailgun",
+            "icon": "mailgun",
+            "host": "smtp.mailgun.org",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Use your Mailgun SMTP credentials from the dashboard. Free tier: 5,000 emails/month for 3 months."
+        },
+        {
+            "id": "amazon_ses",
+            "name": "Amazon SES",
+            "icon": "aws",
+            "host": "email-smtp.us-east-1.amazonaws.com",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Create SMTP credentials in AWS SES console. Update region in host if needed."
+        },
+        {
+            "id": "zoho",
+            "name": "Zoho Mail",
+            "icon": "zoho",
+            "host": "smtp.zoho.com",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Use your Zoho email and password. Enable SMTP access in Zoho Mail settings."
+        },
+        {
+            "id": "custom",
+            "name": "Custom SMTP Server",
+            "icon": "server",
+            "host": "",
+            "port": 587,
+            "encryption": "tls",
+            "note": "Configure your own SMTP server settings."
+        }
+    ]
+
+
 @api_router.post("/settings/test-sms")
 async def test_sms_connection(sms_config: Dict[str, Any], current_user: User = Depends(get_current_user)):
     """Test SMS provider connection with provided configuration"""
