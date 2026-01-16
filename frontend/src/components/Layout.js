@@ -156,6 +156,7 @@ const Layout = () => {
       items: [
         { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/notifications', icon: Bell, label: 'Notifications' },
+        ...(isAdmin ? [{ path: '/reports', icon: BarChart3, label: 'Reports' }] : []),
         { path: '/team-calendar', icon: CalendarDays, label: 'Calendar' },
         { path: '/communications', icon: Megaphone, label: 'Communications' },
         { path: '/documents', icon: FileCheck, label: 'Documents' },
