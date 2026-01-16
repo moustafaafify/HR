@@ -106,6 +106,7 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
+        <Route path="settings/mobile-apps" element={<MobileApps />} />
       </Route>
     </Routes>
   );
