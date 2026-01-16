@@ -3929,35 +3929,6 @@ async def initialize_default_roles(current_user: User = Depends(get_current_user
     return {"message": f"Initialized {len(DEFAULT_ROLES)} default roles"}
 
 
-@api_router.get("/roles/stats")
-async def get_roles_stats(current_user: User = Depends(get_current_user)):
-    """Get statistics about roles and user assignments"""
-    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
-        raise HTTPException(status_code=403, detail="Only admins can view role stats")
-    
-    roles = await db.roles.find({}, {"_id": 0}).to_list(100)
-    stats = []
-    
-    for role in roles:
-        user_count = await db.users.count_documents({"role": role["name"]})
-        stats.append({
-            "role_id": role["id"],
-            "role_name": role["name"],
-            "display_name": role["display_name"],
-            "user_count": user_count,
-            "permission_count": len(role.get("permissions", [])),
-            "is_system_role": role.get("is_system_role", False),
-            "level": role.get("level", 5)
-        })
-    
-    return {
-        "total_roles": len(roles),
-        "system_roles": len([r for r in roles if r.get("is_system_role")]),
-        "custom_roles": len([r for r in roles if not r.get("is_system_role")]),
-        "roles": sorted(stats, key=lambda x: x["level"])
-    }
-
-
 @api_router.get("/roles/{role_id}/users")
 async def get_users_with_role(role_id: str, current_user: User = Depends(get_current_user)):
     """Get all users assigned to a specific role"""
