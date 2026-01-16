@@ -164,7 +164,6 @@ import {
   Trash,
   RotateCcw,
   History,
-  Activity,
   Cpu,
   HardDrive,
   Cloud,
