@@ -14562,6 +14562,68 @@ async def delete_translation(key: str, current_user: User = Depends(get_current_
     return {"success": True}
 
 
+# ============= BRANDING UPLOAD API =============
+
+# Create branding uploads directory
+BRANDING_UPLOADS_DIR = ROOT_DIR / "uploads" / "branding"
+BRANDING_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+@api_router.post("/settings/upload-branding")
+async def upload_branding_file(
+    file: UploadFile = File(...),
+    type: str = "logo"
+):
+    """Upload logo or favicon for branding"""
+    # Validate file type
+    allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml", "image/x-icon", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload PNG, JPG, SVG, ICO, or WebP")
+    
+    # Validate file size
+    max_size = 2 * 1024 * 1024 if type == "logo" else 500 * 1024  # 2MB for logo, 500KB for favicon
+    content = await file.read()
+    if len(content) > max_size:
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {max_size // 1024}KB")
+    
+    # Generate unique filename
+    file_ext = Path(file.filename).suffix or ".png"
+    filename = f"{type}_{uuid.uuid4().hex}{file_ext}"
+    file_path = BRANDING_UPLOADS_DIR / filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Generate URL
+    backend_url = os.environ.get('BACKEND_URL', '')
+    file_url = f"{backend_url}/api/uploads/branding/{filename}"
+    
+    return {"url": file_url, "filename": filename}
+
+@api_router.get("/uploads/branding/{filename}")
+async def get_branding_file(filename: str):
+    """Serve branding files (logo, favicon)"""
+    from fastapi.responses import FileResponse
+    
+    file_path = BRANDING_UPLOADS_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine content type
+    content_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".svg": "image/svg+xml",
+        ".ico": "image/x-icon",
+        ".webp": "image/webp"
+    }
+    ext = Path(filename).suffix.lower()
+    content_type = content_types.get(ext, "application/octet-stream")
+    
+    return FileResponse(file_path, media_type=content_type)
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
