@@ -1220,23 +1220,23 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* SMTP Integration Settings */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+        {/* SMTP Integration Settings - Enhanced */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Mail className="text-orange-600" size={20} />
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Mail className="text-orange-600 dark:text-orange-400" size={20} />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">SMTP Email Integration</h2>
-                <p className="text-sm text-slate-500">Configure custom email server for sending notifications</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Email Configuration</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Configure SMTP server for sending notifications and reports</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               {settings.smtp?.verified && (
-                <span className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                <span className="flex items-center gap-1 text-sm text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full">
                   <CheckCircle2 size={14} />
-                  Verified
+                  Connected
                 </span>
               )}
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1246,131 +1246,308 @@ const Settings = () => {
                   onChange={(e) => updateSmtpSetting('enabled', e.target.checked)}
                   className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span className="text-sm font-medium text-slate-700">Enable</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Enable</span>
               </label>
             </div>
           </div>
 
           {settings.smtp?.enabled && (
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+            <Tabs value={smtpTab} onValueChange={setSmtpTab}>
+              <TabsList className="mb-6 bg-slate-100 dark:bg-slate-700">
+                <TabsTrigger value="config">Configuration</TabsTrigger>
+                <TabsTrigger value="test">Test & Send</TabsTrigger>
+                <TabsTrigger value="logs" onClick={fetchEmailLogs}>Email Logs</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="config" className="space-y-6">
+                {/* Provider Presets */}
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">SMTP Host *</label>
-                  <input
-                    type="text"
-                    placeholder="smtp.example.com"
-                    value={settings.smtp?.host || ''}
-                    onChange={(e) => updateSmtpSetting('host', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
-                  />
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3 block">Quick Setup - Select Provider</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {smtpPresets.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => applySmtpPreset(preset.id)}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          selectedPreset === preset.id 
+                            ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Server size={16} className={selectedPreset === preset.id ? 'text-orange-600' : 'text-slate-400'} />
+                          <span className={`font-medium text-sm ${selectedPreset === preset.id ? 'text-orange-700 dark:text-orange-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                            {preset.name}
+                          </span>
+                        </div>
+                        {preset.port > 0 && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Port {preset.port}</p>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedPreset !== 'custom' && smtpPresets.find(p => p.id === selectedPreset)?.note && (
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                        <Zap size={16} className="mt-0.5 flex-shrink-0" />
+                        {smtpPresets.find(p => p.id === selectedPreset)?.note}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Port *</label>
-                  <input
-                    type="number"
-                    placeholder="587"
-                    value={settings.smtp?.port || 587}
-                    onChange={(e) => updateSmtpSetting('port', parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Username *</label>
-                  <input
-                    type="text"
-                    placeholder="your-email@example.com"
-                    value={settings.smtp?.username || ''}
-                    onChange={(e) => updateSmtpSetting('username', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Password *</label>
-                  <div className="relative">
+                
+                {/* SMTP Configuration Fields */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">SMTP Host *</label>
                     <input
-                      type={showSmtpPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={settings.smtp?.password || ''}
-                      onChange={(e) => updateSmtpSetting('password', e.target.value)}
-                      className="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                      type="text"
+                      placeholder="smtp.example.com"
+                      value={settings.smtp?.host || ''}
+                      onChange={(e) => updateSmtpSetting('host', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowSmtpPassword(!showSmtpPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showSmtpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Port *</label>
+                    <input
+                      type="number"
+                      placeholder="587"
+                      value={settings.smtp?.port || 587}
+                      onChange={(e) => updateSmtpSetting('port', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">From Email *</label>
-                  <input
-                    type="email"
-                    placeholder="noreply@yourcompany.com"
-                    value={settings.smtp?.from_email || ''}
-                    onChange={(e) => updateSmtpSetting('from_email', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Username / Email *</label>
+                    <input
+                      type="text"
+                      placeholder="your-email@example.com"
+                      value={settings.smtp?.username || ''}
+                      onChange={(e) => updateSmtpSetting('username', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Password / API Key *</label>
+                    <div className="relative">
+                      <input
+                        type={showSmtpPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={settings.smtp?.password || ''}
+                        onChange={(e) => updateSmtpSetting('password', e.target.value)}
+                        className="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        {showSmtpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">From Name</label>
-                  <input
-                    type="text"
-                    placeholder="HR Platform"
-                    value={settings.smtp?.from_name || ''}
-                    onChange={(e) => updateSmtpSetting('from_name', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
-                  />
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">From Email *</label>
+                    <input
+                      type="email"
+                      placeholder="noreply@yourcompany.com"
+                      value={settings.smtp?.from_email || ''}
+                      onChange={(e) => updateSmtpSetting('from_email', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">From Name</label>
+                    <input
+                      type="text"
+                      placeholder="HR Platform"
+                      value={settings.smtp?.from_name || ''}
+                      onChange={(e) => updateSmtpSetting('from_name', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Encryption</label>
-                <Select 
-                  value={settings.smtp?.encryption || 'tls'} 
-                  onValueChange={(value) => updateSmtpSetting('encryption', value)}
-                >
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="tls">TLS</SelectItem>
-                    <SelectItem value="ssl">SSL</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <Button
-                  type="button"
-                  onClick={testSmtpConnection}
-                  disabled={testingSmtp || !settings.smtp?.host || !settings.smtp?.username}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <TestTube size={16} />
-                  {testingSmtp ? 'Testing...' : 'Test Connection'}
-                </Button>
-                <p className="text-xs text-slate-500">Test your SMTP configuration before saving</p>
-              </div>
-            </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Encryption</label>
+                  <Select 
+                    value={settings.smtp?.encryption || 'tls'} 
+                    onValueChange={(value) => updateSmtpSetting('encryption', value)}
+                  >
+                    <SelectTrigger className="w-full md:w-48 bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="tls">TLS (Recommended)</SelectItem>
+                      <SelectItem value="ssl">SSL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="test" className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Quick Test */}
+                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                    <h4 className="font-medium text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                      <TestTube size={18} /> Quick Connection Test
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                      Test your SMTP connection. A test email will be sent to your configured username.
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={testSmtpConnection}
+                      disabled={testingSmtp || !settings.smtp?.host || !settings.smtp?.username}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      {testingSmtp ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+                      {testingSmtp ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                  </div>
+                  
+                  {/* Send Custom Test Email */}
+                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                    <h4 className="font-medium text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                      <Send size={18} /> Send Test Email
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                      Send a test email to any address to verify delivery.
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={() => setSendTestEmailDialog(true)}
+                      disabled={!settings.smtp?.host || !settings.smtp?.username}
+                      className="flex items-center gap-2"
+                    >
+                      <Mail size={16} /> Send Test Email
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Connection Status */}
+                <div className={`p-4 rounded-xl border ${settings.smtp?.verified ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'}`}>
+                  <div className="flex items-center gap-3">
+                    {settings.smtp?.verified ? (
+                      <>
+                        <CheckCircle2 className="text-green-600 dark:text-green-400" size={24} />
+                        <div>
+                          <p className="font-medium text-green-800 dark:text-green-200">SMTP Connected & Verified</p>
+                          <p className="text-sm text-green-600 dark:text-green-400">Your email configuration is working correctly.</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="text-amber-600 dark:text-amber-400" size={24} />
+                        <div>
+                          <p className="font-medium text-amber-800 dark:text-amber-200">Pending Verification</p>
+                          <p className="text-sm text-amber-600 dark:text-amber-400">Run a test to verify your SMTP configuration.</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="logs" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <History size={18} /> Recent Emails Sent
+                  </h4>
+                  <Button variant="outline" size="sm" onClick={fetchEmailLogs}>
+                    <RefreshCw size={14} className="mr-1" /> Refresh
+                  </Button>
+                </div>
+                {emailLogs.length > 0 ? (
+                  <div className="space-y-2">
+                    {emailLogs.map((log) => (
+                      <div key={log.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white text-sm">{log.subject}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            To: {log.recipient} • {new Date(log.sent_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                          {log.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                    <Mail size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>No emails sent yet</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
 
           {!settings.smtp?.enabled && (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
               <Mail size={40} className="mx-auto mb-3 opacity-30" />
-              <p>Enable SMTP integration to send emails via your own mail server</p>
+              <p>Enable email integration to send notifications and scheduled reports</p>
             </div>
           )}
         </div>
+        
+        {/* Send Test Email Dialog */}
+        <Dialog open={sendTestEmailDialog} onOpenChange={setSendTestEmailDialog}>
+          <DialogContent className="max-w-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-slate-900 dark:text-white">Send Test Email</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Recipient Email *</label>
+                <Input
+                  type="email"
+                  placeholder="test@example.com"
+                  value={testEmailForm.recipient}
+                  onChange={(e) => setTestEmailForm(prev => ({ ...prev, recipient: e.target.value }))}
+                  className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Subject</label>
+                <Input
+                  value={testEmailForm.subject}
+                  onChange={(e) => setTestEmailForm(prev => ({ ...prev, subject: e.target.value }))}
+                  className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 block">Message</label>
+                <Textarea
+                  value={testEmailForm.message}
+                  onChange={(e) => setTestEmailForm(prev => ({ ...prev, message: e.target.value }))}
+                  rows={3}
+                  className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setSendTestEmailDialog(false)} className="dark:border-slate-600 dark:text-slate-200">
+                  Cancel
+                </Button>
+                <Button onClick={sendTestEmailToCustom} disabled={sendingTestEmail}>
+                  {sendingTestEmail ? <RefreshCw size={16} className="mr-2 animate-spin" /> : <Send size={16} className="mr-2" />}
+                  {sendingTestEmail ? 'Sending...' : 'Send Email'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* SMS Integration Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
