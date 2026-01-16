@@ -259,6 +259,117 @@ const Layout = () => {
 
   const filteredGroups = getFilteredGroups();
 
+  // Mark notification as read
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.put(
+        `${API}/api/notifications/${notificationId}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setRecentNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
+  };
+
+  // Format time ago
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString();
+  };
+
+  // Notification Bell Component
+  const NotificationBell = ({ className = '' }) => (
+    <div className={`relative ${className}`}>
+      <button
+        onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+        className="p-2 hover:bg-stone-100 rounded-lg transition-colors relative"
+        data-testid="notification-bell"
+      >
+        <Bell size={20} className="text-stone-600" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {/* Dropdown */}
+      {showNotifDropdown && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setShowNotifDropdown(false)}
+          />
+          <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-stone-200 z-50 overflow-hidden">
+            <div className="p-3 border-b border-stone-100 flex items-center justify-between">
+              <h3 className="font-semibold text-stone-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <span className="text-xs bg-[#2D4F38] text-white px-2 py-0.5 rounded-full">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+              {recentNotifications.length > 0 ? (
+                recentNotifications.map(notif => (
+                  <div
+                    key={notif.id}
+                    onClick={() => {
+                      if (!notif.is_read) markAsRead(notif.id);
+                      if (notif.link) window.location.href = notif.link;
+                      setShowNotifDropdown(false);
+                    }}
+                    className={`
+                      p-3 border-b border-stone-50 cursor-pointer transition-colors
+                      ${notif.is_read ? 'bg-white hover:bg-stone-50' : 'bg-[#2D4F38]/5 hover:bg-[#2D4F38]/10'}
+                    `}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${notif.is_read ? 'bg-stone-300' : 'bg-[#2D4F38]'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-stone-900 truncate">{notif.title}</p>
+                        <p className="text-xs text-stone-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                        <p className="text-xs text-stone-400 mt-1">{formatTimeAgo(notif.created_at)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center text-stone-500 text-sm">
+                  No notifications yet
+                </div>
+              )}
+            </div>
+
+            <Link
+              to="/notifications"
+              onClick={() => setShowNotifDropdown(false)}
+              className="block p-3 text-center text-sm font-medium text-[#2D4F38] hover:bg-stone-50 border-t border-stone-100"
+            >
+              View all notifications
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen bg-[#FCFCFA]">
       {/* Mobile Header */}
@@ -273,9 +384,12 @@ const Layout = () => {
         <h1 className="text-lg font-bold text-[#2D4F38]" style={{ fontFamily: 'Manrope, sans-serif' }}>
           HR Platform
         </h1>
-        <Link to="/profile" className="w-8 h-8 rounded-full bg-[#2D4F38] flex items-center justify-center text-white text-sm font-medium">
-          {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-        </Link>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <Link to="/profile" className="w-8 h-8 rounded-full bg-[#2D4F38] flex items-center justify-center text-white text-sm font-medium">
+            {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+          </Link>
+        </div>
       </header>
 
       {/* Overlay for mobile */}
