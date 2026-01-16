@@ -1166,6 +1166,177 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* Branding Settings */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg">
+              <Sparkles className="text-purple-600" size={20} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Branding</h2>
+              <p className="text-sm text-slate-500">Customize your app name, logo, and favicon</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* App Name */}
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                App Name
+              </label>
+              <Input
+                type="text"
+                placeholder="Enter your app name"
+                value={settings.app_name || 'HR Portal'}
+                onChange={(e) => setSettings({ ...settings, app_name: e.target.value })}
+                className="max-w-md"
+                data-testid="app-name-input"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                This name will appear in the browser tab, PWA install prompt, and throughout the app
+              </p>
+            </div>
+
+            {/* Logo & Favicon Grid */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Logo Upload */}
+              <div className="border border-slate-200 rounded-xl p-4">
+                <label className="text-sm font-medium text-slate-700 mb-3 block">
+                  App Logo
+                </label>
+                <div className="flex items-start gap-4">
+                  <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-300">
+                    {settings.logo_url ? (
+                      <img 
+                        src={settings.logo_url} 
+                        alt="App Logo" 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Image className="text-slate-400" size={32} />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      ref={logoInputRef}
+                      onChange={handleLogoUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="mb-2"
+                      data-testid="upload-logo-btn"
+                    >
+                      {uploadingLogo ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={16} className="mr-2" />
+                          Upload Logo
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-slate-500">
+                      Recommended: 512x512px, PNG or SVG. Max 2MB.
+                    </p>
+                    {settings.logo_url && (
+                      <button
+                        onClick={() => setSettings({ ...settings, logo_url: '' })}
+                        className="text-xs text-rose-600 hover:text-rose-700 mt-1"
+                      >
+                        Remove logo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Favicon Upload */}
+              <div className="border border-slate-200 rounded-xl p-4">
+                <label className="text-sm font-medium text-slate-700 mb-3 block">
+                  Favicon
+                </label>
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-300">
+                    {settings.favicon_url ? (
+                      <img 
+                        src={settings.favicon_url} 
+                        alt="Favicon" 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Image className="text-slate-400" size={24} />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      ref={faviconInputRef}
+                      onChange={handleFaviconUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => faviconInputRef.current?.click()}
+                      disabled={uploadingFavicon}
+                      className="mb-2"
+                      data-testid="upload-favicon-btn"
+                    >
+                      {uploadingFavicon ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={16} className="mr-2" />
+                          Upload Favicon
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-slate-500">
+                      Recommended: 32x32px or 64x64px, PNG or ICO. Max 500KB.
+                    </p>
+                    {settings.favicon_url && (
+                      <button
+                        onClick={() => setSettings({ ...settings, favicon_url: '' })}
+                        className="text-xs text-rose-600 hover:text-rose-700 mt-1"
+                      >
+                        Remove favicon
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview Banner */}
+            <div className="bg-gradient-to-r from-slate-50 to-purple-50 rounded-xl p-4 border border-slate-200">
+              <p className="text-sm text-slate-600 mb-2 font-medium">Preview</p>
+              <div className="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm max-w-sm">
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                  {settings.logo_url ? (
+                    <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                      {(settings.app_name || 'HR Portal').charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <span className="font-semibold text-slate-900">{settings.app_name || 'HR Portal'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Language Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">
