@@ -13,6 +13,7 @@ const Login = () => {
   const [fullName, setFullName] = useState('');
   const { login, register, user, loading } = useAuth();
   const { t } = useLanguage();
+  const { branding } = useBranding();
   const navigate = useNavigate();
 
   // Redirect if already logged in
