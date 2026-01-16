@@ -667,6 +667,7 @@ const Settings = () => {
 
   useEffect(() => {
     fetchSettings();
+    fetchCustomTranslations();
   }, []);
 
   const fetchSettings = async () => {
@@ -700,6 +701,68 @@ const Settings = () => {
       setSettings(data);
     } catch (error) {
       console.error('Failed to fetch settings:', error);
+    }
+  };
+
+  const fetchCustomTranslations = async () => {
+    try {
+      const response = await axios.get(`${API}/translations`);
+      setCustomTranslations(response.data || {});
+    } catch (error) {
+      console.error('Failed to fetch custom translations:', error);
+    }
+  };
+
+  const saveTranslationKey = async () => {
+    if (!newKeyForm.key.trim() || !newKeyForm.english.trim()) {
+      toast.error('Key and English text are required');
+      return;
+    }
+
+    setSavingTranslations(true);
+    try {
+      const translationData = {
+        key: newKeyForm.key.trim().toLowerCase().replace(/\s+/g, '_'),
+        translations: {
+          en: newKeyForm.english.trim(),
+          ...newKeyForm.translations
+        }
+      };
+
+      await axios.post(`${API}/translations`, translationData);
+      toast.success('Translation key added successfully');
+      setAddKeyDialogOpen(false);
+      setNewKeyForm({ key: '', english: '', translations: {} });
+      fetchCustomTranslations();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save translation');
+    } finally {
+      setSavingTranslations(false);
+    }
+  };
+
+  const updateTranslation = async (key, lang, value) => {
+    try {
+      await axios.put(`${API}/translations/${key}`, {
+        language: lang,
+        value: value
+      });
+      toast.success('Translation updated');
+      fetchCustomTranslations();
+    } catch (error) {
+      toast.error('Failed to update translation');
+    }
+  };
+
+  const deleteTranslationKey = async (key) => {
+    if (!window.confirm(`Are you sure you want to delete the translation key "${key}"?`)) return;
+    
+    try {
+      await axios.delete(`${API}/translations/${key}`);
+      toast.success('Translation key deleted');
+      fetchCustomTranslations();
+    } catch (error) {
+      toast.error('Failed to delete translation key');
     }
   };
 
