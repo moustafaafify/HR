@@ -378,11 +378,9 @@ const Payroll = () => {
     });
   };
 
-  const formatCurrency = (amount, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount || 0);
+  // Use global formatCurrency from CurrencyContext
+  const formatCurrency = (amount) => {
+    return formatCurrencyGlobal(amount);
   };
 
   const getEmployeeName = (emp) => {
