@@ -9,6 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
+  VisitorCard,
+  VisitorStatsCard,
+  PreRegisterVisitorDialog,
+  CheckInDialog,
+  ViewVisitorDialog,
+  BadgePreviewDialog,
+  WalkInDialog
+} from '../components/visitors';
+import {
   Users,
   UserPlus,
   Clock,
