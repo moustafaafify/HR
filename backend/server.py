@@ -1102,6 +1102,17 @@ async def change_password(data: Dict[str, Any], current_user: User = Depends(get
     
     return {"message": "Password changed successfully"}
 
+# ============= USERS ROUTES =============
+
+@api_router.get("/users")
+async def get_users(current_user: User = Depends(get_current_user)):
+    """Get all users (admin only)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view all users")
+    
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return users
+
 # ============= SETTINGS ROUTES =============
 
 @api_router.get("/settings", response_model=Settings)
