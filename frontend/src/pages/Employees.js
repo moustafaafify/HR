@@ -508,6 +508,226 @@ jane.smith@example.com,Jane Smith,Product Manager,+0987654321,,2024-02-01`;
           </table>
         </div>
       </div>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={bulkImportOpen} onOpenChange={(open) => {
+        setBulkImportOpen(open);
+        if (!open) resetBulkImport();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet size={20} className="text-[#2D4F38]" />
+              Bulk Import Employees
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Upload Step */}
+          {importStep === 'upload' && (
+            <div className="space-y-6">
+              <div className="bg-stone-50 rounded-xl p-6 text-center border-2 border-dashed border-stone-300">
+                <Upload size={40} className="mx-auto text-stone-400 mb-4" />
+                <h3 className="font-semibold text-stone-900 mb-2">Upload CSV File</h3>
+                <p className="text-sm text-stone-500 mb-4">
+                  Upload a CSV file with employee data. Required fields: email, full_name
+                </p>
+                <input
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  data-testid="csv-file-input"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-[#2D4F38] hover:bg-[#1F3A29]"
+                >
+                  <Upload size={16} className="mr-2" />
+                  Choose File
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                <div>
+                  <p className="font-medium text-blue-900">Need a template?</p>
+                  <p className="text-sm text-blue-700">Download our CSV template with all supported fields</p>
+                </div>
+                <Button variant="outline" onClick={downloadTemplate}>
+                  <Download size={16} className="mr-2" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Preview Step */}
+          {importStep === 'preview' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-stone-600">
+                  Found <span className="font-semibold text-stone-900">{csvData.length}</span> employees to import
+                </p>
+                <Button variant="ghost" size="sm" onClick={resetBulkImport}>
+                  Choose different file
+                </Button>
+              </div>
+
+              <div className="max-h-64 overflow-auto border border-stone-200 rounded-xl">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-stone-50 sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-stone-700">#</th>
+                      <th className="px-3 py-2 text-left font-medium text-stone-700">Email</th>
+                      <th className="px-3 py-2 text-left font-medium text-stone-700">Full Name</th>
+                      <th className="px-3 py-2 text-left font-medium text-stone-700">Job Title</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {csvData.slice(0, 10).map((row, idx) => (
+                      <tr key={idx} className="hover:bg-stone-50">
+                        <td className="px-3 py-2 text-stone-500">{idx + 1}</td>
+                        <td className="px-3 py-2">{row.email || <span className="text-red-500">Missing</span>}</td>
+                        <td className="px-3 py-2">{row.full_name || <span className="text-red-500">Missing</span>}</td>
+                        <td className="px-3 py-2">{row.job_title || '-'}</td>
+                      </tr>
+                    ))}
+                    {csvData.length > 10 && (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-2 text-center text-stone-500">
+                          ... and {csvData.length - 10} more
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={resetBulkImport}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleBulkImport}
+                  disabled={importing}
+                  className="bg-[#2D4F38] hover:bg-[#1F3A29]"
+                >
+                  {importing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Importing...
+                    </>
+                  ) : (
+                    <>Import {csvData.length} Employees</>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Results Step */}
+          {importStep === 'results' && importResults && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-emerald-50 rounded-xl p-4 flex items-center gap-3">
+                  <div className="p-2 bg-emerald-100 rounded-lg">
+                    <CheckCircle2 size={24} className="text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-700">{importResults.success}</p>
+                    <p className="text-sm text-emerald-600">Successful</p>
+                  </div>
+                </div>
+                <div className="bg-rose-50 rounded-xl p-4 flex items-center gap-3">
+                  <div className="p-2 bg-rose-100 rounded-lg">
+                    <XCircle size={24} className="text-rose-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-rose-700">{importResults.failed}</p>
+                    <p className="text-sm text-rose-600">Failed</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Created Employees with Temp Passwords */}
+              {importResults.created_employees?.length > 0 && (
+                <div className="border border-stone-200 rounded-xl overflow-hidden">
+                  <div className="bg-emerald-50 px-4 py-2 flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <span className="font-medium text-emerald-800">Created Employees</span>
+                  </div>
+                  <div className="max-h-48 overflow-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-stone-50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-stone-700">Email</th>
+                          <th className="px-3 py-2 text-left font-medium text-stone-700">Name</th>
+                          <th className="px-3 py-2 text-left font-medium text-stone-700">Temp Password</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {importResults.created_employees.map((emp, idx) => (
+                          <tr key={idx} className="hover:bg-stone-50">
+                            <td className="px-3 py-2">{emp.email}</td>
+                            <td className="px-3 py-2">{emp.full_name}</td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <code className="bg-stone-100 px-2 py-0.5 rounded text-xs">
+                                  {emp.temp_password}
+                                </code>
+                                <button
+                                  onClick={() => copyTempPassword(emp.temp_password)}
+                                  className="text-stone-400 hover:text-stone-600"
+                                >
+                                  <Copy size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Errors */}
+              {importResults.errors?.length > 0 && (
+                <div className="border border-stone-200 rounded-xl overflow-hidden">
+                  <div className="bg-rose-50 px-4 py-2 flex items-center gap-2">
+                    <AlertTriangle size={16} className="text-rose-600" />
+                    <span className="font-medium text-rose-800">Errors</span>
+                  </div>
+                  <div className="max-h-32 overflow-auto">
+                    {importResults.errors.map((err, idx) => (
+                      <div key={idx} className="px-4 py-2 text-sm border-b border-stone-100 last:border-0">
+                        <span className="text-stone-500">Row {err.row}:</span>{' '}
+                        <span className="text-rose-600">{err.error}</span>
+                        {err.email !== 'N/A' && (
+                          <span className="text-stone-400 ml-2">({err.email})</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={resetBulkImport}>
+                  Import More
+                </Button>
+                <Button
+                  onClick={() => setBulkImportOpen(false)}
+                  className="bg-[#2D4F38] hover:bg-[#1F3A29]"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
