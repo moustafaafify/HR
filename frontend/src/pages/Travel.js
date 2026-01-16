@@ -922,12 +922,12 @@ const Travel = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Estimated Budget:</span>
-                    <span className="font-bold text-indigo-600">${selectedRequest.total_estimated_cost?.toLocaleString()}</span>
+                    <span className="font-bold text-indigo-600">{formatCurrency(selectedRequest.total_estimated_cost)}</span>
                   </div>
                   {selectedRequest.total_actual_cost && (
                     <div className="flex justify-between">
                       <span className="text-slate-500">Actual Cost:</span>
-                      <span className="font-bold text-emerald-600">${selectedRequest.total_actual_cost?.toLocaleString()}</span>
+                      <span className="font-bold text-emerald-600">{formatCurrency(selectedRequest.total_actual_cost)}</span>
                     </div>
                   )}
                 </div>
