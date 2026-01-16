@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class HRPlatformAPITester:
-    def __init__(self, base_url="https://hr-suite-9.preview.emergentagent.com"):
+    def __init__(self, base_url="https://collab-hub-hr.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.token = None
