@@ -197,18 +197,58 @@ const MobileApps = () => {
   ];
 
   const moduleList = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, description: 'Main dashboard with stats and quick actions' },
-    { id: 'employees', label: 'Employees', icon: Users, description: 'Employee directory and profiles' },
-    { id: 'leaves', label: 'Time Off', icon: Calendar, description: 'Leave requests and approvals' },
-    { id: 'attendance', label: 'Attendance', icon: Clock, description: 'Clock in/out and attendance tracking' },
-    { id: 'payroll', label: 'Payroll', icon: DollarSign, description: 'Payslips and salary information' },
-    { id: 'expenses', label: 'Expenses', icon: FileText, description: 'Expense claims and reimbursements' },
-    { id: 'tickets', label: 'Support', icon: Ticket, description: 'Help desk and support tickets' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Alerts and announcements' },
-    { id: 'training', label: 'Training', icon: GraduationCap, description: 'Learning and development' },
-    { id: 'benefits', label: 'Benefits', icon: Heart, description: 'Employee benefits information' },
-    { id: 'documents', label: 'Documents', icon: FileText, description: 'Document management' },
-    { id: 'profile', label: 'My Profile', icon: User, description: 'Personal profile and settings' }
+    // Core
+    { id: 'dashboard', label: 'Dashboard', icon: Home, description: 'Main dashboard with stats and quick actions', category: 'Core' },
+    { id: 'profile', label: 'My Profile', icon: User, description: 'Personal profile and settings', category: 'Core' },
+    { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Alerts and announcements', category: 'Core' },
+    
+    // Organization
+    { id: 'corporations', label: 'Corporations', icon: Building2, description: 'Manage corporations', category: 'Organization' },
+    { id: 'branches', label: 'Branches', icon: GitBranch, description: 'Branch locations', category: 'Organization' },
+    { id: 'departments', label: 'Departments', icon: FolderTree, description: 'Department structure', category: 'Organization' },
+    { id: 'divisions', label: 'Divisions', icon: Layers, description: 'Division management', category: 'Organization' },
+    { id: 'orgChart', label: 'Org Chart', icon: Network, description: 'Organization hierarchy', category: 'Organization' },
+    
+    // People
+    { id: 'employees', label: 'Employees', icon: Users, description: 'Employee directory and profiles', category: 'People' },
+    { id: 'recruitment', label: 'Recruitment', icon: UserPlus, description: 'Job postings and applications', category: 'People' },
+    { id: 'onboarding', label: 'Onboarding', icon: ClipboardCheck, description: 'New employee onboarding', category: 'People' },
+    { id: 'offboarding', label: 'Offboarding', icon: UserMinus, description: 'Employee exit process', category: 'People' },
+    
+    // Time & Attendance
+    { id: 'leaves', label: 'Time Off', icon: Calendar, description: 'Leave requests and approvals', category: 'Time & Attendance' },
+    { id: 'attendance', label: 'Attendance', icon: Clock, description: 'Clock in/out and attendance tracking', category: 'Time & Attendance' },
+    { id: 'timesheets', label: 'Timesheets', icon: Sheet, description: 'Weekly timesheet entries', category: 'Time & Attendance' },
+    { id: 'overtime', label: 'Overtime', icon: Timer, description: 'Overtime requests and tracking', category: 'Time & Attendance' },
+    { id: 'teamCalendar', label: 'Team Calendar', icon: CalendarDays, description: 'Team schedule and availability', category: 'Time & Attendance' },
+    
+    // Finance
+    { id: 'payroll', label: 'Payroll', icon: DollarSign, description: 'Payslips and salary information', category: 'Finance' },
+    { id: 'expenses', label: 'Expenses', icon: Receipt, description: 'Expense claims and reimbursements', category: 'Finance' },
+    { id: 'benefits', label: 'Benefits', icon: Heart, description: 'Employee benefits information', category: 'Finance' },
+    
+    // Performance & Development
+    { id: 'performance', label: 'Performance', icon: TrendingUp, description: 'Performance reviews and goals', category: 'Performance' },
+    { id: 'appraisals', label: 'Appraisals', icon: ClipboardCheck, description: 'Employee appraisals', category: 'Performance' },
+    { id: 'training', label: 'Training', icon: GraduationCap, description: 'Learning and development', category: 'Performance' },
+    { id: 'skills', label: 'Skills', icon: Code, description: 'Skills matrix and assessments', category: 'Performance' },
+    { id: 'successionPlanning', label: 'Succession', icon: Target, description: 'Succession planning', category: 'Performance' },
+    { id: 'recognition', label: 'Recognition', icon: Award, description: 'Employee recognition and awards', category: 'Performance' },
+    
+    // Operations
+    { id: 'projects', label: 'Projects', icon: FolderKanban, description: 'Project management', category: 'Operations' },
+    { id: 'assets', label: 'Assets', icon: Package, description: 'Asset management', category: 'Operations' },
+    { id: 'documents', label: 'Documents', icon: FileText, description: 'Document management', category: 'Operations' },
+    { id: 'travel', label: 'Travel', icon: Plane, description: 'Travel requests and bookings', category: 'Operations' },
+    
+    // Support & Communication
+    { id: 'tickets', label: 'Support Tickets', icon: Ticket, description: 'Help desk and support tickets', category: 'Support' },
+    { id: 'complaints', label: 'Complaints', icon: AlertOctagon, description: 'Complaint management', category: 'Support' },
+    { id: 'communications', label: 'Communications', icon: Megaphone, description: 'Internal communications', category: 'Support' },
+    { id: 'disciplinary', label: 'Disciplinary', icon: Gavel, description: 'Disciplinary actions', category: 'Support' },
+    
+    // Reports
+    { id: 'reports', label: 'Reports', icon: BarChart3, description: 'Analytics and reports', category: 'Reports' }
   ];
 
   // Phone Simulator Component
