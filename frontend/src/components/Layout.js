@@ -211,6 +211,7 @@ const Layout = () => {
       icon: LayoutDashboard,
       items: [
         { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/collaborations', icon: MessagesSquare, label: 'Collaborations' },
         { path: '/notifications', icon: Bell, label: 'Notifications' },
         ...(isAdmin ? [{ path: '/reports', icon: BarChart3, label: 'Reports' }] : []),
         ...(isAdmin ? [{ path: '/analytics', icon: Activity, label: 'HR Analytics' }] : []),
