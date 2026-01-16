@@ -1299,12 +1299,12 @@ const WorkforcePlanning = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Quarter (Optional)</label>
-                <Select value={headcountForm.quarter} onValueChange={(v) => setHeadcountForm({ ...headcountForm, quarter: v })}>
+                <Select value={headcountForm.quarter || "full_year"} onValueChange={(v) => setHeadcountForm({ ...headcountForm, quarter: v === "full_year" ? "" : v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select quarter" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Full Year</SelectItem>
+                    <SelectItem value="full_year">Full Year</SelectItem>
                     <SelectItem value="Q1">Q1</SelectItem>
                     <SelectItem value="Q2">Q2</SelectItem>
                     <SelectItem value="Q3">Q3</SelectItem>
