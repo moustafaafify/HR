@@ -508,13 +508,14 @@ const Layout = () => {
                   }}
                   data-testid={`nav-group-${group.id}`}
                 >
-                  <GroupIcon size={18} className={hasActiveItem ? 'text-[#2D4F38]' : 'text-stone-400'} />
+                  <GroupIcon size={18} style={{ color: hasActiveItem ? 'var(--primary, #2D4F38)' : 'var(--muted-foreground, #9ca3af)' }} />
                   {!sidebarCollapsed && (
                     <>
                       <span className="flex-1 text-left">{group.label}</span>
                       <ChevronDown 
                         size={14} 
-                        className={`text-stone-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
+                        className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        style={{ color: 'var(--muted-foreground, #9ca3af)' }}
                       />
                     </>
                   )}
@@ -522,7 +523,7 @@ const Layout = () => {
 
                 {/* Group Items */}
                 {!sidebarCollapsed && isExpanded && (
-                  <div className="ml-3 pl-3 border-l border-stone-100 space-y-0.5">
+                  <div className="ml-3 pl-3 space-y-0.5" style={{ borderLeft: '1px solid var(--border, #f1f5f9)' }}>
                     {group.items.map((item) => {
                       const Icon = item.icon;
                       const isActive = isItemActive(item.path);
@@ -532,15 +533,16 @@ const Layout = () => {
                           key={item.path}
                           to={item.path}
                           data-testid={`nav-item-${item.path.slice(1) || 'dashboard'}`}
-                          className={`
-                            flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all
-                            ${isActive 
-                              ? 'bg-[#2D4F38] text-white font-medium shadow-sm' 
-                              : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-                            }
-                          `}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all"
+                          style={isActive ? {
+                            backgroundColor: 'var(--primary, #2D4F38)',
+                            color: 'white',
+                            fontWeight: '500'
+                          } : {
+                            color: 'var(--foreground, #475569)'
+                          }}
                         >
-                          <Icon size={16} className={isActive ? 'text-white' : 'text-stone-400'} />
+                          <Icon size={16} style={{ color: isActive ? 'white' : 'var(--muted-foreground, #9ca3af)' }} />
                           <span className="truncate">{item.label}</span>
                         </Link>
                       );
@@ -553,11 +555,11 @@ const Layout = () => {
         </nav>
 
         {/* User Section */}
-        <div className="p-3 border-t border-stone-100">
+        <div className="p-3" style={{ borderTop: '1px solid var(--border, #f1f5f9)' }}>
           <Link
             to="/profile"
             className={`
-              flex items-center gap-3 p-2 rounded-xl hover:bg-stone-50 transition-all
+              flex items-center gap-3 p-2 rounded-xl transition-all
               ${sidebarCollapsed ? 'justify-center' : ''}
             `}
             data-testid="nav-user-profile"
