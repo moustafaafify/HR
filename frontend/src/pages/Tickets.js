@@ -665,14 +665,14 @@ const Tickets = () => {
                     </Select>
 
                     <Select
-                      value={selectedTicket.assigned_to || ''}
-                      onValueChange={(v) => handleAssignTicket(selectedTicket.id, v)}
+                      value={selectedTicket.assigned_to || 'unassigned'}
+                      onValueChange={(v) => handleAssignTicket(selectedTicket.id, v === 'unassigned' ? null : v)}
                     >
                       <SelectTrigger className="w-[160px] h-8">
                         <SelectValue placeholder="Assign to..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {employees.map(emp => (
                           <SelectItem key={emp.id} value={emp.id}>{emp.full_name}</SelectItem>
                         ))}
