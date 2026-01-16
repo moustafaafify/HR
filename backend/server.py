@@ -12141,6 +12141,471 @@ async def seed_default_benefits(current_user: User = Depends(get_current_user)):
     return {"message": f"Seeded {len(default_plans)} default benefit plans"}
 
 
+# ============= TICKET MANAGEMENT MODELS =============
+
+class TicketPriority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"
+
+class TicketStatus(str, Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    PENDING = "pending"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+class TicketCategory(str, Enum):
+    IT = "it"
+    HR = "hr"
+    FACILITIES = "facilities"
+    PAYROLL = "payroll"
+    BENEFITS = "benefits"
+    LEAVE = "leave"
+    ONBOARDING = "onboarding"
+    OTHER = "other"
+
+
+class TicketComment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_id: str
+    author_id: str
+    author_name: Optional[str] = None
+    author_role: Optional[str] = None
+    content: str
+    is_internal: bool = False  # Internal notes visible only to admins
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class Ticket(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ticket_number: Optional[str] = None  # Auto-generated: TKT-0001
+    
+    # Basic info
+    subject: str
+    description: str
+    category: str = "other"
+    priority: str = "medium"
+    status: str = "open"
+    
+    # Requester info
+    requester_id: str
+    requester_name: Optional[str] = None
+    requester_email: Optional[str] = None
+    requester_department: Optional[str] = None
+    
+    # Assignment
+    assigned_to: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    
+    # Tags for categorization
+    tags: List[str] = Field(default_factory=list)
+    
+    # Attachments
+    attachments: List[Dict[str, Any]] = Field(default_factory=list)
+    
+    # Resolution
+    resolution_notes: Optional[str] = None
+    satisfaction_rating: Optional[int] = None  # 1-5
+    
+    # Timestamps
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    first_response_at: Optional[str] = None
+    resolved_at: Optional[str] = None
+    closed_at: Optional[str] = None
+    
+    # SLA
+    due_date: Optional[str] = None
+
+
+# ============= TICKET MANAGEMENT API ENDPOINTS =============
+
+async def generate_ticket_number():
+    """Generate next ticket number"""
+    last_ticket = await db.tickets.find_one(
+        {"ticket_number": {"$regex": "^TKT-"}},
+        sort=[("ticket_number", -1)]
+    )
+    if last_ticket and last_ticket.get("ticket_number"):
+        try:
+            last_num = int(last_ticket["ticket_number"].split("-")[1])
+            return f"TKT-{str(last_num + 1).zfill(5)}"
+        except:
+            pass
+    return "TKT-00001"
+
+
+@api_router.get("/tickets/stats")
+async def get_ticket_stats(current_user: User = Depends(get_current_user)):
+    """Get ticket statistics"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    if is_admin:
+        query = {}
+    else:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return {"total": 0, "open": 0, "in_progress": 0, "resolved": 0}
+        query = {"requester_id": employee["id"]}
+    
+    all_tickets = await db.tickets.find(query, {"_id": 0}).to_list(5000)
+    
+    # Count by status
+    status_counts = {"open": 0, "in_progress": 0, "pending": 0, "resolved": 0, "closed": 0}
+    priority_counts = {"low": 0, "medium": 0, "high": 0, "urgent": 0}
+    category_counts = {}
+    
+    for ticket in all_tickets:
+        status = ticket.get("status", "open")
+        if status in status_counts:
+            status_counts[status] += 1
+        
+        priority = ticket.get("priority", "medium")
+        if priority in priority_counts:
+            priority_counts[priority] += 1
+        
+        category = ticket.get("category", "other")
+        category_counts[category] = category_counts.get(category, 0) + 1
+    
+    # Calculate average resolution time (for resolved tickets)
+    resolved_tickets = [t for t in all_tickets if t.get("resolved_at") and t.get("created_at")]
+    avg_resolution_hours = 0
+    if resolved_tickets:
+        total_hours = 0
+        for t in resolved_tickets:
+            try:
+                created = datetime.fromisoformat(t["created_at"].replace("Z", "+00:00"))
+                resolved = datetime.fromisoformat(t["resolved_at"].replace("Z", "+00:00"))
+                total_hours += (resolved - created).total_seconds() / 3600
+            except:
+                pass
+        avg_resolution_hours = round(total_hours / len(resolved_tickets), 1) if resolved_tickets else 0
+    
+    return {
+        "total": len(all_tickets),
+        "by_status": status_counts,
+        "by_priority": priority_counts,
+        "by_category": category_counts,
+        "open_tickets": status_counts["open"] + status_counts["in_progress"] + status_counts["pending"],
+        "avg_resolution_hours": avg_resolution_hours,
+        "unassigned": len([t for t in all_tickets if not t.get("assigned_to") and t.get("status") not in ["resolved", "closed"]])
+    }
+
+
+@api_router.get("/tickets")
+async def get_tickets(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    category: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    requester_id: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get tickets - admins see all, employees see their own"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    query = {}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        query["requester_id"] = employee["id"]
+    elif requester_id:
+        query["requester_id"] = requester_id
+    
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+    if category:
+        query["category"] = category
+    if assigned_to:
+        query["assigned_to"] = assigned_to
+    
+    tickets = await db.tickets.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    # Search filter
+    if search:
+        search_lower = search.lower()
+        tickets = [t for t in tickets if 
+            search_lower in t.get("subject", "").lower() or
+            search_lower in t.get("description", "").lower() or
+            search_lower in t.get("ticket_number", "").lower() or
+            search_lower in t.get("requester_name", "").lower()
+        ]
+    
+    return tickets
+
+
+@api_router.get("/tickets/{ticket_id}")
+async def get_ticket(ticket_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific ticket with comments"""
+    ticket = await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Check access
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or ticket["requester_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get comments
+    comments = await db.ticket_comments.find(
+        {"ticket_id": ticket_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    
+    # Filter internal comments for non-admins
+    if not is_admin:
+        comments = [c for c in comments if not c.get("is_internal")]
+    
+    ticket["comments"] = comments
+    
+    return ticket
+
+
+@api_router.post("/tickets")
+async def create_ticket(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new ticket"""
+    # Get employee info
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    
+    if employee:
+        requester_id = employee["id"]
+        requester_name = employee.get("full_name")
+        requester_email = employee.get("work_email")
+        dept = await db.departments.find_one({"id": employee.get("department_id")}, {"_id": 0})
+        requester_department = dept.get("name") if dept else None
+    else:
+        requester_id = current_user.id
+        requester_name = current_user.full_name
+        requester_email = current_user.email
+        requester_department = None
+    
+    # Generate ticket number
+    ticket_number = await generate_ticket_number()
+    
+    # Set due date based on priority (SLA)
+    due_date = None
+    priority = data.get("priority", "medium")
+    if priority == "urgent":
+        due_date = (datetime.now(timezone.utc) + timedelta(hours=4)).isoformat()
+    elif priority == "high":
+        due_date = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    elif priority == "medium":
+        due_date = (datetime.now(timezone.utc) + timedelta(hours=48)).isoformat()
+    else:
+        due_date = (datetime.now(timezone.utc) + timedelta(hours=72)).isoformat()
+    
+    ticket_data = {
+        **data,
+        "ticket_number": ticket_number,
+        "requester_id": requester_id,
+        "requester_name": requester_name,
+        "requester_email": requester_email,
+        "requester_department": requester_department,
+        "status": "open",
+        "due_date": due_date
+    }
+    
+    ticket = Ticket(**ticket_data)
+    await db.tickets.insert_one(ticket.model_dump())
+    
+    return ticket.model_dump()
+
+
+@api_router.put("/tickets/{ticket_id}")
+async def update_ticket(ticket_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a ticket"""
+    ticket = await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    # Check access - employees can only update their own tickets (limited fields)
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or ticket["requester_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        # Employees can only add description or close their ticket
+        allowed_fields = ["description", "status"]
+        if "status" in data and data["status"] not in ["closed"]:
+            raise HTTPException(status_code=403, detail="Employees can only close tickets")
+        data = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    # Track status changes
+    old_status = ticket.get("status")
+    new_status = data.get("status")
+    
+    if new_status and new_status != old_status:
+        if new_status == "resolved" and not ticket.get("resolved_at"):
+            data["resolved_at"] = datetime.now(timezone.utc).isoformat()
+        elif new_status == "closed" and not ticket.get("closed_at"):
+            data["closed_at"] = datetime.now(timezone.utc).isoformat()
+        elif new_status == "in_progress" and not ticket.get("first_response_at"):
+            data["first_response_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # If assigning, get assignee name
+    if "assigned_to" in data and data["assigned_to"]:
+        assignee = await db.employees.find_one({"id": data["assigned_to"]}, {"_id": 0})
+        if assignee:
+            data["assigned_to_name"] = assignee.get("full_name")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.tickets.update_one({"id": ticket_id}, {"$set": data})
+    return await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/{ticket_id}")
+async def delete_ticket(ticket_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a ticket (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete tickets")
+    
+    await db.ticket_comments.delete_many({"ticket_id": ticket_id})
+    await db.tickets.delete_one({"id": ticket_id})
+    return {"message": "Ticket deleted"}
+
+
+# Ticket Comments
+
+@api_router.get("/tickets/{ticket_id}/comments")
+async def get_ticket_comments(ticket_id: str, current_user: User = Depends(get_current_user)):
+    """Get comments for a ticket"""
+    ticket = await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    # Check access
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or ticket["requester_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    comments = await db.ticket_comments.find(
+        {"ticket_id": ticket_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    
+    # Filter internal comments for non-admins
+    if not is_admin:
+        comments = [c for c in comments if not c.get("is_internal")]
+    
+    return comments
+
+
+@api_router.post("/tickets/{ticket_id}/comments")
+async def add_ticket_comment(ticket_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add a comment to a ticket"""
+    ticket = await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    # Check access
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or ticket["requester_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        # Employees cannot add internal notes
+        data["is_internal"] = False
+    
+    # Get author info
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    author_name = employee.get("full_name") if employee else current_user.full_name
+    
+    comment_data = {
+        **data,
+        "ticket_id": ticket_id,
+        "author_id": current_user.id,
+        "author_name": author_name,
+        "author_role": current_user.role
+    }
+    
+    comment = TicketComment(**comment_data)
+    await db.ticket_comments.insert_one(comment.model_dump())
+    
+    # Update ticket's updated_at and first_response_at
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if is_admin and not ticket.get("first_response_at"):
+        update_data["first_response_at"] = datetime.now(timezone.utc).isoformat()
+    await db.tickets.update_one({"id": ticket_id}, {"$set": update_data})
+    
+    return comment.model_dump()
+
+
+# Ticket Assignment
+
+@api_router.post("/tickets/{ticket_id}/assign")
+async def assign_ticket(ticket_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Assign a ticket to a user"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can assign tickets")
+    
+    assignee_id = data.get("assigned_to")
+    assignee_name = None
+    
+    if assignee_id:
+        assignee = await db.employees.find_one({"id": assignee_id}, {"_id": 0})
+        if assignee:
+            assignee_name = assignee.get("full_name")
+    
+    update_data = {
+        "assigned_to": assignee_id,
+        "assigned_to_name": assignee_name,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # If first assignment and status is open, move to in_progress
+    ticket = await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+    if ticket and ticket.get("status") == "open" and assignee_id:
+        update_data["status"] = "in_progress"
+        if not ticket.get("first_response_at"):
+            update_data["first_response_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.tickets.update_one({"id": ticket_id}, {"$set": update_data})
+    return await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+
+
+# Rating
+
+@api_router.post("/tickets/{ticket_id}/rate")
+async def rate_ticket(ticket_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Rate ticket resolution (requester only)"""
+    ticket = await db.tickets.find_one({"id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee or ticket["requester_id"] != employee["id"]:
+        raise HTTPException(status_code=403, detail="Only the requester can rate the ticket")
+    
+    if ticket.get("status") not in ["resolved", "closed"]:
+        raise HTTPException(status_code=400, detail="Can only rate resolved or closed tickets")
+    
+    rating = data.get("rating")
+    if not rating or rating < 1 or rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+    
+    await db.tickets.update_one(
+        {"id": ticket_id},
+        {"$set": {"satisfaction_rating": rating, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Rating submitted"}
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
