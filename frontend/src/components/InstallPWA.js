@@ -33,11 +33,14 @@ const InstallPWA = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const fromQR = urlParams.get('install') === 'pwa' || urlParams.get('utm_source') === 'qr';
 
+    // Check if this is a mobile device
+    const isMobile = isIOSDevice || isAndroidDevice || /mobile/i.test(userAgent);
+
     // Show prompt if:
     // 1. Not already installed
     // 2. Not dismissed in last day (or came from QR code)
-    // 3. On any device (mobile or desktop)
-    if (!isInStandaloneMode && (daysSinceDismissed > 1 || fromQR)) {
+    // 3. Only on mobile devices OR if came from QR code
+    if (!isInStandaloneMode && (fromQR || isMobile) && daysSinceDismissed > 1) {
       // Show prompt after a short delay
       setTimeout(() => setShowPrompt(true), 1500);
     }
