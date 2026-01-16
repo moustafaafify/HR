@@ -41,6 +41,7 @@ import Projects from './pages/Projects';
 import Benefits from './pages/Benefits';
 import Profile from './pages/Profile';
 import Tickets from './pages/Tickets';
+import Notifications from './pages/Notifications';
 import Layout from './components/Layout';
 import './App.css';
 
