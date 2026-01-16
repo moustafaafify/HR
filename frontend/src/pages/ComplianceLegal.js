@@ -38,6 +38,18 @@ import {
   Target,
   ClipboardList
 } from 'lucide-react';
+import {
+  ComplianceStatsCard,
+  PolicyCard,
+  TrainingCard,
+  MyTrainingCard,
+  IncidentCard,
+  CertificationCard,
+  LegalDocumentCard,
+  PolicyDialog,
+  TrainingDialog,
+  IncidentDialog
+} from '../components/compliance';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
