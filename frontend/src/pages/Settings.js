@@ -16,13 +16,21 @@ const API = `${BACKEND_URL}/api`;
 const Settings = () => {
   const { t, refreshSettings } = useLanguage();
   const { refreshSettings: refreshCurrencySettings } = useCurrency();
+  const { refreshBranding } = useBranding();
   const navigate = useNavigate();
+  const logoInputRef = useRef(null);
+  const faviconInputRef = useRef(null);
+  
   const [settings, setSettings] = useState({
     language_1: 'en',
     language_2: '',
     currency: 'USD',
     enabled_currencies: ['USD'],
     exchange_rates: { USD: 1.0 },
+    // Branding Settings
+    app_name: 'HR Portal',
+    logo_url: '',
+    favicon_url: '',
     // SMTP Settings
     smtp: {
       enabled: false,
@@ -51,6 +59,8 @@ const Settings = () => {
   const [showSmsSecret, setShowSmsSecret] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   
   // Translation Management State
   const [selectedTranslationLang, setSelectedTranslationLang] = useState('');
