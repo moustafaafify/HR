@@ -107,6 +107,7 @@ function AppRoutes() {
         <Route path="tickets" element={<Tickets />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="analytics" element={<Analytics />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
