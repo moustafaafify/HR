@@ -51,6 +51,7 @@ import Analytics from './pages/Analytics';
 import WorkforcePlanning from './pages/WorkforcePlanning';
 import ComplianceLegal from './pages/ComplianceLegal';
 import VisitorManagement from './pages/VisitorManagement';
+import ScheduledReports from './pages/ScheduledReports';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -114,6 +115,7 @@ function AppRoutes() {
         <Route path="workforce-planning" element={<WorkforcePlanning />} />
         <Route path="compliance" element={<ComplianceLegal />} />
         <Route path="visitors" element={<VisitorManagement />} />
+        <Route path="scheduled-reports" element={<ScheduledReports />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
