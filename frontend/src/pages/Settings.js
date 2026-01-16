@@ -614,6 +614,170 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* Theme Customization */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg">
+              <Sparkles className="text-purple-600" size={20} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Theme Customization</h2>
+              <p className="text-sm text-slate-500">Customize the look and feel of your application</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Color Pickers */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Primary Color */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Primary Color
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={settings.primary_color || '#2D4F38'}
+                      onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+                      className="w-14 h-14 rounded-lg cursor-pointer border-2 border-slate-200 p-1"
+                      data-testid="primary-color-picker"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      value={settings.primary_color || '#2D4F38'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                          setSettings({ ...settings, primary_color: val });
+                        }
+                      }}
+                      placeholder="#2D4F38"
+                      className="font-mono text-sm"
+                      data-testid="primary-color-input"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Used for sidebar, buttons, and key elements</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accent Color */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Accent Color
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={settings.accent_color || '#4A7C59'}
+                      onChange={(e) => setSettings({ ...settings, accent_color: e.target.value })}
+                      className="w-14 h-14 rounded-lg cursor-pointer border-2 border-slate-200 p-1"
+                      data-testid="accent-color-picker"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      value={settings.accent_color || '#4A7C59'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                          setSettings({ ...settings, accent_color: val });
+                        }
+                      }}
+                      placeholder="#4A7C59"
+                      className="font-mono text-sm"
+                      data-testid="accent-color-input"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Used for highlights and secondary elements</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Dark Mode Toggle */}
+            <div className="border-t border-slate-100 pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-800 rounded-lg">
+                    <Eye className="text-white" size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">Dark Mode</h3>
+                    <p className="text-sm text-slate-500">Enable dark theme for reduced eye strain</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, dark_mode: !settings.dark_mode })}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                    settings.dark_mode ? 'bg-slate-800' : 'bg-slate-200'
+                  }`}
+                  data-testid="dark-mode-toggle"
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
+                      settings.dark_mode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Theme Preview */}
+            <div className="border-t border-slate-100 pt-6">
+              <p className="text-sm font-medium text-slate-700 mb-3">Preview</p>
+              <div className={`rounded-xl border overflow-hidden ${settings.dark_mode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                <div className="flex">
+                  {/* Mini Sidebar Preview */}
+                  <div 
+                    className="w-16 p-3 flex flex-col items-center gap-2"
+                    style={{ backgroundColor: settings.primary_color || '#2D4F38' }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white text-xs font-bold">
+                      {(settings.app_name || 'HR').charAt(0)}
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-white/30"></div>
+                    <div className="w-8 h-8 rounded-lg bg-white/10"></div>
+                  </div>
+                  {/* Mini Content Preview */}
+                  <div className={`flex-1 p-4 ${settings.dark_mode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                    <div className={`text-sm font-semibold mb-2 ${settings.dark_mode ? 'text-white' : 'text-slate-900'}`}>
+                      Dashboard
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        className="px-3 py-1.5 rounded-lg text-white text-xs font-medium"
+                        style={{ backgroundColor: settings.primary_color || '#2D4F38' }}
+                      >
+                        Primary
+                      </button>
+                      <button 
+                        className="px-3 py-1.5 rounded-lg text-white text-xs font-medium"
+                        style={{ backgroundColor: settings.accent_color || '#4A7C59' }}
+                      >
+                        Accent
+                      </button>
+                      <button 
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${
+                          settings.dark_mode 
+                            ? 'border-slate-600 text-slate-300' 
+                            : 'border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        Secondary
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Language Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">
