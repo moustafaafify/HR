@@ -61,16 +61,6 @@ const Settings = () => {
   const [testingSms, setTestingSms] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
-  
-  // Translation Management State
-  const [selectedTranslationLang, setSelectedTranslationLang] = useState('');
-  const [translationSearch, setTranslationSearch] = useState('');
-  const [editingKey, setEditingKey] = useState(null);
-  const [editedTranslations, setEditedTranslations] = useState({});
-  const [customTranslations, setCustomTranslations] = useState({});
-  const [addKeyDialogOpen, setAddKeyDialogOpen] = useState(false);
-  const [newKeyForm, setNewKeyForm] = useState({ key: '', english: '', translations: {} });
-  const [savingTranslations, setSavingTranslations] = useState(false);
 
   // Complete translations data - all available translations
   const allTranslations = {
