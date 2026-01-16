@@ -40,6 +40,7 @@ import Timesheets from './pages/Timesheets';
 import Projects from './pages/Projects';
 import Benefits from './pages/Benefits';
 import Profile from './pages/Profile';
+import Tickets from './pages/Tickets';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -95,6 +96,7 @@ function AppRoutes() {
         <Route path="projects" element={<Projects />} />
         <Route path="benefits" element={<Benefits />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="tickets" element={<Tickets />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
