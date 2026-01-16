@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Smartphone, Share } from 'lucide-react';
 import axios from 'axios';
+import { useBranding } from '../contexts/BrandingContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const InstallPWA = () => {
+  const { branding } = useBranding();
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
@@ -16,6 +18,16 @@ const InstallPWA = () => {
     appName: 'HR Portal'
   });
 
+  // Update mobileConfig when branding changes
+  useEffect(() => {
+    if (branding.app_name) {
+      setMobileConfig(prev => ({
+        ...prev,
+        appName: branding.app_name
+      }));
+    }
+  }, [branding.app_name]);
+
   // Fetch mobile config on mount
   useEffect(() => {
     const fetchConfig = async () => {
@@ -26,7 +38,7 @@ const InstallPWA = () => {
             ...prev,
             primaryColor: response.data.primaryColor || prev.primaryColor,
             secondaryColor: response.data.secondaryColor || prev.secondaryColor,
-            appName: response.data.appName || prev.appName
+            appName: branding.app_name || response.data.appName || prev.appName
           }));
         }
       } catch (error) {
@@ -34,7 +46,7 @@ const InstallPWA = () => {
       }
     };
     fetchConfig();
-  }, []);
+  }, [branding.app_name]);
 
   useEffect(() => {
     // Check if already installed (standalone mode)
