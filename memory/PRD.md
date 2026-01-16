@@ -143,6 +143,21 @@ A comprehensive compliance and legal management module:
 - `GET/POST /api/workforce/availability/my` - Employee availability
 - `PUT /api/workforce/availability/my/preferences` - Employee preferences
 
+### Compliance & Legal
+- `GET /api/compliance/dashboard` - Admin compliance dashboard
+- `GET /api/compliance/my-overview` - Employee compliance overview
+- `POST/GET/PUT/DELETE /api/compliance/policies` - Policy CRUD
+- `POST /api/compliance/policies/{id}/acknowledge` - Acknowledge a policy
+- `GET /api/compliance/my-acknowledgements` - Employee's acknowledgements
+- `POST/GET/PUT/DELETE /api/compliance/trainings` - Training CRUD
+- `POST /api/compliance/trainings/{id}/assign` - Assign training to employees
+- `GET /api/compliance/my-trainings` - Employee's assigned trainings
+- `PUT /api/compliance/my-trainings/{id}` - Update training progress
+- `POST/GET/PUT/DELETE /api/compliance/documents` - Legal document CRUD
+- `POST /api/compliance/documents/{id}/sign` - Sign a document
+- `POST/GET/PUT /api/compliance/incidents` - Incident reporting
+- `POST/GET/PUT/DELETE /api/compliance/certifications` - Certification CRUD
+
 ### Push Notifications
 - `GET /api/push/vapid-public-key`
 - `POST /api/push/subscribe`
