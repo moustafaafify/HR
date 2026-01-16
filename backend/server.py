@@ -802,7 +802,11 @@ class Role(BaseModel):
     description: Optional[str] = None
     permissions: List[str] = Field(default_factory=list)
     is_system_role: bool = False
+    level: int = 5  # Role hierarchy level (0 = highest, 5 = lowest)
+    color: str = "#64748b"  # Role badge color
+    icon: str = "Shield"  # Icon name
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class Permission(BaseModel):
     model_config = ConfigDict(extra="ignore")
