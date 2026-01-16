@@ -56,7 +56,7 @@ import {
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const Layout = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -64,6 +64,49 @@ const Layout = () => {
   const [expandedGroups, setExpandedGroups] = useState(['core']);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+
+  // Fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await axios.get(`${API}/api/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnreadCount(response.data.count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  }, [token]);
+
+  // Fetch recent notifications for dropdown
+  const fetchRecentNotifications = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await axios.get(`${API}/api/notifications?limit=5`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRecentNotifications(response.data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  }, [token]);
+
+  // Fetch notifications on mount and periodically
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  // Fetch recent notifications when dropdown opens
+  useEffect(() => {
+    if (showNotifDropdown) {
+      fetchRecentNotifications();
+    }
+  }, [showNotifDropdown, fetchRecentNotifications]);
 
   // Handle responsive sidebar
   useEffect(() => {
