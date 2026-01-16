@@ -168,6 +168,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color
 
 const Reports = () => {
   const { token } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [overview, setOverview] = useState(null);

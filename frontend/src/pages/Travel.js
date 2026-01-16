@@ -77,6 +77,7 @@ const STATUS_CONFIG = {
 
 const Travel = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [stats, setStats] = useState(null);

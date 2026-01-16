@@ -93,6 +93,7 @@ const INTERVIEW_TYPES = [
 
 const Recruitment = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('jobs');
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);

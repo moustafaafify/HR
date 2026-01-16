@@ -103,6 +103,7 @@ const getCategoryIcon = (iconName) => {
 
 const Assets = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('assets');
   const [stats, setStats] = useState(null);

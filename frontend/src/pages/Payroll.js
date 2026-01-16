@@ -62,6 +62,7 @@ const STATUS_CONFIG = {
 
 const Payroll = () => {
   const { user } = useAuth();
+  const { formatCurrency: formatCurrencyGlobal } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('payslips');
   const [stats, setStats] = useState(null);
