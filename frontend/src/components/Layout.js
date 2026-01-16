@@ -39,7 +39,8 @@ import {
   Code,
   Timer,
   Sheet,
-  FolderKanban
+  FolderKanban,
+  Heart
 } from 'lucide-react';
 
 const Layout = () => {
