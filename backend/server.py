@@ -12640,6 +12640,7 @@ async def create_ticket(data: Dict[str, Any], current_user: User = Depends(get_c
     category = data.get("category", "other")
     assigned_to = None
     assigned_to_name = None
+    assigned_to_role = None
     
     # Find matching rule
     rule = await db.assignment_rules.find_one({
@@ -12651,9 +12652,20 @@ async def create_ticket(data: Dict[str, Any], current_user: User = Depends(get_c
         ]
     }, {"_id": 0})
     
-    if rule:
-        assigned_to = rule.get("assignee_id")
-        assigned_to_name = rule.get("assignee_name")
+    if rule and rule.get("assignee_id"):
+        # Look up the assignee employee to get current name and role
+        assignee = await db.employees.find_one({"id": rule.get("assignee_id")}, {"_id": 0})
+        if assignee:
+            assigned_to = assignee.get("id")
+            assigned_to_name = assignee.get("full_name")
+            assigned_to_role = assignee.get("job_title")
+        else:
+            # Try looking up by user_id in case assignee_id is actually a user_id
+            assignee = await db.employees.find_one({"user_id": rule.get("assignee_id")}, {"_id": 0})
+            if assignee:
+                assigned_to = assignee.get("id")
+                assigned_to_name = assignee.get("full_name")
+                assigned_to_role = assignee.get("job_title")
     
     ticket_data = {
         **data,
