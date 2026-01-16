@@ -446,7 +446,7 @@ const Profile = () => {
           <div className="relative">
             <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl lg:text-4xl font-bold border-4 border-white/30 overflow-hidden">
               {employee?.profile_picture ? (
-                <img src={employee.profile_picture} alt={employee.full_name} className="w-full h-full object-cover" />
+                <img src={getFullImageUrl(employee.profile_picture)} alt={employee.full_name} className="w-full h-full object-cover" />
               ) : (
                 getInitials(employee?.full_name || user?.full_name)
               )}
