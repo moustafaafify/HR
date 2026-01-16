@@ -15766,6 +15766,7 @@ from routers.visitors import router as visitors_router
 from routers.compliance import router as compliance_router
 from routers.workforce import router as workforce_router
 from routers.scheduled_reports import router as scheduled_reports_router
+from routers.collaborations import router as collaborations_router
 
 # Include the main API router
 app.include_router(api_router)
@@ -15775,6 +15776,7 @@ app.include_router(visitors_router, prefix="/api")
 app.include_router(compliance_router, prefix="/api")
 app.include_router(workforce_router, prefix="/api")
 app.include_router(scheduled_reports_router, prefix="/api")
+app.include_router(collaborations_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
