@@ -28,12 +28,23 @@ export const usePushNotifications = (token) => {
 
   // Check if push notifications are supported
   useEffect(() => {
-    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-    setIsSupported(supported);
+    let isMounted = true;
     
-    if (supported) {
-      setPermission(Notification.permission);
-    }
+    const checkSupport = () => {
+      const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      if (isMounted) {
+        setIsSupported(supported);
+        if (supported) {
+          setPermission(Notification.permission);
+        }
+      }
+    };
+    
+    checkSupport();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Check subscription status on mount
