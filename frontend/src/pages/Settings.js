@@ -8,8 +8,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Shield, ChevronRight, Plus, X, Globe, DollarSign, Mail, MessageSquare, Eye, EyeOff, TestTube, CheckCircle2, XCircle, Search, Edit2, Save, Image, Upload, Sparkles, Bell, BellOff, Send } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { Shield, ChevronRight, Plus, X, Globe, DollarSign, Mail, MessageSquare, Eye, EyeOff, TestTube, CheckCircle2, XCircle, Search, Edit2, Save, Image, Upload, Sparkles, Bell, BellOff, Send, Server, Clock, RefreshCw, History, Zap } from 'lucide-react';
 import usePushNotifications from '../hooks/usePushNotifications';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
