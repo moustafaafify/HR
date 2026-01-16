@@ -198,7 +198,9 @@ async def get_compliance_dashboard(current_user: User = Depends(get_current_user
             "as": "acknowledgements"
         }},
         {"$project": {
-            "id": 1, "title": 1,
+            "_id": 0,
+            "id": 1, 
+            "title": 1,
             "ack_count": {"$size": "$acknowledgements"}
         }}
     ]).to_list(10)
