@@ -32,6 +32,7 @@ class Channel(BaseModel):
     type: str = "public"  # public, private, direct
     icon: Optional[str] = None  # emoji or icon name
     color: Optional[str] = "#6366f1"
+    category_id: Optional[str] = None  # For organizing channels
     
     # Members (for private channels and DMs)
     members: List[str] = Field(default_factory=list)  # user IDs
