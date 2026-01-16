@@ -269,44 +269,57 @@ jane.smith@example.com,Jane Smith,Product Manager,+0987654321,,2024-02-01`;
 
   return (
     <div data-testid="employees-page">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl sm:text-4xl font-black text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
           {t('employees')}
         </h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={() => openDialog()} 
-              data-testid="add-employee-button"
-              className="rounded-full bg-indigo-950 text-white hover:bg-indigo-900 shadow-lg hover:shadow-xl"
-            >
-              <Plus size={20} className="me-2" />
-              {t('addNew')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingEmp ? t('edit') : t('addNew')} {t('employees')}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4" data-testid="employee-form">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">{t('fullName')}</label>
-                  <input
-                    type="text"
-                    data-testid="emp-fullname-input"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">{t('email')}</label>
-                  <input
-                    type="email"
-                    data-testid="emp-email-input"
-                    value={formData.email}
+        <div className="flex items-center gap-2">
+          {/* Bulk Import Button */}
+          <Button
+            onClick={() => setBulkImportOpen(true)}
+            variant="outline"
+            className="rounded-full"
+            data-testid="bulk-import-button"
+          >
+            <Upload size={18} className="mr-2" />
+            Bulk Import
+          </Button>
+          
+          {/* Add Employee Button */}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                onClick={() => openDialog()} 
+                data-testid="add-employee-button"
+                className="rounded-full bg-[#2D4F38] text-white hover:bg-[#1F3A29] shadow-lg hover:shadow-xl"
+              >
+                <Plus size={20} className="me-2" />
+                {t('addNew')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingEmp ? t('edit') : t('addNew')} {t('employees')}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4" data-testid="employee-form">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">{t('fullName')}</label>
+                    <input
+                      type="text"
+                      data-testid="emp-fullname-input"
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#2D4F38]/20 focus:border-[#2D4F38] transition-all duration-200 outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">{t('email')}</label>
+                    <input
+                      type="email"
+                      data-testid="emp-email-input"
+                      value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
                     required
