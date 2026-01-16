@@ -315,7 +315,10 @@ const Layout = () => {
         {/* User section */}
         <div className="p-3 lg:p-4 border-t border-slate-100">
           <div className="bg-slate-50 rounded-xl p-3 lg:p-4">
-            <div className="flex items-center gap-3">
+            <Link 
+              to="/profile"
+              className="flex items-center gap-3 hover:bg-slate-100 -m-2 p-2 rounded-lg transition-colors"
+            >
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
                 {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
               </div>
@@ -323,7 +326,7 @@ const Layout = () => {
                 <p className="font-bold text-slate-900 truncate text-sm lg:text-base">{user?.full_name || user?.email}</p>
                 <p className="text-xs text-slate-500 capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
-            </div>
+            </Link>
             <button
               onClick={logout}
               data-testid="logout-button"
