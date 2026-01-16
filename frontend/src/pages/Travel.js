@@ -520,7 +520,7 @@ const Travel = () => {
                     </div>
                     <div>
                       <p className="text-slate-500">Est. Budget</p>
-                      <p className="font-medium">${request.total_estimated_cost?.toLocaleString()}</p>
+                      <p className="font-medium">{formatCurrency(request.total_estimated_cost)}</p>
                     </div>
                   </div>
                   
