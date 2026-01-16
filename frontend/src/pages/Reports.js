@@ -802,10 +802,65 @@ const Reports = () => {
             <RefreshCw size={16} className="mr-2" />
             Refresh
           </Button>
-          <Button className="bg-[#2D4F38] hover:bg-[#1F3A29]">
-            <Download size={16} className="mr-2" />
-            Export
-          </Button>
+          
+          {/* Export Dropdown */}
+          <div className="relative" ref={exportMenuRef}>
+            <Button 
+              className="bg-[#2D4F38] hover:bg-[#1F3A29]"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              data-testid="export-button"
+            >
+              <Download size={16} className="mr-2" />
+              Export
+              <ChevronDown size={14} className="ml-2" />
+            </Button>
+            
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-200 py-2 z-50">
+                <div className="px-3 py-1.5 text-xs font-semibold text-stone-400 uppercase tracking-wider">
+                  Current View: {tabs.find(t => t.id === activeTab)?.label}
+                </div>
+                <button
+                  onClick={exportToCSV}
+                  className="w-full px-4 py-2.5 text-left hover:bg-stone-50 flex items-center gap-3 transition-colors"
+                  data-testid="export-csv"
+                >
+                  <FileSpreadsheet size={18} className="text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-medium text-stone-900">Export to CSV</p>
+                    <p className="text-xs text-stone-500">Download as spreadsheet</p>
+                  </div>
+                </button>
+                <button
+                  onClick={exportToPDF}
+                  className="w-full px-4 py-2.5 text-left hover:bg-stone-50 flex items-center gap-3 transition-colors"
+                  data-testid="export-pdf"
+                >
+                  <FileText size={18} className="text-rose-600" />
+                  <div>
+                    <p className="text-sm font-medium text-stone-900">Export to PDF</p>
+                    <p className="text-xs text-stone-500">Print or save as PDF</p>
+                  </div>
+                </button>
+                
+                <div className="border-t border-stone-100 my-2"></div>
+                <div className="px-3 py-1.5 text-xs font-semibold text-stone-400 uppercase tracking-wider">
+                  Full Report
+                </div>
+                <button
+                  onClick={exportAllToCSV}
+                  className="w-full px-4 py-2.5 text-left hover:bg-stone-50 flex items-center gap-3 transition-colors"
+                  data-testid="export-all-csv"
+                >
+                  <Download size={18} className="text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-stone-900">Export All Data</p>
+                    <p className="text-xs text-stone-500">Complete report (CSV)</p>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
