@@ -57,6 +57,8 @@ const Profile = () => {
   const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
 
   // Data
   const [employee, setEmployee] = useState(null);
