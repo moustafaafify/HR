@@ -232,8 +232,13 @@ const Settings = () => {
 
         {/* Language Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('languageSettings')}</h2>
-          <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Globe className="text-blue-600" size={20} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">{t('languageSettings')}</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
                 {t('primaryLanguage')}
@@ -245,12 +250,13 @@ const Settings = () => {
                 <SelectTrigger data-testid="primary-language-select">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {languages.map((lang) => (
                     <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-slate-500 mt-1">Main language for the application interface</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
@@ -263,60 +269,153 @@ const Settings = () => {
                 <SelectTrigger data-testid="secondary-language-select">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectItem value="none">None</SelectItem>
                   {languages.filter(l => l.code !== settings.language_1).map((lang) => (
                     <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-slate-500 mt-1">Secondary language for bilingual support</p>
             </div>
+          </div>
+          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+            <p className="text-sm text-slate-600">
+              <strong>50 languages available</strong> including English, Chinese, Hindi, Spanish, Arabic, Bengali, Portuguese, Russian, Japanese, and more.
+            </p>
           </div>
         </div>
 
         {/* Currency Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('currencySettings')}</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                Default Currency
-              </label>
-              <Select 
-                value={settings.currency} 
-                onValueChange={(value) => setSettings({ ...settings, currency: value })}
-              >
-                <SelectTrigger data-testid="currency-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((curr) => (
-                    <SelectItem key={curr} value={curr}>{curr}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <DollarSign className="text-green-600" size={20} />
             </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Exchange Rates (relative to USD)</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {currencies.filter(c => c !== 'USD').map((curr) => (
-                  <div key={curr}>
-                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                      {curr}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      data-testid={`exchange-rate-${curr}`}
-                      value={settings.exchange_rates[curr] || 1.0}
-                      onChange={(e) => updateExchangeRate(curr, e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 outline-none"
-                    />
-                  </div>
-                ))}
+            <h2 className="text-2xl font-bold text-slate-900">{t('currencySettings')}</h2>
+          </div>
+          
+          <div className="space-y-6">
+            {/* Default Currency */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  Default Currency
+                </label>
+                <Select 
+                  value={settings.currency} 
+                  onValueChange={(value) => {
+                    setSettings(prev => ({ 
+                      ...prev, 
+                      currency: value,
+                      enabled_currencies: prev.enabled_currencies?.includes(value) 
+                        ? prev.enabled_currencies 
+                        : [...(prev.enabled_currencies || []), value]
+                    }));
+                  }}
+                >
+                  <SelectTrigger data-testid="currency-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {allCurrencies.map((curr) => (
+                      <SelectItem key={curr.code} value={curr.code}>
+                        {curr.code} - {curr.name} ({curr.symbol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500 mt-1">Primary currency for the organization</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  Enabled Currencies ({enabledCurrencies.length})
+                </label>
+                <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-lg bg-slate-50 min-h-[48px]">
+                  {enabledCurrencies.map(code => {
+                    const curr = allCurrencies.find(c => c.code === code);
+                    return (
+                      <span 
+                        key={code}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          code === settings.currency 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {code}
+                        {code !== settings.currency && (
+                          <button 
+                            type="button"
+                            onClick={() => toggleCurrency(code)}
+                            className="hover:text-red-600"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+
+            {/* Add Currencies */}
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Add More Currencies
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[200px] overflow-y-auto p-3 border border-slate-200 rounded-lg bg-slate-50">
+                {allCurrencies
+                  .filter(c => !enabledCurrencies.includes(c.code))
+                  .map((curr) => (
+                    <button
+                      key={curr.code}
+                      type="button"
+                      onClick={() => toggleCurrency(curr.code)}
+                      className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white hover:bg-slate-100 hover:border-slate-300 transition-colors text-left"
+                    >
+                      <Plus size={12} className="text-slate-400" />
+                      <span className="font-medium">{curr.code}</span>
+                      <span className="text-slate-400 truncate">{curr.symbol}</span>
+                    </button>
+                  ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">Click to enable a currency for use across the platform</p>
+            </div>
+
+            {/* Exchange Rates */}
+            {enabledCurrencies.length > 1 && (
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 mb-3">Exchange Rates (relative to {settings.currency})</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {enabledCurrencies
+                    .filter(c => c !== settings.currency)
+                    .map((currCode) => {
+                      const curr = allCurrencies.find(c => c.code === currCode);
+                      return (
+                        <div key={currCode} className="p-3 bg-slate-50 rounded-lg">
+                          <label className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                            <span className="font-bold">{currCode}</span>
+                            <span className="text-slate-400 text-xs">{curr?.symbol}</span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.0001"
+                            data-testid={`exchange-rate-${currCode}`}
+                            value={settings.exchange_rates[currCode] || 1.0}
+                            onChange={(e) => updateExchangeRate(currCode, e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all duration-200 outline-none text-sm"
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Enter how many units of each currency equal 1 {settings.currency}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
