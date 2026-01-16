@@ -12677,11 +12677,28 @@ async def create_ticket(data: Dict[str, Any], current_user: User = Depends(get_c
         "status": "in_progress" if assigned_to else "open",
         "assigned_to": assigned_to,
         "assigned_to_name": assigned_to_name,
+        "assigned_to_role": assigned_to_role,
         "due_date": due_date
     }
     
     ticket = Ticket(**ticket_data)
     await db.tickets.insert_one(ticket.model_dump())
+    
+    # Send notification to assignee if auto-assigned
+    if assigned_to:
+        # Find the user_id for the assignee
+        assignee_employee = await db.employees.find_one({"id": assigned_to}, {"_id": 0})
+        if assignee_employee and assignee_employee.get("user_id"):
+            await create_notification_for_user(
+                user_id=assignee_employee["user_id"],
+                notification_type=NotificationType.TICKET,
+                title=f"New Ticket Assigned: {ticket.ticket_number}",
+                message=f"You have been auto-assigned ticket '{ticket.subject}' ({ticket.priority} priority)",
+                link=f"/tickets",
+                reference_id=ticket.id,
+                reference_type="ticket",
+                priority="high" if priority in ["urgent", "high"] else "normal"
+            )
     
     return ticket.model_dump()
 
