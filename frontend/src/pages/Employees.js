@@ -461,6 +461,7 @@ jane.smith@example.com,Jane Smith,Product Manager,+0987654321,,2024-02-01`;
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
