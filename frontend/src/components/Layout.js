@@ -228,6 +228,7 @@ const Layout = () => {
         { path: '/complaints', icon: AlertOctagon, label: 'Complaints' },
         ...(isAdmin ? [
           { path: '/settings/workflows', icon: Workflow, label: 'Workflows' },
+          { path: '/settings/mobile-apps', icon: Smartphone, label: 'Mobile Apps' },
           { path: '/settings', icon: SettingsIcon, label: 'Settings' },
         ] : []),
       ]
