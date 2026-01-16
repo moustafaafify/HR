@@ -1164,6 +1164,93 @@ async def update_settings(data: Dict[str, Any], current_user: User = Depends(get
     settings = await db.settings.find_one({"id": "global_settings"}, {"_id": 0})
     return Settings(**settings)
 
+@api_router.post("/settings/test-smtp")
+async def test_smtp_connection(smtp_config: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Test SMTP connection with provided configuration"""
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can test SMTP")
+    
+    import smtplib
+    from email.mime.text import MIMEText
+    
+    try:
+        host = smtp_config.get('host', '')
+        port = smtp_config.get('port', 587)
+        username = smtp_config.get('username', '')
+        password = smtp_config.get('password', '')
+        encryption = smtp_config.get('encryption', 'tls')
+        from_email = smtp_config.get('from_email', username)
+        
+        if not host or not username or not password:
+            return {"success": False, "message": "Missing required SMTP configuration"}
+        
+        # Create SMTP connection based on encryption type
+        if encryption == 'ssl':
+            server = smtplib.SMTP_SSL(host, port, timeout=10)
+        else:
+            server = smtplib.SMTP(host, port, timeout=10)
+            if encryption == 'tls':
+                server.starttls()
+        
+        # Login
+        server.login(username, password)
+        
+        # Send test email to self
+        msg = MIMEText("This is a test email from HR Platform to verify SMTP configuration.")
+        msg['Subject'] = 'HR Platform - SMTP Test'
+        msg['From'] = from_email
+        msg['To'] = username
+        
+        server.sendmail(from_email, [username], msg.as_string())
+        server.quit()
+        
+        return {"success": True, "message": "SMTP connection successful! Test email sent."}
+    except smtplib.SMTPAuthenticationError:
+        return {"success": False, "message": "Authentication failed. Check username and password."}
+    except smtplib.SMTPConnectError:
+        return {"success": False, "message": "Could not connect to SMTP server. Check host and port."}
+    except Exception as e:
+        return {"success": False, "message": f"Connection failed: {str(e)}"}
+
+@api_router.post("/settings/test-sms")
+async def test_sms_connection(sms_config: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Test SMS provider connection with provided configuration"""
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can test SMS")
+    
+    provider = sms_config.get('provider', 'twilio')
+    
+    # For now, we'll do a basic validation of credentials format
+    # In production, you would make actual API calls to verify
+    try:
+        if provider == 'twilio':
+            account_sid = sms_config.get('account_sid', '')
+            api_secret = sms_config.get('api_secret', '')
+            sender_id = sms_config.get('sender_id', '')
+            
+            if not account_sid or not api_secret or not sender_id:
+                return {"success": False, "message": "Missing required Twilio credentials"}
+            
+            if not account_sid.startswith('AC'):
+                return {"success": False, "message": "Invalid Account SID format. Should start with 'AC'"}
+            
+            # In production, you would verify with Twilio API here
+            return {"success": True, "message": "Twilio credentials format validated. Save settings to enable."}
+            
+        else:
+            api_key = sms_config.get('api_key', '')
+            api_secret = sms_config.get('api_secret', '')
+            sender_id = sms_config.get('sender_id', '')
+            
+            if not api_key or not api_secret or not sender_id:
+                return {"success": False, "message": f"Missing required {provider} credentials"}
+            
+            # In production, you would verify with the provider's API here
+            return {"success": True, "message": f"{provider.title()} credentials format validated. Save settings to enable."}
+            
+    except Exception as e:
+        return {"success": False, "message": f"Validation failed: {str(e)}"}
+
 # ============= CORPORATION ROUTES =============
 
 @api_router.post("/corporations", response_model=Corporation)
