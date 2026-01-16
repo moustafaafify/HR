@@ -432,7 +432,7 @@ const Layout = () => {
             </div>
           )}
           {sidebarCollapsed && (
-            <div className="w-9 h-9 rounded-lg bg-[#2D4F38] flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--primary, #2D4F38)' }}>
               {branding.logo_url ? (
                 <img src={branding.logo_url} alt="Logo" className="w-full h-full object-contain" />
               ) : (
@@ -446,7 +446,7 @@ const Layout = () => {
                 onClick={() => setSidebarOpen(false)}
                 className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
               >
-                <X size={18} className="text-stone-500" />
+                <X size={18} style={{ color: 'var(--muted-foreground, #64748b)' }} />
               </button>
             )}
             {!isMobile && (
@@ -454,7 +454,7 @@ const Layout = () => {
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                 className="p-2 hover:bg-stone-100 rounded-lg transition-colors hidden lg:flex"
               >
-                <ChevronLeft size={18} className={`text-stone-500 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+                <ChevronLeft size={18} className={`transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} style={{ color: 'var(--muted-foreground, #64748b)' }} />
               </button>
             )}
           </div>
@@ -464,15 +464,20 @@ const Layout = () => {
         {!sidebarCollapsed && (
           <div className="p-3">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted-foreground, #9ca3af)' }} />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 text-sm bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D4F38]/20 focus:border-[#2D4F38] transition-all"
+                className="w-full h-9 pl-9 pr-3 text-sm rounded-lg focus:outline-none transition-all"
+                style={{ 
+                  backgroundColor: 'var(--muted, #f1f5f9)', 
+                  border: '1px solid var(--border, #e2e8f0)',
+                  color: 'var(--foreground, #0f172a)'
+                }}
               />
-              <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-stone-200 bg-stone-100 px-1.5 text-[10px] font-medium text-stone-500">
+              <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-0.5 rounded px-1.5 text-[10px] font-medium" style={{ border: '1px solid var(--border)', backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                 ⌘K
               </kbd>
             </div>
@@ -493,9 +498,14 @@ const Layout = () => {
                   onClick={() => !sidebarCollapsed && toggleGroup(group.id)}
                   className={`
                     w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all
-                    ${hasActiveItem ? 'text-[#2D4F38] bg-[#2D4F38]/5' : 'text-stone-500 hover:text-stone-700 hover:bg-stone-50'}
                     ${sidebarCollapsed ? 'justify-center' : ''}
                   `}
+                  style={hasActiveItem ? { 
+                    color: 'var(--primary, #2D4F38)', 
+                    backgroundColor: 'rgba(var(--primary-rgb, 45, 79, 56), 0.05)' 
+                  } : { 
+                    color: 'var(--muted-foreground, #64748b)' 
+                  }}
                   data-testid={`nav-group-${group.id}`}
                 >
                   <GroupIcon size={18} className={hasActiveItem ? 'text-[#2D4F38]' : 'text-stone-400'} />
