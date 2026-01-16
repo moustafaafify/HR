@@ -1365,7 +1365,7 @@ const Recruitment = () => {
                 {selectedApplication.expected_salary && (
                   <div className="bg-white border border-slate-200 rounded-xl p-4">
                     <p className="text-sm text-slate-500 flex items-center gap-1"><DollarSign size={14} /> Expected Salary</p>
-                    <p className="font-medium text-slate-900">${selectedApplication.expected_salary.toLocaleString()}</p>
+                    <p className="font-medium text-slate-900">{formatCurrency(selectedApplication.expected_salary)}</p>
                   </div>
                 )}
                 {selectedApplication.notice_period && (
