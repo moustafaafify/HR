@@ -1542,10 +1542,25 @@ async def upload_employee_photo(
     # Generate URL
     photo_url = f"/api/uploads/employee_photos/{filename}"
     
-    # Update employee record
+    # Update or create employee record with upsert
     await db.employees.update_one(
         {"user_id": current_user.id},
-        {"$set": {"profile_picture": photo_url, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {
+            "$set": {
+                "profile_picture": photo_url,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            },
+            "$setOnInsert": {
+                "id": current_user.id,
+                "user_id": current_user.id,
+                "full_name": current_user.full_name,
+                "email": current_user.email,
+                "work_email": current_user.email,
+                "branch_id": "default",
+                "corporation_id": "default"
+            }
+        },
+        upsert=True
     )
     
     # Also update user record
