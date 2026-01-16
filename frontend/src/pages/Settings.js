@@ -1921,6 +1921,144 @@ const Settings = () => {
           {loading ? 'Saving...' : t('save')}
         </Button>
       </div>
+
+      {/* Add Translation Key Dialog */}
+      {addKeyDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-violet-100 rounded-lg">
+                    <Plus className="text-violet-600" size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Add Translation Key</h3>
+                    <p className="text-sm text-slate-500">Create a new translation entry for all languages</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddKeyDialogOpen(false);
+                    setNewKeyForm({ key: '', english: '', translations: {} });
+                  }}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-slate-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Key Name */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  Translation Key <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g., welcome_message, button_submit"
+                  value={newKeyForm.key}
+                  onChange={(e) => setNewKeyForm({ ...newKeyForm, key: e.target.value })}
+                  className="font-mono"
+                  data-testid="new-translation-key-input"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Use lowercase with underscores (e.g., my_custom_key)
+                </p>
+              </div>
+
+              {/* English (Base) */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  English (Base) <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter the English text"
+                  value={newKeyForm.english}
+                  onChange={(e) => setNewKeyForm({ ...newKeyForm, english: e.target.value })}
+                  data-testid="new-translation-english-input"
+                />
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-slate-200 pt-4">
+                <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <Languages size={16} />
+                  Translations (Optional)
+                </h4>
+                <p className="text-xs text-slate-500 mb-4">
+                  Add translations for other languages. You can add more translations later.
+                </p>
+              </div>
+
+              {/* Popular Languages Quick Add */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  { code: 'es', name: 'Spanish (Español)' },
+                  { code: 'fr', name: 'French (Français)' },
+                  { code: 'ar', name: 'Arabic (العربية)' },
+                  { code: 'de', name: 'German (Deutsch)' },
+                  { code: 'zh', name: 'Chinese (中文)' },
+                  { code: 'hi', name: 'Hindi (हिन्दी)' },
+                  { code: 'pt', name: 'Portuguese (Português)' },
+                  { code: 'ru', name: 'Russian (Русский)' },
+                ].map((lang) => (
+                  <div key={lang.code}>
+                    <label className="text-xs font-medium text-slate-600 mb-1 block">
+                      {lang.name}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={`Translation in ${lang.name.split(' ')[0]}`}
+                      value={newKeyForm.translations[lang.code] || ''}
+                      onChange={(e) => setNewKeyForm({
+                        ...newKeyForm,
+                        translations: {
+                          ...newKeyForm.translations,
+                          [lang.code]: e.target.value
+                        }
+                      })}
+                      data-testid={`new-translation-${lang.code}-input`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAddKeyDialogOpen(false);
+                  setNewKeyForm({ key: '', english: '', translations: {} });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveTranslationKey}
+                disabled={savingTranslations || !newKeyForm.key.trim() || !newKeyForm.english.trim()}
+                className="bg-violet-600 hover:bg-violet-700"
+                data-testid="save-translation-key-btn"
+              >
+                {savingTranslations ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} className="mr-2" />
+                    Save Translation Key
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
