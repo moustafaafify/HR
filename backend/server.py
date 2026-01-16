@@ -839,10 +839,64 @@ class Settings(BaseModel):
     primary_color: str = "#2D4F38"
     accent_color: str = "#4A7C59"
     dark_mode: bool = False
+    # Push Notification Settings (admin configurable)
+    push_notifications: Dict[str, bool] = Field(default_factory=lambda: {
+        "leave_request_new": True,
+        "leave_request_approved": True,
+        "leave_request_rejected": True,
+        "ticket_assigned": True,
+        "ticket_updated": True,
+        "expense_approved": True,
+        "expense_rejected": True,
+        "announcement_new": True,
+        "payroll_processed": True,
+        "training_reminder": True,
+        "birthday_reminder": False,
+        "performance_review_due": True
+    })
     # Integration settings
     smtp: Optional[SmtpSettings] = Field(default_factory=SmtpSettings)
     sms: Optional[SmsSettings] = Field(default_factory=SmsSettings)
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============= PUSH NOTIFICATION MODELS =============
+
+class PushSubscriptionKeys(BaseModel):
+    """Encryption keys from push subscription"""
+    p256dh: str
+    auth: str
+
+class PushSubscription(BaseModel):
+    """Browser push subscription data"""
+    endpoint: str
+    expirationTime: Optional[int] = None
+    keys: PushSubscriptionKeys
+
+class PushSubscriptionCreate(BaseModel):
+    """Request body for creating a push subscription"""
+    subscription: PushSubscription
+
+class StoredPushSubscription(BaseModel):
+    """Push subscription stored in database"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    endpoint: str
+    p256dh: str
+    auth: str
+    user_agent: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class NotificationPayload(BaseModel):
+    """Notification content to send"""
+    title: str
+    body: str
+    icon: Optional[str] = None
+    badge: Optional[str] = None
+    tag: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
+    url: Optional[str] = None
 
 class Role(BaseModel):
     model_config = ConfigDict(extra="ignore")
