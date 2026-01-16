@@ -1134,13 +1134,13 @@ const Reports = () => {
             <StatCard title="Total Claims" value={expenseData.total} icon={Receipt} color="amber" />
             <StatCard 
               title="Total Amount" 
-              value={`$${expenseData.total_amount?.toLocaleString() || 0}`} 
+              value={formatCurrency(expenseData.total_amount || 0)} 
               icon={TrendingUp} 
               color="green" 
             />
             <StatCard 
               title="Approved Amount" 
-              value={`$${expenseData.approved_amount?.toLocaleString() || 0}`} 
+              value={formatCurrency(expenseData.approved_amount || 0)} 
               icon={CheckCircle2} 
               color="blue" 
             />
