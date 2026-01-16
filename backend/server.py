@@ -12432,6 +12432,7 @@ class AssignmentRule(BaseModel):
     category: str
     assignee_id: str
     assignee_name: Optional[str] = None
+    assignee_role: Optional[str] = None
     priority_filter: Optional[str] = None
     is_active: bool = True
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -12451,9 +12452,18 @@ async def create_assignment_rule(data: Dict[str, Any], current_user: User = Depe
     """Create an assignment rule"""
     if current_user.role not in ["super_admin", "corp_admin"]:
         raise HTTPException(status_code=403, detail="Only admins can create assignment rules")
-    assignee = await db.employees.find_one({"id": data.get("assignee_id")}, {"_id": 0})
-    if assignee:
-        data["assignee_name"] = assignee.get("full_name")
+    
+    assignee_id = data.get("assignee_id")
+    if not assignee_id:
+        raise HTTPException(status_code=400, detail="Assignee is required")
+    
+    assignee = await db.employees.find_one({"id": assignee_id}, {"_id": 0})
+    if not assignee:
+        raise HTTPException(status_code=400, detail="Assignee not found. Please select a valid employee.")
+    
+    data["assignee_name"] = assignee.get("full_name")
+    data["assignee_role"] = assignee.get("job_title")
+    
     rule = AssignmentRule(**data)
     await db.assignment_rules.insert_one(rule.model_dump())
     return rule.model_dump()
@@ -12464,10 +12474,14 @@ async def update_assignment_rule(rule_id: str, data: Dict[str, Any], current_use
     """Update an assignment rule"""
     if current_user.role not in ["super_admin", "corp_admin"]:
         raise HTTPException(status_code=403, detail="Only admins can update assignment rules")
+    
     if "assignee_id" in data:
         assignee = await db.employees.find_one({"id": data["assignee_id"]}, {"_id": 0})
-        if assignee:
-            data["assignee_name"] = assignee.get("full_name")
+        if not assignee:
+            raise HTTPException(status_code=400, detail="Assignee not found. Please select a valid employee.")
+        data["assignee_name"] = assignee.get("full_name")
+        data["assignee_role"] = assignee.get("job_title")
+    
     await db.assignment_rules.update_one({"id": rule_id}, {"$set": data})
     return await db.assignment_rules.find_one({"id": rule_id}, {"_id": 0})
 
