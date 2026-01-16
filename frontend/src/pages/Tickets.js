@@ -857,7 +857,7 @@ const Tickets = () => {
                     <div className="flex items-center gap-2 text-sm"><Calendar size={14} className="text-stone-400" /><span className="text-stone-500">Created:</span><span className="font-medium">{formatDate(selectedTicket.created_at)}</span></div>
                   </div>
                   <div className="space-y-3">
-                    {selectedTicket.assigned_to_name && <div className="flex items-center gap-2 text-sm"><UserPlus size={14} className="text-stone-400" /><span className="text-stone-500">Assigned to:</span><span className="font-medium">{selectedTicket.assigned_to_name}</span></div>}
+                    {selectedTicket.assigned_to_name && <div className="flex items-center gap-2 text-sm"><UserPlus size={14} className="text-stone-400" /><span className="text-stone-500">Assigned to:</span><span className="font-medium">{selectedTicket.assigned_to_name}{selectedTicket.assigned_to_role && <span className="text-stone-400 ml-1">({selectedTicket.assigned_to_role})</span>}</span></div>}
                     {selectedTicket.due_date && <div className="flex items-center gap-2 text-sm"><Clock size={14} className="text-stone-400" /><span className="text-stone-500">Due:</span><span className="font-medium">{formatDate(selectedTicket.due_date)}</span></div>}
                     {selectedTicket.resolved_at && <div className="flex items-center gap-2 text-sm"><CheckCircle2 size={14} className="text-emerald-500" /><span className="text-stone-500">Resolved:</span><span className="font-medium">{formatDate(selectedTicket.resolved_at)}</span></div>}
                   </div>
