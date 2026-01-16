@@ -888,11 +888,13 @@ const Reports = () => {
         })}
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && overview && (
-        <div className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Report Content - wrapped for PDF export */}
+      <div id="report-content">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && overview && (
+          <div className="space-y-6">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               title="Total Employees"
               value={overview.employees?.total || 0}
