@@ -191,6 +191,7 @@ const VisitorManagement = () => {
         await fetchEmployees();
         if (isAdmin) {
           await fetchDashboard();
+          await fetchHistory();
         }
         await fetchMyDashboard();
         await fetchVisitors();
@@ -200,7 +201,7 @@ const VisitorManagement = () => {
     };
     
     loadData();
-  }, [isAdmin, fetchDashboard, fetchMyDashboard, fetchVisitors, fetchEmployees]);
+  }, [isAdmin, fetchDashboard, fetchMyDashboard, fetchVisitors, fetchEmployees, fetchHistory]);
   
   // Handlers
   const handleSaveVisitor = async () => {
