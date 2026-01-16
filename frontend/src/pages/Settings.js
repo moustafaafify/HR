@@ -6,7 +6,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Shield, ChevronRight, Plus, X, Globe, DollarSign } from 'lucide-react';
+import { Shield, ChevronRight, Plus, X, Globe, DollarSign, Mail, MessageSquare, Eye, EyeOff, TestTube, CheckCircle2, XCircle } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -20,9 +20,35 @@ const Settings = () => {
     language_2: '',
     currency: 'USD',
     enabled_currencies: ['USD'],
-    exchange_rates: { USD: 1.0 }
+    exchange_rates: { USD: 1.0 },
+    // SMTP Settings
+    smtp: {
+      enabled: false,
+      host: '',
+      port: 587,
+      username: '',
+      password: '',
+      from_email: '',
+      from_name: '',
+      encryption: 'tls',
+      verified: false
+    },
+    // SMS Settings
+    sms: {
+      enabled: false,
+      provider: 'twilio',
+      api_key: '',
+      api_secret: '',
+      sender_id: '',
+      account_sid: '',
+      verified: false
+    }
   });
   const [loading, setLoading] = useState(false);
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
+  const [showSmsSecret, setShowSmsSecret] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [testingSms, setTestingSms] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -31,10 +57,30 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       const response = await axios.get(`${API}/settings`);
-      // Ensure enabled_currencies exists
+      // Ensure all nested objects exist
       const data = {
         ...response.data,
-        enabled_currencies: response.data.enabled_currencies || [response.data.currency || 'USD']
+        enabled_currencies: response.data.enabled_currencies || [response.data.currency || 'USD'],
+        smtp: response.data.smtp || {
+          enabled: false,
+          host: '',
+          port: 587,
+          username: '',
+          password: '',
+          from_email: '',
+          from_name: '',
+          encryption: 'tls',
+          verified: false
+        },
+        sms: response.data.sms || {
+          enabled: false,
+          provider: 'twilio',
+          api_key: '',
+          api_secret: '',
+          sender_id: '',
+          account_sid: '',
+          verified: false
+        }
       };
       setSettings(data);
     } catch (error) {
@@ -48,6 +94,67 @@ const Settings = () => {
       await axios.put(`${API}/settings`, settings);
       toast.success('Settings updated successfully');
       await refreshSettings();
+      await refreshCurrencySettings();
+    } catch (error) {
+      toast.error('Failed to update settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testSmtpConnection = async () => {
+    setTestingSmtp(true);
+    try {
+      const response = await axios.post(`${API}/settings/test-smtp`, settings.smtp);
+      if (response.data.success) {
+        toast.success('SMTP connection successful!');
+        setSettings(prev => ({
+          ...prev,
+          smtp: { ...prev.smtp, verified: true }
+        }));
+      } else {
+        toast.error(response.data.message || 'SMTP connection failed');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to test SMTP connection');
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const testSmsConnection = async () => {
+    setTestingSms(true);
+    try {
+      const response = await axios.post(`${API}/settings/test-sms`, settings.sms);
+      if (response.data.success) {
+        toast.success('SMS connection successful!');
+        setSettings(prev => ({
+          ...prev,
+          sms: { ...prev.sms, verified: true }
+        }));
+      } else {
+        toast.error(response.data.message || 'SMS connection failed');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to test SMS connection');
+    } finally {
+      setTestingSms(false);
+    }
+  };
+
+  const updateSmtpSetting = (key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      smtp: { ...prev.smtp, [key]: value, verified: false }
+    }));
+  };
+
+  const updateSmsSetting = (key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      sms: { ...prev.sms, [key]: value, verified: false }
+    }));
+  };
       await refreshCurrencySettings();
     } catch (error) {
       toast.error('Failed to update settings');
