@@ -564,13 +564,13 @@ const Layout = () => {
             `}
             data-testid="nav-user-profile"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2D4F38] to-[#4A7C59] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0" style={{ background: `linear-gradient(135deg, var(--primary, #2D4F38), var(--accent, #4A7C59))` }}>
               {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-stone-900 truncate">{user?.full_name || user?.email}</p>
-                <p className="text-xs text-stone-500 capitalize truncate">{user?.role?.replace('_', ' ')}</p>
+                <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground, #0f172a)' }}>{user?.full_name || user?.email}</p>
+                <p className="text-xs capitalize truncate" style={{ color: 'var(--muted-foreground, #64748b)' }}>{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
           </Link>
