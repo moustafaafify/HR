@@ -14629,6 +14629,93 @@ async def get_branding_file(filename: str):
     return FileResponse(file_path, media_type=content_type)
 
 
+@api_router.get("/manifest.json")
+async def get_dynamic_manifest():
+    """Generate dynamic PWA manifest with current branding settings"""
+    from fastapi.responses import JSONResponse
+    
+    # Get current settings
+    settings = await db.settings.find_one({"id": "global_settings"}, {"_id": 0})
+    
+    app_name = settings.get("app_name", "HR Portal") if settings else "HR Portal"
+    logo_url = settings.get("logo_url", "") if settings else ""
+    
+    # Build icons array
+    if logo_url:
+        icons = [
+            {"src": logo_url, "sizes": "72x72", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "96x96", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "128x128", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "144x144", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "152x152", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "384x384", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+        ]
+        shortcut_icon = logo_url
+    else:
+        icons = [
+            {"src": "/icons/icon-72x72.png", "sizes": "72x72", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-128x128.png", "sizes": "128x128", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-144x144.png", "sizes": "144x144", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-152x152.png", "sizes": "152x152", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+        ]
+        shortcut_icon = "/icons/icon-96x96.png"
+    
+    manifest = {
+        "name": app_name,
+        "short_name": app_name,
+        "description": f"{app_name} - Your complete HR management solution",
+        "start_url": "/?source=pwa",
+        "id": "hr-portal-pwa",
+        "display": "standalone",
+        "background_color": "#2D4F38",
+        "theme_color": "#2D4F38",
+        "orientation": "portrait-primary",
+        "scope": "/",
+        "lang": "en",
+        "dir": "ltr",
+        "icons": icons,
+        "categories": ["business", "productivity"],
+        "shortcuts": [
+            {
+                "name": "Dashboard",
+                "short_name": "Dashboard",
+                "description": "Go to Dashboard",
+                "url": "/dashboard?source=pwa",
+                "icons": [{"src": shortcut_icon, "sizes": "96x96"}]
+            },
+            {
+                "name": "My Leaves",
+                "short_name": "Leaves",
+                "description": "View and request leaves",
+                "url": "/leaves?source=pwa",
+                "icons": [{"src": shortcut_icon, "sizes": "96x96"}]
+            },
+            {
+                "name": "Employees",
+                "short_name": "Employees",
+                "description": "Employee directory",
+                "url": "/employees?source=pwa",
+                "icons": [{"src": shortcut_icon, "sizes": "96x96"}]
+            }
+        ],
+        "related_applications": [],
+        "prefer_related_applications": False
+    }
+    
+    return JSONResponse(content=manifest, headers={
+        "Content-Type": "application/manifest+json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+    })
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
