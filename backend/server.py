@@ -12200,6 +12200,7 @@ class Ticket(BaseModel):
     # Assignment
     assigned_to: Optional[str] = None
     assigned_to_name: Optional[str] = None
+    assigned_to_role: Optional[str] = None
     
     # Tags for categorization
     tags: List[str] = Field(default_factory=list)
