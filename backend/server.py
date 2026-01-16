@@ -3599,43 +3599,219 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
 AVAILABLE_PERMISSIONS = [
     # Employee Management
     {"id": "employees.view", "name": "View Employees", "category": "Employees", "description": "View employee list and details"},
+    {"id": "employees.view_sensitive", "name": "View Sensitive Data", "category": "Employees", "description": "View salary, SSN, and other sensitive employee data"},
     {"id": "employees.create", "name": "Create Employees", "category": "Employees", "description": "Add new employees"},
     {"id": "employees.edit", "name": "Edit Employees", "category": "Employees", "description": "Modify employee information"},
     {"id": "employees.delete", "name": "Delete Employees", "category": "Employees", "description": "Remove employees"},
     {"id": "employees.reset_password", "name": "Reset Passwords", "category": "Employees", "description": "Reset employee passwords"},
     {"id": "employees.manage_access", "name": "Manage Portal Access", "category": "Employees", "description": "Enable/disable employee portal access"},
+    {"id": "employees.bulk_import", "name": "Bulk Import", "category": "Employees", "description": "Import employees from CSV"},
     
     # Leave Management
-    {"id": "leaves.view", "name": "View Leaves", "category": "Leave Management", "description": "View leave requests"},
+    {"id": "leaves.view_own", "name": "View Own Leaves", "category": "Leave Management", "description": "View own leave requests"},
+    {"id": "leaves.view_team", "name": "View Team Leaves", "category": "Leave Management", "description": "View team members' leave requests"},
+    {"id": "leaves.view_all", "name": "View All Leaves", "category": "Leave Management", "description": "View all leave requests in organization"},
     {"id": "leaves.create", "name": "Create Leaves", "category": "Leave Management", "description": "Submit leave requests"},
     {"id": "leaves.approve", "name": "Approve/Reject Leaves", "category": "Leave Management", "description": "Approve or reject leave requests"},
+    {"id": "leaves.manage_balances", "name": "Manage Leave Balances", "category": "Leave Management", "description": "Adjust employee leave balances"},
     
-    # Attendance
-    {"id": "attendance.view", "name": "View Attendance", "category": "Attendance", "description": "View attendance records"},
+    # Attendance & Time
+    {"id": "attendance.view_own", "name": "View Own Attendance", "category": "Attendance", "description": "View own attendance records"},
+    {"id": "attendance.view_team", "name": "View Team Attendance", "category": "Attendance", "description": "View team attendance records"},
+    {"id": "attendance.view_all", "name": "View All Attendance", "category": "Attendance", "description": "View all attendance records"},
     {"id": "attendance.manage", "name": "Manage Attendance", "category": "Attendance", "description": "Add/edit attendance records"},
+    {"id": "timesheets.view", "name": "View Timesheets", "category": "Attendance", "description": "View timesheet submissions"},
+    {"id": "timesheets.approve", "name": "Approve Timesheets", "category": "Attendance", "description": "Approve/reject timesheets"},
+    {"id": "overtime.request", "name": "Request Overtime", "category": "Attendance", "description": "Submit overtime requests"},
+    {"id": "overtime.approve", "name": "Approve Overtime", "category": "Attendance", "description": "Approve overtime requests"},
     
     # Performance Reviews
-    {"id": "reviews.view", "name": "View Reviews", "category": "Performance", "description": "View performance reviews"},
+    {"id": "reviews.view_own", "name": "View Own Reviews", "category": "Performance", "description": "View own performance reviews"},
+    {"id": "reviews.view_team", "name": "View Team Reviews", "category": "Performance", "description": "View team members' reviews"},
+    {"id": "reviews.view_all", "name": "View All Reviews", "category": "Performance", "description": "View all performance reviews"},
     {"id": "reviews.create", "name": "Create Reviews", "category": "Performance", "description": "Create performance reviews"},
     {"id": "reviews.edit", "name": "Edit Reviews", "category": "Performance", "description": "Modify performance reviews"},
+    {"id": "reviews.manage_cycles", "name": "Manage Review Cycles", "category": "Performance", "description": "Create and manage appraisal cycles"},
+    
+    # Recruitment
+    {"id": "recruitment.view", "name": "View Jobs & Candidates", "category": "Recruitment", "description": "View job postings and candidates"},
+    {"id": "recruitment.manage_jobs", "name": "Manage Job Postings", "category": "Recruitment", "description": "Create/edit/close job postings"},
+    {"id": "recruitment.manage_candidates", "name": "Manage Candidates", "category": "Recruitment", "description": "Review and process candidates"},
+    {"id": "recruitment.schedule_interviews", "name": "Schedule Interviews", "category": "Recruitment", "description": "Schedule candidate interviews"},
+    {"id": "recruitment.make_offers", "name": "Make Offers", "category": "Recruitment", "description": "Send job offers to candidates"},
+    
+    # Training
+    {"id": "training.view", "name": "View Trainings", "category": "Training", "description": "View available trainings"},
+    {"id": "training.enroll", "name": "Enroll in Training", "category": "Training", "description": "Enroll in training programs"},
+    {"id": "training.manage", "name": "Manage Trainings", "category": "Training", "description": "Create/edit training programs"},
+    {"id": "training.assign", "name": "Assign Trainings", "category": "Training", "description": "Assign trainings to employees"},
+    
+    # Expenses
+    {"id": "expenses.view_own", "name": "View Own Expenses", "category": "Expenses", "description": "View own expense claims"},
+    {"id": "expenses.view_all", "name": "View All Expenses", "category": "Expenses", "description": "View all expense claims"},
+    {"id": "expenses.create", "name": "Submit Expenses", "category": "Expenses", "description": "Submit expense claims"},
+    {"id": "expenses.approve", "name": "Approve Expenses", "category": "Expenses", "description": "Approve/reject expense claims"},
+    
+    # Documents
+    {"id": "documents.view_own", "name": "View Own Documents", "category": "Documents", "description": "View own documents"},
+    {"id": "documents.view_all", "name": "View All Documents", "category": "Documents", "description": "View all documents"},
+    {"id": "documents.upload", "name": "Upload Documents", "category": "Documents", "description": "Upload documents"},
+    {"id": "documents.approve", "name": "Approve Documents", "category": "Documents", "description": "Approve document requests"},
+    
+    # Support Tickets
+    {"id": "tickets.view_own", "name": "View Own Tickets", "category": "Support", "description": "View own support tickets"},
+    {"id": "tickets.view_all", "name": "View All Tickets", "category": "Support", "description": "View all support tickets"},
+    {"id": "tickets.create", "name": "Create Tickets", "category": "Support", "description": "Create support tickets"},
+    {"id": "tickets.manage", "name": "Manage Tickets", "category": "Support", "description": "Assign, update, and close tickets"},
+    {"id": "tickets.admin", "name": "Ticket Administration", "category": "Support", "description": "Manage templates, rules, and settings"},
+    
+    # Benefits
+    {"id": "benefits.view", "name": "View Benefits", "category": "Benefits", "description": "View benefit plans"},
+    {"id": "benefits.enroll", "name": "Enroll in Benefits", "category": "Benefits", "description": "Enroll in benefit plans"},
+    {"id": "benefits.manage", "name": "Manage Benefits", "category": "Benefits", "description": "Create/edit benefit plans"},
+    {"id": "benefits.approve", "name": "Approve Enrollments", "category": "Benefits", "description": "Approve benefit enrollments"},
     
     # Organization Structure
     {"id": "organization.view", "name": "View Organization", "category": "Organization", "description": "View corporations, branches, departments, divisions"},
     {"id": "organization.manage", "name": "Manage Organization", "category": "Organization", "description": "Create/edit/delete organizational units"},
     
     # Payroll
-    {"id": "payroll.view", "name": "View Payroll", "category": "Payroll", "description": "View salary and payroll information"},
+    {"id": "payroll.view_own", "name": "View Own Payroll", "category": "Payroll", "description": "View own salary and payslips"},
+    {"id": "payroll.view_all", "name": "View All Payroll", "category": "Payroll", "description": "View all salary information"},
     {"id": "payroll.manage", "name": "Manage Payroll", "category": "Payroll", "description": "Edit salary and payroll data"},
+    {"id": "payroll.run", "name": "Run Payroll", "category": "Payroll", "description": "Process payroll runs"},
+    
+    # Reports
+    {"id": "reports.view", "name": "View Reports", "category": "Reports", "description": "View analytics and reports"},
+    {"id": "reports.export", "name": "Export Reports", "category": "Reports", "description": "Export report data"},
+    {"id": "reports.advanced", "name": "Advanced Reports", "category": "Reports", "description": "Access advanced analytics"},
+    
+    # Communications
+    {"id": "announcements.view", "name": "View Announcements", "category": "Communications", "description": "View company announcements"},
+    {"id": "announcements.create", "name": "Create Announcements", "category": "Communications", "description": "Post company announcements"},
+    {"id": "notifications.send", "name": "Send Notifications", "category": "Communications", "description": "Send notifications to users"},
     
     # Settings & Admin
     {"id": "settings.view", "name": "View Settings", "category": "Administration", "description": "View system settings"},
     {"id": "settings.manage", "name": "Manage Settings", "category": "Administration", "description": "Modify system settings"},
+    {"id": "roles.view", "name": "View Roles", "category": "Administration", "description": "View roles and permissions"},
     {"id": "roles.manage", "name": "Manage Roles", "category": "Administration", "description": "Create and manage user roles"},
+    {"id": "users.assign_roles", "name": "Assign Roles", "category": "Administration", "description": "Assign roles to users"},
+    {"id": "audit.view", "name": "View Audit Logs", "category": "Administration", "description": "View system audit logs"},
 ]
 
-@api_router.get("/permissions", response_model=List[Permission])
+# Default role templates
+DEFAULT_ROLES = [
+    {
+        "name": "super_admin",
+        "display_name": "Super Administrator",
+        "description": "Full system access with all permissions",
+        "permissions": [p["id"] for p in AVAILABLE_PERMISSIONS],
+        "is_system_role": True,
+        "level": 0
+    },
+    {
+        "name": "corp_admin",
+        "display_name": "Corporation Administrator",
+        "description": "Full access within assigned corporation",
+        "permissions": [p["id"] for p in AVAILABLE_PERMISSIONS if not p["id"].startswith("audit.")],
+        "is_system_role": True,
+        "level": 1
+    },
+    {
+        "name": "hr_manager",
+        "display_name": "HR Manager",
+        "description": "Full HR operations access",
+        "permissions": [
+            "employees.view", "employees.view_sensitive", "employees.create", "employees.edit", "employees.reset_password", "employees.manage_access", "employees.bulk_import",
+            "leaves.view_all", "leaves.approve", "leaves.manage_balances",
+            "attendance.view_all", "attendance.manage", "timesheets.approve", "overtime.approve",
+            "reviews.view_all", "reviews.create", "reviews.edit", "reviews.manage_cycles",
+            "recruitment.view", "recruitment.manage_jobs", "recruitment.manage_candidates", "recruitment.schedule_interviews", "recruitment.make_offers",
+            "training.view", "training.manage", "training.assign",
+            "documents.view_all", "documents.upload", "documents.approve",
+            "benefits.view", "benefits.manage", "benefits.approve",
+            "organization.view",
+            "reports.view", "reports.export",
+            "announcements.view", "announcements.create",
+            "settings.view", "roles.view"
+        ],
+        "is_system_role": True,
+        "level": 2
+    },
+    {
+        "name": "department_head",
+        "display_name": "Department Head",
+        "description": "Manages department employees and approvals",
+        "permissions": [
+            "employees.view",
+            "leaves.view_team", "leaves.approve",
+            "attendance.view_team", "timesheets.approve", "overtime.approve",
+            "reviews.view_team", "reviews.create", "reviews.edit",
+            "expenses.view_all", "expenses.approve",
+            "tickets.view_all", "tickets.manage",
+            "training.view", "training.assign",
+            "documents.view_all",
+            "reports.view",
+            "announcements.view"
+        ],
+        "is_system_role": True,
+        "level": 3
+    },
+    {
+        "name": "team_lead",
+        "display_name": "Team Lead",
+        "description": "Manages team members",
+        "permissions": [
+            "employees.view",
+            "leaves.view_team", "leaves.approve",
+            "attendance.view_team",
+            "reviews.view_team", "reviews.create",
+            "training.view",
+            "documents.view_own", "documents.upload",
+            "announcements.view"
+        ],
+        "is_system_role": True,
+        "level": 4
+    },
+    {
+        "name": "employee",
+        "display_name": "Employee",
+        "description": "Standard employee access",
+        "permissions": [
+            "leaves.view_own", "leaves.create",
+            "attendance.view_own",
+            "reviews.view_own",
+            "training.view", "training.enroll",
+            "expenses.view_own", "expenses.create",
+            "documents.view_own", "documents.upload",
+            "tickets.view_own", "tickets.create",
+            "benefits.view", "benefits.enroll",
+            "payroll.view_own",
+            "announcements.view"
+        ],
+        "is_system_role": True,
+        "level": 5
+    }
+]
+
+
+@api_router.get("/permissions")
 async def get_permissions(current_user: User = Depends(get_current_user)):
+    """Get all available permissions"""
     return [Permission(**p) for p in AVAILABLE_PERMISSIONS]
+
+
+@api_router.get("/permissions/categories")
+async def get_permission_categories(current_user: User = Depends(get_current_user)):
+    """Get permissions grouped by category"""
+    categories = {}
+    for p in AVAILABLE_PERMISSIONS:
+        cat = p["category"]
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(p)
+    return categories
 
 @api_router.post("/roles", response_model=Role)
 async def create_role(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
