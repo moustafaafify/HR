@@ -1146,6 +1146,14 @@ const Settings = () => {
                 <p className="text-sm text-slate-500">View and manage translations for all supported languages</p>
               </div>
             </div>
+            <Button
+              onClick={() => setAddKeyDialogOpen(true)}
+              className="bg-violet-600 hover:bg-violet-700"
+              data-testid="add-translation-key-btn"
+            >
+              <Plus size={16} className="mr-2" />
+              Add Key
+            </Button>
           </div>
 
           {/* Translation Controls */}
@@ -1162,10 +1170,10 @@ const Settings = () => {
                 <SelectTrigger data-testid="translation-language-select">
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
-                <SelectContent>
-                  {availableTranslationLanguages.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {getLanguageName(code)}
+                <SelectContent className="max-h-[300px]">
+                  {availableTranslationLanguages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
