@@ -13211,6 +13211,354 @@ async def seed_default_canned_responses(current_user: User = Depends(get_current
     return {"message": f"Seeded {len(default_responses)} default canned responses"}
 
 
+# ============= NOTIFICATIONS =============
+
+class NotificationType:
+    TICKET = "ticket"
+    LEAVE = "leave"
+    BENEFIT = "benefit"
+    DOCUMENT = "document"
+    TRAINING = "training"
+    EXPENSE = "expense"
+    PERFORMANCE = "performance"
+    ANNOUNCEMENT = "announcement"
+    TASK = "task"
+    SYSTEM = "system"
+
+class Notification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # The user who receives this notification
+    type: str = NotificationType.SYSTEM
+    title: str
+    message: str
+    link: Optional[str] = None  # URL to navigate to when clicked
+    reference_id: Optional[str] = None  # ID of related entity (ticket_id, leave_id, etc.)
+    reference_type: Optional[str] = None  # Type of related entity
+    is_read: bool = False
+    is_archived: bool = False
+    priority: str = "normal"  # low, normal, high, urgent
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    read_at: Optional[str] = None
+
+class CreateNotificationRequest(BaseModel):
+    user_id: Optional[str] = None  # If None, send to all users
+    user_ids: Optional[List[str]] = None  # Send to multiple specific users
+    type: str = NotificationType.SYSTEM
+    title: str
+    message: str
+    link: Optional[str] = None
+    reference_id: Optional[str] = None
+    reference_type: Optional[str] = None
+    priority: str = "normal"
+    send_to_all: bool = False
+    send_to_admins: bool = False
+    send_to_employees: bool = False
+
+
+async def create_notification_for_user(
+    user_id: str,
+    notification_type: str,
+    title: str,
+    message: str,
+    link: Optional[str] = None,
+    reference_id: Optional[str] = None,
+    reference_type: Optional[str] = None,
+    priority: str = "normal"
+):
+    """Helper function to create a notification for a specific user"""
+    notification = Notification(
+        user_id=user_id,
+        type=notification_type,
+        title=title,
+        message=message,
+        link=link,
+        reference_id=reference_id,
+        reference_type=reference_type,
+        priority=priority
+    )
+    await db.notifications.insert_one(notification.model_dump())
+    return notification.model_dump()
+
+
+async def create_notification_for_multiple_users(
+    user_ids: List[str],
+    notification_type: str,
+    title: str,
+    message: str,
+    link: Optional[str] = None,
+    reference_id: Optional[str] = None,
+    reference_type: Optional[str] = None,
+    priority: str = "normal"
+):
+    """Helper function to create notifications for multiple users"""
+    notifications = []
+    for user_id in user_ids:
+        notification = Notification(
+            user_id=user_id,
+            type=notification_type,
+            title=title,
+            message=message,
+            link=link,
+            reference_id=reference_id,
+            reference_type=reference_type,
+            priority=priority
+        )
+        notifications.append(notification.model_dump())
+    
+    if notifications:
+        await db.notifications.insert_many(notifications)
+    return notifications
+
+
+@api_router.get("/notifications")
+async def get_notifications(
+    is_read: Optional[bool] = None,
+    type: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0,
+    current_user: User = Depends(get_current_user)
+):
+    """Get notifications for the current user"""
+    query = {"user_id": current_user.id, "is_archived": False}
+    
+    if is_read is not None:
+        query["is_read"] = is_read
+    if type:
+        query["type"] = type
+    
+    notifications = await db.notifications.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return notifications
+
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_count(current_user: User = Depends(get_current_user)):
+    """Get count of unread notifications"""
+    count = await db.notifications.count_documents({
+        "user_id": current_user.id,
+        "is_read": False,
+        "is_archived": False
+    })
+    return {"count": count}
+
+
+@api_router.get("/notifications/stats")
+async def get_notification_stats(current_user: User = Depends(get_current_user)):
+    """Get notification statistics for the current user"""
+    base_query = {"user_id": current_user.id, "is_archived": False}
+    
+    total = await db.notifications.count_documents(base_query)
+    unread = await db.notifications.count_documents({**base_query, "is_read": False})
+    
+    # Count by type
+    all_notifications = await db.notifications.find(base_query, {"_id": 0, "type": 1}).to_list(1000)
+    by_type = {}
+    for n in all_notifications:
+        t = n.get("type", "system")
+        by_type[t] = by_type.get(t, 0) + 1
+    
+    return {
+        "total": total,
+        "unread": unread,
+        "read": total - unread,
+        "by_type": by_type
+    }
+
+
+@api_router.post("/notifications")
+async def create_notification(
+    data: CreateNotificationRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Create notification(s) - admin only for bulk/broadcast"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    # Non-admins can only create notifications for themselves
+    if not is_admin:
+        notification = await create_notification_for_user(
+            user_id=current_user.id,
+            notification_type=data.type,
+            title=data.title,
+            message=data.message,
+            link=data.link,
+            reference_id=data.reference_id,
+            reference_type=data.reference_type,
+            priority=data.priority
+        )
+        return notification
+    
+    # Admin can broadcast or send to specific users
+    target_user_ids = []
+    
+    if data.send_to_all:
+        users = await db.users.find({}, {"_id": 0, "id": 1}).to_list(10000)
+        target_user_ids = [u["id"] for u in users]
+    elif data.send_to_admins:
+        users = await db.users.find(
+            {"role": {"$in": ["super_admin", "corp_admin"]}},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        target_user_ids = [u["id"] for u in users]
+    elif data.send_to_employees:
+        users = await db.users.find(
+            {"role": "employee"},
+            {"_id": 0, "id": 1}
+        ).to_list(10000)
+        target_user_ids = [u["id"] for u in users]
+    elif data.user_ids:
+        target_user_ids = data.user_ids
+    elif data.user_id:
+        target_user_ids = [data.user_id]
+    else:
+        raise HTTPException(status_code=400, detail="Must specify target users")
+    
+    notifications = await create_notification_for_multiple_users(
+        user_ids=target_user_ids,
+        notification_type=data.type,
+        title=data.title,
+        message=data.message,
+        link=data.link,
+        reference_id=data.reference_id,
+        reference_type=data.reference_type,
+        priority=data.priority
+    )
+    
+    return {"message": f"Created {len(notifications)} notifications", "count": len(notifications)}
+
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Mark a notification as read"""
+    notification = await db.notifications.find_one(
+        {"id": notification_id, "user_id": current_user.id},
+        {"_id": 0}
+    )
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    await db.notifications.update_one(
+        {"id": notification_id},
+        {"$set": {"is_read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Notification marked as read"}
+
+
+@api_router.put("/notifications/mark-all-read")
+async def mark_all_notifications_read(current_user: User = Depends(get_current_user)):
+    """Mark all notifications as read for the current user"""
+    result = await db.notifications.update_many(
+        {"user_id": current_user.id, "is_read": False},
+        {"$set": {"is_read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": f"Marked {result.modified_count} notifications as read"}
+
+
+@api_router.put("/notifications/{notification_id}/archive")
+async def archive_notification(
+    notification_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Archive a notification"""
+    notification = await db.notifications.find_one(
+        {"id": notification_id, "user_id": current_user.id},
+        {"_id": 0}
+    )
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    await db.notifications.update_one(
+        {"id": notification_id},
+        {"$set": {"is_archived": True}}
+    )
+    
+    return {"message": "Notification archived"}
+
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a notification"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    query = {"id": notification_id}
+    if not is_admin:
+        query["user_id"] = current_user.id
+    
+    result = await db.notifications.delete_one(query)
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    return {"message": "Notification deleted"}
+
+
+@api_router.delete("/notifications/clear-all")
+async def clear_all_notifications(current_user: User = Depends(get_current_user)):
+    """Delete all notifications for the current user"""
+    result = await db.notifications.delete_many({"user_id": current_user.id})
+    return {"message": f"Deleted {result.deleted_count} notifications"}
+
+
+# Admin endpoint to send announcements
+@api_router.post("/notifications/announcement")
+async def send_announcement(
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Send an announcement to all users or specific groups (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can send announcements")
+    
+    title = data.get("title", "Announcement")
+    message = data.get("message", "")
+    priority = data.get("priority", "normal")
+    target = data.get("target", "all")  # all, admins, employees, department, branch
+    target_id = data.get("target_id")  # department_id or branch_id if applicable
+    
+    target_user_ids = []
+    
+    if target == "all":
+        users = await db.users.find({}, {"_id": 0, "id": 1}).to_list(10000)
+        target_user_ids = [u["id"] for u in users]
+    elif target == "admins":
+        users = await db.users.find(
+            {"role": {"$in": ["super_admin", "corp_admin"]}},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        target_user_ids = [u["id"] for u in users]
+    elif target == "employees":
+        users = await db.users.find({"role": "employee"}, {"_id": 0, "id": 1}).to_list(10000)
+        target_user_ids = [u["id"] for u in users]
+    elif target == "department" and target_id:
+        employees = await db.employees.find({"department_id": target_id}, {"_id": 0, "user_id": 1}).to_list(1000)
+        target_user_ids = [e["user_id"] for e in employees]
+    elif target == "branch" and target_id:
+        employees = await db.employees.find({"branch_id": target_id}, {"_id": 0, "user_id": 1}).to_list(1000)
+        target_user_ids = [e["user_id"] for e in employees]
+    
+    if not target_user_ids:
+        raise HTTPException(status_code=400, detail="No target users found")
+    
+    notifications = await create_notification_for_multiple_users(
+        user_ids=target_user_ids,
+        notification_type=NotificationType.ANNOUNCEMENT,
+        title=title,
+        message=message,
+        priority=priority
+    )
+    
+    return {"message": f"Announcement sent to {len(notifications)} users", "count": len(notifications)}
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
