@@ -437,15 +437,31 @@ const Profile = () => {
         <div className="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl lg:text-4xl font-bold border-4 border-white/30">
+            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl lg:text-4xl font-bold border-4 border-white/30 overflow-hidden">
               {employee?.profile_picture ? (
-                <img src={employee.profile_picture} alt={employee.full_name} className="w-full h-full object-cover rounded-xl" />
+                <img src={employee.profile_picture} alt={employee.full_name} className="w-full h-full object-cover" />
               ) : (
                 getInitials(employee?.full_name || user?.full_name)
               )}
             </div>
-            <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-white text-indigo-600 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-50 transition-colors">
-              <Camera size={16} />
+            <input
+              type="file"
+              ref={photoInputRef}
+              onChange={handlePhotoUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <button 
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="absolute -bottom-2 -right-2 w-8 h-8 bg-white text-indigo-600 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-50 transition-colors disabled:opacity-50"
+              data-testid="upload-profile-photo-btn"
+            >
+              {uploadingPhoto ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-indigo-600 border-t-transparent" />
+              ) : (
+                <Camera size={16} />
+              )}
             </button>
           </div>
 
