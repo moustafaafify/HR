@@ -241,7 +241,8 @@ const InstallPWA = () => {
                   </button>
                   <button
                     onClick={handleInstallClick}
-                    className="flex-1 py-4 bg-[#2D4F38] text-white rounded-2xl font-semibold hover:bg-[#1a3a24] transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#2D4F38]/30"
+                    style={{ backgroundColor: mobileConfig.primaryColor, boxShadow: `0 10px 25px -5px ${mobileConfig.primaryColor}50` }}
+                    className="flex-1 py-4 text-white rounded-2xl font-semibold hover:opacity-90 transition-colors flex items-center justify-center gap-2"
                   >
                     <Download size={20} />
                     Install
