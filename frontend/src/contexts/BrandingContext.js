@@ -22,10 +22,17 @@ export const BrandingProvider = ({ children }) => {
       const response = await axios.get(`${API}/settings`);
       const settings = response.data;
       
+      // Helper to get full URL for relative paths
+      const getFullUrl = (path) => {
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+        return `${BACKEND_URL}${path}`;
+      };
+      
       const newBranding = {
         app_name: settings.app_name || 'HR Portal',
-        logo_url: settings.logo_url || '',
-        favicon_url: settings.favicon_url || ''
+        logo_url: getFullUrl(settings.logo_url),
+        favicon_url: getFullUrl(settings.favicon_url)
       };
       
       setBranding(newBranding);
