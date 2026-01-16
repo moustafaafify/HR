@@ -967,7 +967,7 @@ const Assets = () => {
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-white">
           <DollarSign className="w-8 h-8 mb-2 opacity-80" />
           <p className="text-indigo-100 text-sm">Total Value</p>
-          <p className="text-2xl font-bold">${(stats?.total_value || 0).toLocaleString()}</p>
+          <p className="text-2xl font-bold">{formatCurrency(stats?.total_value || 0)}</p>
         </div>
       </div>
 
