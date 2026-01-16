@@ -811,6 +811,136 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* Push Notifications Settings */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Bell className="text-orange-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Push Notifications</h2>
+                <p className="text-sm text-slate-500">Configure which events trigger push notifications</p>
+              </div>
+            </div>
+            {/* User's push subscription status */}
+            <div className="flex items-center gap-2">
+              {pushSupported ? (
+                <>
+                  <Button
+                    variant={pushSubscribed ? "default" : "outline"}
+                    size="sm"
+                    onClick={async () => {
+                      if (pushSubscribed) {
+                        const success = await unsubscribePush();
+                        if (success) toast.success('Unsubscribed from push notifications');
+                        else toast.error('Failed to unsubscribe');
+                      } else {
+                        const success = await subscribePush();
+                        if (success) toast.success('Subscribed to push notifications');
+                        else toast.error(pushPermission === 'denied' ? 'Notifications blocked by browser' : 'Failed to subscribe');
+                      }
+                    }}
+                    disabled={pushLoading}
+                    className={pushSubscribed ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                    data-testid="push-subscribe-btn"
+                  >
+                    {pushLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                    ) : pushSubscribed ? (
+                      <>
+                        <Bell size={16} className="mr-2" />
+                        Subscribed
+                      </>
+                    ) : (
+                      <>
+                        <BellOff size={16} className="mr-2" />
+                        Subscribe
+                      </>
+                    )}
+                  </Button>
+                  {pushSubscribed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const success = await sendTestNotification();
+                        if (success) toast.success('Test notification sent!');
+                        else toast.error('Failed to send test notification');
+                      }}
+                      data-testid="push-test-btn"
+                    >
+                      <Send size={16} className="mr-2" />
+                      Test
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <span className="text-sm text-slate-500">Push notifications not supported</span>
+              )}
+            </div>
+          </div>
+
+          {/* Notification Triggers */}
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-slate-700">Enable notifications for:</p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                { key: 'leave_request_new', label: 'New Leave Requests', desc: 'When an employee submits a leave request' },
+                { key: 'leave_request_approved', label: 'Leave Approved', desc: 'When a leave request is approved' },
+                { key: 'leave_request_rejected', label: 'Leave Rejected', desc: 'When a leave request is rejected' },
+                { key: 'ticket_assigned', label: 'Ticket Assigned', desc: 'When a ticket is assigned to you' },
+                { key: 'ticket_updated', label: 'Ticket Updated', desc: 'When a ticket you created is updated' },
+                { key: 'expense_approved', label: 'Expense Approved', desc: 'When an expense is approved' },
+                { key: 'expense_rejected', label: 'Expense Rejected', desc: 'When an expense is rejected' },
+                { key: 'announcement_new', label: 'New Announcements', desc: 'Company-wide announcements' },
+                { key: 'payroll_processed', label: 'Payroll Processed', desc: 'When payroll is processed' },
+                { key: 'training_reminder', label: 'Training Reminders', desc: 'Upcoming training sessions' },
+                { key: 'birthday_reminder', label: 'Birthday Reminders', desc: 'Team member birthdays' },
+                { key: 'performance_review_due', label: 'Performance Reviews', desc: 'When reviews are due' },
+              ].map(({ key, label, desc }) => (
+                <div
+                  key={key}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    settings.push_notifications?.[key]
+                      ? 'bg-orange-50 border-orange-200'
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                  }`}
+                  onClick={() => setSettings({
+                    ...settings,
+                    push_notifications: {
+                      ...settings.push_notifications,
+                      [key]: !settings.push_notifications?.[key]
+                    }
+                  })}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-900">{label}</span>
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                      settings.push_notifications?.[key] ? 'bg-orange-500' : 'bg-slate-300'
+                    }`}>
+                      {settings.push_notifications?.[key] && (
+                        <CheckCircle2 size={12} className="text-white" />
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Browser Permission Info */}
+          {pushSupported && pushPermission === 'denied' && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">
+                <strong>Notifications blocked:</strong> You've blocked notifications in your browser. 
+                To enable, click the lock icon in your browser's address bar and allow notifications.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Language Settings */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">
