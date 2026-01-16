@@ -1384,18 +1384,19 @@ const WorkforcePlanning = () => {
       
       {/* Allocation Dialog */}
       <Dialog open={allocationDialog} onOpenChange={setAllocationDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <DialogHeader>
-            <DialogTitle>{selectedItem ? 'Edit Allocation' : 'New Allocation'}</DialogTitle>
+            <DialogTitle className="text-slate-900 dark:text-white">{selectedItem ? 'Edit Allocation' : 'New Allocation'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Employee *</label>
-              <Select value={allocationForm.employee_id} onValueChange={(v) => setAllocationForm({ ...allocationForm, employee_id: v })}>
-                <SelectTrigger>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Employee *</label>
+              <Select value={allocationForm.employee_id || "select"} onValueChange={(v) => setAllocationForm({ ...allocationForm, employee_id: v === "select" ? "" : v })}>
+                <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <SelectItem value="select" disabled>Select employee</SelectItem>
                   {employees.map(e => (
                     <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
                   ))}
@@ -1403,12 +1404,13 @@ const WorkforcePlanning = () => {
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Project</label>
-              <Select value={allocationForm.project_id} onValueChange={(v) => setAllocationForm({ ...allocationForm, project_id: v })}>
-                <SelectTrigger>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Project</label>
+              <Select value={allocationForm.project_id || "select"} onValueChange={(v) => setAllocationForm({ ...allocationForm, project_id: v === "select" ? "" : v })}>
+                <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <SelectItem value="select" disabled>Select project</SelectItem>
                   {projects.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
@@ -1416,43 +1418,47 @@ const WorkforcePlanning = () => {
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Role in Project</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Role in Project</label>
               <Input
                 value={allocationForm.role_in_project}
                 onChange={(e) => setAllocationForm({ ...allocationForm, role_in_project: e.target.value })}
                 placeholder="e.g., Lead Developer, Consultant"
+                className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Allocation % *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Allocation % *</label>
               <Input
                 type="number"
                 min="0"
                 max="100"
                 value={allocationForm.allocation_percentage}
                 onChange={(e) => setAllocationForm({ ...allocationForm, allocation_percentage: parseInt(e.target.value) || 0 })}
+                className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Start Date</label>
                 <Input
                   type="date"
                   value={allocationForm.start_date}
                   onChange={(e) => setAllocationForm({ ...allocationForm, start_date: e.target.value })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">End Date</label>
                 <Input
                   type="date"
                   value={allocationForm.end_date}
                   onChange={(e) => setAllocationForm({ ...allocationForm, end_date: e.target.value })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setAllocationDialog(false)}>Cancel</Button>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <Button variant="outline" onClick={() => setAllocationDialog(false)} className="dark:border-slate-600 dark:text-slate-200">Cancel</Button>
               <Button onClick={handleSaveAllocation}>
                 {selectedItem ? 'Update' : 'Create'} Allocation
               </Button>
@@ -1463,35 +1469,37 @@ const WorkforcePlanning = () => {
       
       {/* Scenario Dialog */}
       <Dialog open={scenarioDialog} onOpenChange={setScenarioDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <DialogHeader>
-            <DialogTitle>{selectedItem ? 'Edit Scenario' : 'New Scenario'}</DialogTitle>
+            <DialogTitle className="text-slate-900 dark:text-white">{selectedItem ? 'Edit Scenario' : 'New Scenario'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Scenario Name *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Scenario Name *</label>
                 <Input
                   value={scenarioForm.name}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, name: e.target.value })}
                   placeholder="e.g., 20% Growth Scenario"
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Description</label>
                 <Textarea
                   value={scenarioForm.description}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, description: e.target.value })}
                   rows={2}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Scenario Type</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Scenario Type</label>
                 <Select value={scenarioForm.scenario_type} onValueChange={(v) => setScenarioForm({ ...scenarioForm, scenario_type: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="growth">Growth</SelectItem>
                     <SelectItem value="reduction">Reduction</SelectItem>
                     <SelectItem value="restructure">Restructure</SelectItem>
@@ -1500,52 +1508,57 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Implementation (months)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Implementation (months)</label>
                 <Input
                   type="number"
                   value={scenarioForm.implementation_months}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, implementation_months: parseInt(e.target.value) || 6 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Base Headcount</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Base Headcount</label>
                 <Input
                   type="number"
                   value={scenarioForm.base_headcount}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, base_headcount: parseInt(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Projected Headcount</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Projected Headcount</label>
                 <Input
                   type="number"
                   value={scenarioForm.projected_headcount}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, projected_headcount: parseInt(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Base Cost ($)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Base Cost ($)</label>
                 <Input
                   type="number"
                   value={scenarioForm.base_cost}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, base_cost: parseFloat(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Projected Cost ($)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Projected Cost ($)</label>
                 <Input
                   type="number"
                   value={scenarioForm.projected_cost}
                   onChange={(e) => setScenarioForm({ ...scenarioForm, projected_cost: parseFloat(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Productivity Impact</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Productivity Impact</label>
                 <Select value={scenarioForm.productivity_impact} onValueChange={(v) => setScenarioForm({ ...scenarioForm, productivity_impact: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="positive">Positive</SelectItem>
                     <SelectItem value="neutral">Neutral</SelectItem>
                     <SelectItem value="negative">Negative</SelectItem>
@@ -1553,12 +1566,12 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Morale Impact</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Morale Impact</label>
                 <Select value={scenarioForm.morale_impact} onValueChange={(v) => setScenarioForm({ ...scenarioForm, morale_impact: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="positive">Positive</SelectItem>
                     <SelectItem value="neutral">Neutral</SelectItem>
                     <SelectItem value="negative">Negative</SelectItem>
@@ -1566,8 +1579,8 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setScenarioDialog(false)}>Cancel</Button>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <Button variant="outline" onClick={() => setScenarioDialog(false)} className="dark:border-slate-600 dark:text-slate-200">Cancel</Button>
               <Button onClick={handleSaveScenario}>
                 {selectedItem ? 'Update' : 'Create'} Scenario
               </Button>
