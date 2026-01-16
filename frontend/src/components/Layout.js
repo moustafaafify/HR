@@ -47,7 +47,8 @@ import {
   TrendingUp,
   DollarSign,
   HelpCircle,
-  ChevronLeft
+  ChevronLeft,
+  Ticket
 } from 'lucide-react';
 
 const Layout = () => {
