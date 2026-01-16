@@ -11,6 +11,49 @@ Build a full-stack HR platform with:
 - Workflow system for approval processes
 - Recruitment module for job postings and candidate management
 
+## Latest Updates (Jan 16, 2026)
+
+### Benefits Module (NEW)
+**Admin Features:**
+- Create, edit, delete benefit plans
+- Seed default plans (health, dental, vision, life, disability, retirement, wellness)
+- View all enrollments, approve/reject pending enrollments
+- Terminate active enrollments
+- Process benefit claims (approve, deny, mark as paid)
+- View benefits statistics
+
+**Employee Features:**
+- Browse available benefit plans
+- Enroll in plans with coverage type selection
+- Add dependents to family plans
+- View enrollment status and costs
+- File benefit claims
+- Track claim status
+
+**Benefit Categories:** Health, Dental, Vision, Life Insurance, Disability, Retirement, Wellness
+
+### Enhanced User Profile (NEW)
+**Features:**
+- Beautiful gradient header with avatar and employee info
+- Quick stats (Leave Balance, Benefits, Skills, Performance)
+- 5 tabs: Overview, Employment, Personal, Benefits, Security
+- Edit profile information (personal details, bio, social links)
+- Edit contact address
+- Edit emergency contact
+- Change password functionality
+- View reporting structure
+- Recent activity feed
+- Active benefits summary
+- Skills display
+- Clickable user section in sidebar navigates to profile
+
+### Project Management Module (COMPLETED)
+- Full CRUD for projects with status, priority, budget tracking
+- Team member management with roles and allocation
+- Task management with status workflow
+- Project analytics and time tracking
+- Integration with Timesheets module
+
 ## Data Seeding Fix (Jan 15, 2026)
 **Issue:** Employee records had mismatched `user_id` values that didn't match the `id` in the `users` collection, and name fields were often empty.
 
