@@ -66,7 +66,6 @@ const Settings = () => {
 
   useEffect(() => {
     fetchSettings();
-    fetchCustomTranslations();
   }, []);
 
   const fetchSettings = async () => {
