@@ -12606,6 +12606,358 @@ async def rate_ticket(ticket_id: str, data: Dict[str, Any], current_user: User =
     return {"message": "Rating submitted"}
 
 
+# ============= TICKET TEMPLATES =============
+
+class TicketTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    subject_template: str
+    body_template: str
+    category: str = "other"
+    priority: str = "medium"
+    tags: List[str] = Field(default_factory=list)
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.get("/tickets/templates")
+async def get_ticket_templates(current_user: User = Depends(get_current_user)):
+    """Get all ticket templates"""
+    templates = await db.ticket_templates.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return templates
+
+
+@api_router.post("/tickets/templates")
+async def create_ticket_template(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a ticket template (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create templates")
+    
+    template = TicketTemplate(**data)
+    await db.ticket_templates.insert_one(template.model_dump())
+    return template.model_dump()
+
+
+@api_router.put("/tickets/templates/{template_id}")
+async def update_ticket_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a ticket template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update templates")
+    
+    await db.ticket_templates.update_one({"id": template_id}, {"$set": data})
+    return await db.ticket_templates.find_one({"id": template_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/templates/{template_id}")
+async def delete_ticket_template(template_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a ticket template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete templates")
+    
+    await db.ticket_templates.delete_one({"id": template_id})
+    return {"message": "Template deleted"}
+
+
+@api_router.post("/tickets/templates/seed-defaults")
+async def seed_default_templates(current_user: User = Depends(get_current_user)):
+    """Seed default ticket templates"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can seed templates")
+    
+    existing = await db.ticket_templates.count_documents({})
+    if existing > 0:
+        return {"message": "Templates already exist", "count": existing}
+    
+    default_templates = [
+        {
+            "name": "Password Reset",
+            "description": "Request a password reset for your account",
+            "subject_template": "Password Reset Request",
+            "body_template": "I need to reset my password for [System Name].\n\nReason: [Forgot password / Account locked / Security concern]\n\nPlease assist with resetting my credentials.",
+            "category": "it",
+            "priority": "high"
+        },
+        {
+            "name": "New Equipment Request",
+            "description": "Request new computer equipment or peripherals",
+            "subject_template": "New Equipment Request - [Equipment Type]",
+            "body_template": "I would like to request the following equipment:\n\n- Equipment Type: [Laptop/Monitor/Keyboard/Mouse/Other]\n- Justification: [Reason for request]\n- Preferred Specifications: [Any specific requirements]\n\nCurrent equipment status: [Working/Not working/None]",
+            "category": "it",
+            "priority": "medium"
+        },
+        {
+            "name": "VPN Access Request",
+            "description": "Request VPN access for remote work",
+            "subject_template": "VPN Access Request",
+            "body_template": "I need VPN access for remote work.\n\nPurpose: [Work from home / Travel / Other]\nDuration: [Temporary / Permanent]\nStart Date: [Date]\n\nI have completed the required security training: [Yes/No]",
+            "category": "it",
+            "priority": "medium"
+        },
+        {
+            "name": "Software Installation",
+            "description": "Request software installation or license",
+            "subject_template": "Software Installation Request - [Software Name]",
+            "body_template": "Please install the following software:\n\nSoftware Name: [Name]\nVersion: [If specific]\nPurpose: [Business justification]\nLicense: [Company owned / Need to purchase]\n\nThis software is required for: [Describe your need]",
+            "category": "it",
+            "priority": "low"
+        },
+        {
+            "name": "Leave Balance Inquiry",
+            "description": "Question about leave balance or accrual",
+            "subject_template": "Leave Balance Inquiry",
+            "body_template": "I have a question about my leave balance.\n\nLeave Type: [Annual/Sick/Personal]\nQuestion: [Describe your inquiry]\n\nMy current understanding is: [What you believe your balance is]",
+            "category": "hr",
+            "priority": "low"
+        },
+        {
+            "name": "Payroll Discrepancy",
+            "description": "Report an issue with your paycheck",
+            "subject_template": "Payroll Discrepancy - [Pay Period]",
+            "body_template": "I noticed a discrepancy in my paycheck.\n\nPay Period: [Date range]\nExpected Amount: [Amount]\nReceived Amount: [Amount]\nDiscrepancy: [Difference]\n\nPossible reason: [Overtime/Deduction/Bonus/Other]\n\nPlease review and advise.",
+            "category": "payroll",
+            "priority": "high"
+        },
+        {
+            "name": "Benefits Enrollment",
+            "description": "Questions about benefits enrollment",
+            "subject_template": "Benefits Enrollment Question",
+            "body_template": "I have a question about benefits enrollment.\n\nBenefit Type: [Health/Dental/Vision/401k/Other]\nQuestion: [Your specific question]\n\nIs this related to:\n- [ ] New enrollment\n- [ ] Change in coverage\n- [ ] Adding dependent\n- [ ] Other",
+            "category": "benefits",
+            "priority": "medium"
+        },
+        {
+            "name": "Facility Maintenance",
+            "description": "Report a facility issue or maintenance request",
+            "subject_template": "Facility Maintenance - [Issue Type]",
+            "body_template": "I would like to report a facility issue.\n\nLocation: [Building/Floor/Room]\nIssue Type: [HVAC/Lighting/Plumbing/Furniture/Other]\nDescription: [Detailed description]\nUrgency: [Safety hazard / Impacts work / Minor inconvenience]\n\nBest time for maintenance: [If applicable]",
+            "category": "facilities",
+            "priority": "medium"
+        }
+    ]
+    
+    for template_data in default_templates:
+        template = TicketTemplate(**template_data)
+        await db.ticket_templates.insert_one(template.model_dump())
+    
+    return {"message": f"Seeded {len(default_templates)} default templates"}
+
+
+# ============= AUTO-ASSIGNMENT RULES =============
+
+class AssignmentRule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    category: str  # The ticket category this rule applies to
+    assignee_id: str  # The employee to assign to
+    assignee_name: Optional[str] = None
+    priority_filter: Optional[str] = None  # Only apply to specific priority
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.get("/tickets/assignment-rules")
+async def get_assignment_rules(current_user: User = Depends(get_current_user)):
+    """Get all assignment rules (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can view assignment rules")
+    
+    rules = await db.assignment_rules.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return rules
+
+
+@api_router.post("/tickets/assignment-rules")
+async def create_assignment_rule(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create an assignment rule"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create assignment rules")
+    
+    # Get assignee name
+    assignee = await db.employees.find_one({"id": data.get("assignee_id")}, {"_id": 0})
+    if assignee:
+        data["assignee_name"] = assignee.get("full_name")
+    
+    rule = AssignmentRule(**data)
+    await db.assignment_rules.insert_one(rule.model_dump())
+    return rule.model_dump()
+
+
+@api_router.put("/tickets/assignment-rules/{rule_id}")
+async def update_assignment_rule(rule_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an assignment rule"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update assignment rules")
+    
+    if "assignee_id" in data:
+        assignee = await db.employees.find_one({"id": data["assignee_id"]}, {"_id": 0})
+        if assignee:
+            data["assignee_name"] = assignee.get("full_name")
+    
+    await db.assignment_rules.update_one({"id": rule_id}, {"$set": data})
+    return await db.assignment_rules.find_one({"id": rule_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/assignment-rules/{rule_id}")
+async def delete_assignment_rule(rule_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an assignment rule"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete assignment rules")
+    
+    await db.assignment_rules.delete_one({"id": rule_id})
+    return {"message": "Rule deleted"}
+
+
+# ============= CANNED RESPONSES =============
+
+class CannedResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    shortcut: Optional[str] = None  # e.g., "/password" to quickly insert
+    content: str
+    category: Optional[str] = None  # Optional category filter
+    is_active: bool = True
+    usage_count: int = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.get("/tickets/canned-responses")
+async def get_canned_responses(category: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get canned responses (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can view canned responses")
+    
+    query = {"is_active": True}
+    if category:
+        query["$or"] = [{"category": category}, {"category": None}]
+    
+    responses = await db.canned_responses.find(query, {"_id": 0}).sort("usage_count", -1).to_list(100)
+    return responses
+
+
+@api_router.post("/tickets/canned-responses")
+async def create_canned_response(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create canned responses")
+    
+    response = CannedResponse(**data)
+    await db.canned_responses.insert_one(response.model_dump())
+    return response.model_dump()
+
+
+@api_router.put("/tickets/canned-responses/{response_id}")
+async def update_canned_response(response_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update canned responses")
+    
+    await db.canned_responses.update_one({"id": response_id}, {"$set": data})
+    return await db.canned_responses.find_one({"id": response_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/canned-responses/{response_id}")
+async def delete_canned_response(response_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete canned responses")
+    
+    await db.canned_responses.delete_one({"id": response_id})
+    return {"message": "Response deleted"}
+
+
+@api_router.post("/tickets/canned-responses/{response_id}/use")
+async def use_canned_response(response_id: str, current_user: User = Depends(get_current_user)):
+    """Increment usage count for a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can use canned responses")
+    
+    await db.canned_responses.update_one({"id": response_id}, {"$inc": {"usage_count": 1}})
+    return await db.canned_responses.find_one({"id": response_id}, {"_id": 0})
+
+
+@api_router.post("/tickets/canned-responses/seed-defaults")
+async def seed_default_canned_responses(current_user: User = Depends(get_current_user)):
+    """Seed default canned responses"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can seed canned responses")
+    
+    existing = await db.canned_responses.count_documents({})
+    if existing > 0:
+        return {"message": "Canned responses already exist", "count": existing}
+    
+    default_responses = [
+        {
+            "name": "Acknowledge Receipt",
+            "shortcut": "/ack",
+            "content": "Thank you for submitting this ticket. I've received your request and will begin working on it shortly. I'll update you as soon as I have more information.",
+            "category": None
+        },
+        {
+            "name": "Request More Info",
+            "shortcut": "/moreinfo",
+            "content": "Thank you for your ticket. To better assist you, could you please provide the following additional information:\n\n1. \n2. \n3. \n\nThis will help us resolve your issue more quickly.",
+            "category": None
+        },
+        {
+            "name": "Password Reset Complete",
+            "shortcut": "/pwreset",
+            "content": "Your password has been reset successfully. You should receive an email with instructions to set your new password.\n\nIf you don't receive the email within 10 minutes, please check your spam folder or let me know.\n\nFor security, please change your password upon first login.",
+            "category": "it"
+        },
+        {
+            "name": "VPN Instructions",
+            "shortcut": "/vpn",
+            "content": "Your VPN access has been granted. Here's how to connect:\n\n1. Download the VPN client from [link]\n2. Install and open the application\n3. Enter your network credentials\n4. Select the appropriate server\n5. Click Connect\n\nIf you encounter any issues, please refer to our VPN troubleshooting guide or let me know.",
+            "category": "it"
+        },
+        {
+            "name": "Equipment Order Placed",
+            "shortcut": "/equipment",
+            "content": "Your equipment request has been approved and the order has been placed. Here are the details:\n\n- Item: \n- Expected delivery: \n- Delivery location: \n\nI'll notify you when the equipment arrives. Please let me know if you have any questions.",
+            "category": "it"
+        },
+        {
+            "name": "Payroll Reviewed",
+            "shortcut": "/payroll",
+            "content": "I've reviewed your payroll inquiry. Here's what I found:\n\n[Explanation of the discrepancy or confirmation]\n\nIf a correction is needed, it will be reflected in your next paycheck. Please let me know if you have any further questions.",
+            "category": "payroll"
+        },
+        {
+            "name": "Leave Balance Confirmed",
+            "shortcut": "/leave",
+            "content": "I've checked your leave balance. Here are your current balances:\n\n- Annual Leave: X days\n- Sick Leave: X days\n- Personal Leave: X days\n\nPlease note that balances are updated at the beginning of each month. Let me know if you need any clarification.",
+            "category": "hr"
+        },
+        {
+            "name": "Issue Resolved",
+            "shortcut": "/resolved",
+            "content": "Great news! The issue has been resolved. Here's a summary of what was done:\n\n[Summary of resolution]\n\nPlease test and confirm that everything is working as expected. If you encounter any further issues, feel free to reopen this ticket or create a new one.\n\nThank you for your patience!",
+            "category": None
+        },
+        {
+            "name": "Escalation Notice",
+            "shortcut": "/escalate",
+            "content": "I'm escalating this ticket to our specialized team for further investigation. They have more expertise in this area and will be able to assist you better.\n\nYou can expect an update within [timeframe]. Thank you for your patience.",
+            "category": None
+        },
+        {
+            "name": "Facilities Work Scheduled",
+            "shortcut": "/facilities",
+            "content": "Your facilities request has been reviewed and work has been scheduled.\n\n- Scheduled Date: \n- Estimated Duration: \n- Contact Person: \n\nPlease ensure the area is accessible during this time. Let me know if you need to reschedule.",
+            "category": "facilities"
+        }
+    ]
+    
+    for response_data in default_responses:
+        response = CannedResponse(**response_data)
+        await db.canned_responses.insert_one(response.model_dump())
+    
+    return {"message": f"Seeded {len(default_responses)} default canned responses"}
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
