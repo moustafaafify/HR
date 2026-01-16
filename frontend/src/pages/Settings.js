@@ -56,6 +56,10 @@ const Settings = () => {
   const [translationSearch, setTranslationSearch] = useState('');
   const [editingKey, setEditingKey] = useState(null);
   const [editedTranslations, setEditedTranslations] = useState({});
+  const [customTranslations, setCustomTranslations] = useState({});
+  const [addKeyDialogOpen, setAddKeyDialogOpen] = useState(false);
+  const [newKeyForm, setNewKeyForm] = useState({ key: '', english: '', translations: {} });
+  const [savingTranslations, setSavingTranslations] = useState(false);
 
   // Complete translations data - all available translations
   const allTranslations = {
