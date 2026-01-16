@@ -118,6 +118,48 @@ const Profile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // Handle profile picture upload
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(`${API}/employees/me/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.data.profile_picture) {
+        setEmployee(prev => ({ ...prev, profile_picture: response.data.profile_picture }));
+        toast.success('Profile picture updated successfully');
+        await refreshUser();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload profile picture');
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (photoInputRef.current) {
+        photoInputRef.current.value = '';
+      }
+    }
+  };
+
   // Fetch functions
   const fetchEmployeeData = useCallback(async () => {
     try {
