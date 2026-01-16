@@ -185,7 +185,7 @@ const InstallPWA = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl">
-                    <div className="w-10 h-10 bg-[#2D4F38] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div style={{ backgroundColor: mobileConfig.primaryColor }} className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-bold text-sm">HR</span>
                     </div>
                     <div>
@@ -196,7 +196,8 @@ const InstallPWA = () => {
                 </div>
                 <button
                   onClick={handleDismiss}
-                  className="w-full py-4 bg-[#2D4F38] text-white rounded-2xl font-semibold hover:bg-[#1a3a24] transition-colors text-lg"
+                  style={{ backgroundColor: mobileConfig.primaryColor }}
+                  className="w-full py-4 text-white rounded-2xl font-semibold hover:opacity-90 transition-colors text-lg"
                 >
                   Got it!
                 </button>
