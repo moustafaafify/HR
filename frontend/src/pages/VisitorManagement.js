@@ -167,6 +167,22 @@ const VisitorManagement = () => {
     }
   }, [token]);
   
+  const fetchHistory = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const params = new URLSearchParams();
+      if (historyFilters.start_date) params.append('start_date', historyFilters.start_date);
+      if (historyFilters.end_date) params.append('end_date', historyFilters.end_date);
+      
+      const response = await axios.get(`${API}/visitors/history?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHistory(response.data);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    }
+  }, [token, isAdmin, historyFilters]);
+  
   // Load data
   useEffect(() => {
     const loadData = async () => {
