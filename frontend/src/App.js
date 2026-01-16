@@ -53,6 +53,7 @@ import ComplianceLegal from './pages/ComplianceLegal';
 import VisitorManagement from './pages/VisitorManagement';
 import ScheduledReports from './pages/ScheduledReports';
 import Wiki from './pages/Wiki';
+import Collaborations from './pages/Collaborations';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -118,6 +119,7 @@ function AppRoutes() {
         <Route path="visitors" element={<VisitorManagement />} />
         <Route path="scheduled-reports" element={<ScheduledReports />} />
         <Route path="wiki" element={<Wiki />} />
+        <Route path="collaborations" element={<Collaborations />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
