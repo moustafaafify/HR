@@ -1,7 +1,7 @@
 # HR Platform - Product Requirements Document
 
 ## Original Problem Statement
-Create a comprehensive, full-stack HR platform that is multi-language, multi-currency, and supports a multi-corporate structure. The platform includes a wide range of HR modules (35+).
+Create a comprehensive, full-stack HR platform that is multi-language, multi-currency, and supports a multi-corporate structure.
 
 ## Tech Stack
 - **Frontend**: React with Shadcn/UI components
@@ -19,59 +19,113 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 1. **Translation Management Removal (DONE)**
    - Removed the Translation Management section from Settings.js
-   - File reduced from 2325 lines to ~1400 lines
 
 2. **Theme Color Customization (DONE)**
-   - Primary Color picker in Settings (admin only)
-   - Accent Color picker in Settings (admin only)
-   - Dark Mode toggle in Settings (admin - global default)
-   - Live preview of theme in Settings page
+   - Primary/Accent Color pickers in Settings
+   - Dark Mode toggle
+   - Live preview
 
-3. **User Dark Mode Toggle (DONE)** ✨ NEW
-   - **Desktop**: Sun/Moon icon in top header bar (right side, next to notifications)
-   - **Mobile**: Sun/Moon icon in mobile header
-   - Stored in **localStorage** - personal preference per device
-   - Respects system preference (prefers-color-scheme) by default
-   - Works for ALL users (employees, admins, etc.)
+3. **User Dark Mode Toggle (DONE)**
+   - Sun/Moon icon in top header for all users
+   - Stored in localStorage
 
-4. **CSS Variables System (DONE)**
-   - `--primary` / `--primary-light` / `--primary-dark` / `--primary-rgb`
-   - `--accent` / `--accent-light` / `--accent-dark` / `--accent-rgb`
-   - `--background` / `--foreground`
-   - `--card` / `--card-foreground`
-   - `--muted` / `--muted-foreground`
-   - `--border` / `--sidebar-bg` / `--sidebar-border`
+4. **PWA Push Notifications (DONE)** ✨ NEW
+   - **Backend:**
+     - VAPID key generation and storage
+     - Push subscription endpoints: `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/status`
+     - Test notification endpoint: `/api/push/test`
+     - Helper functions: `send_push_notification()`, `broadcast_push_notification()`
+     - Automatic expired subscription cleanup
+   - **Frontend:**
+     - `usePushNotifications` hook for subscription management
+     - Push Notifications section in Settings with:
+       - Subscribe/Unsubscribe button
+       - Test notification button
+       - 12 configurable notification triggers (admin-controlled)
+     - Service worker handles push events and notification clicks
+   - **Configurable Triggers:**
+     - Leave requests (new, approved, rejected)
+     - Tickets (assigned, updated)
+     - Expenses (approved, rejected)
+     - Announcements
+     - Payroll processed
+     - Training reminders
+     - Birthday reminders
+     - Performance reviews due
 
 ---
 
-## How Dark Mode Works
+## Push Notification Triggers (Admin Configurable)
 
-### For Employees (Regular Users)
-1. Look for the **Moon icon** (☽) in the top-right header
-2. Click to toggle between light and dark modes
-3. Preference is saved locally and persists across sessions
+| Trigger Key | Description |
+|-------------|-------------|
+| `leave_request_new` | New leave requests submitted |
+| `leave_request_approved` | Leave requests approved |
+| `leave_request_rejected` | Leave requests rejected |
+| `ticket_assigned` | Tickets assigned to user |
+| `ticket_updated` | Ticket updates |
+| `expense_approved` | Expenses approved |
+| `expense_rejected` | Expenses rejected |
+| `announcement_new` | Company announcements |
+| `payroll_processed` | Payroll processing complete |
+| `training_reminder` | Training session reminders |
+| `birthday_reminder` | Team birthday notifications |
+| `performance_review_due` | Performance review deadlines |
 
-### For Admins
-1. Can set **global default** in Settings > Theme Customization
-2. Individual users can override with their local toggle
+---
+
+## Key API Endpoints (New)
+
+### Push Notifications
+- `GET /api/push/vapid-public-key` - Get VAPID public key
+- `POST /api/push/subscribe` - Subscribe to push notifications
+- `POST /api/push/unsubscribe` - Unsubscribe from push notifications
+- `GET /api/push/status` - Check subscription status
+- `POST /api/push/test` - Send test notification
+
+---
+
+## Database Schema (New)
+
+### push_subscriptions Collection
+```json
+{
+  "id": "uuid",
+  "user_id": "string",
+  "endpoint": "string",
+  "p256dh": "string",
+  "auth": "string",
+  "is_active": true,
+  "created_at": "ISO datetime"
+}
+```
+
+---
+
+## Environment Variables (New)
+```
+VAPID_PUBLIC_KEY="BJylUq5TSUWVeOevAI0VP2u1fHrQaaNdT2Xcn2EyCc4evNpMb9BdbLgUUESYN-DeC_sTqgL3C-VVSbc7F4q2heQ"
+VAPID_PRIVATE_KEY="MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0waw..."
+VAPID_SUBJECT="mailto:admin@hrplatform.com"
+```
 
 ---
 
 ## Prioritized Backlog
 
 ### P0 - Critical
-- [ ] Comprehensive E2E Testing - Full regression test across all modules
-- [ ] Full Dark Mode Support - Apply CSS variables to all dashboard cards
+- [ ] Comprehensive E2E Testing
+- [ ] Integrate push notifications into actual leave/expense/ticket workflows
 
 ### P1 - High Priority
-- [ ] PWA Push Notifications
+- [ ] Real Device PWA Testing
 - [ ] Scheduled Report Delivery
 - [ ] Audit Trail for Security Events
 
 ### P2 - Medium Priority
 - [ ] Refactor Large Components
 - [ ] PWA Offline Mode
-- [ ] Export Translations
+- [ ] Full Dark Mode Support for all pages
 
 ---
 
@@ -82,8 +136,9 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 ---
 
 ## Files Modified This Session
-- `frontend/src/pages/Settings.js` - Theme Customization section
-- `frontend/src/contexts/BrandingContext.js` - Theme color management
-- `frontend/src/components/Layout.js` - Added dark mode toggle to header
-- `frontend/src/pages/Login.js` - CSS variables support
-- `backend/server.py` - Theme fields in Settings model
+- `backend/server.py` - Added push notification endpoints and helper functions
+- `backend/.env` - Added VAPID keys
+- `frontend/src/pages/Settings.js` - Added Push Notifications section
+- `frontend/src/hooks/usePushNotifications.js` - NEW hook for push management
+- `frontend/src/components/Layout.js` - Dark mode toggle in header
+- `frontend/public/service-worker.js` - Already had push handlers
