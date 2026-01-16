@@ -1184,7 +1184,7 @@ const Travel = () => {
                             <p className="text-slate-500">to {new Date(request.return_date).toLocaleDateString()}</p>
                           </td>
                           <td className="py-3 px-4 font-medium">
-                            ${request.total_estimated_cost?.toLocaleString()}
+                            {formatCurrency(request.total_estimated_cost)}
                           </td>
                           <td className="py-3 px-4">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
