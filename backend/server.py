@@ -824,6 +824,11 @@ class Settings(BaseModel):
     currency: str = "USD"
     enabled_currencies: List[str] = Field(default_factory=lambda: ["USD"])
     exchange_rates: Dict[str, float] = Field(default_factory=lambda: {"USD": 1.0})
+    # Branding settings
+    app_name: str = "HR Portal"
+    logo_url: Optional[str] = None
+    favicon_url: Optional[str] = None
+    # Integration settings
     smtp: Optional[SmtpSettings] = Field(default_factory=SmtpSettings)
     sms: Optional[SmsSettings] = Field(default_factory=SmsSettings)
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
