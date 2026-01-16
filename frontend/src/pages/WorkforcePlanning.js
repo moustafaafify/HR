@@ -1272,12 +1272,12 @@ const WorkforcePlanning = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
-                <Select value={headcountForm.department_id} onValueChange={(v) => setHeadcountForm({ ...headcountForm, department_id: v })}>
+                <Select value={headcountForm.department_id || "all"} onValueChange={(v) => setHeadcountForm({ ...headcountForm, department_id: v === "all" ? "" : v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="All Departments" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {departments.map(d => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
