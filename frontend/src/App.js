@@ -121,6 +121,7 @@ function App() {
           <BrowserRouter>
             <AppRoutes />
             <Toaster position="top-right" />
+            <InstallPWA />
           </BrowserRouter>
         </CurrencyProvider>
       </LanguageProvider>
