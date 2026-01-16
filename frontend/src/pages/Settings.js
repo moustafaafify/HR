@@ -19,9 +19,21 @@ const Settings = () => {
   const { t, refreshSettings } = useLanguage();
   const { refreshSettings: refreshCurrencySettings } = useCurrency();
   const { refreshBranding } = useBranding();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
   const faviconInputRef = useRef(null);
+  
+  // Push notifications hook
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushSubscribed,
+    isLoading: pushLoading,
+    permission: pushPermission,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush,
+    sendTestNotification
+  } = usePushNotifications(token);
   
   const [settings, setSettings] = useState({
     language_1: 'en',
