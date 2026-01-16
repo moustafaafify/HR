@@ -1239,6 +1239,48 @@ async def create_employee(data: Dict[str, Any], current_user: User = Depends(get
     await db.employees.insert_one(emp.model_dump())
     return emp
 
+@api_router.get("/employees/me")
+async def get_my_employee_profile(current_user: User = Depends(get_current_user)):
+    """Get current user's employee profile"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        # Return basic user info if no employee record
+        return {
+            "id": current_user.id,
+            "user_id": current_user.id,
+            "full_name": current_user.full_name,
+            "email": current_user.email,
+            "work_email": current_user.email
+        }
+    return employee
+
+@api_router.put("/employees/me")
+async def update_my_employee_profile(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update current user's employee profile"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee profile not found")
+    
+    # Fields that employees can update themselves
+    allowed_fields = [
+        'first_name', 'last_name', 'phone', 'personal_email', 'date_of_birth',
+        'gender', 'marital_status', 'nationality', 'bio',
+        'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country',
+        'emergency_contact_name', 'emergency_contact_relationship', 
+        'emergency_contact_phone', 'emergency_contact_email',
+        'linkedin_url', 'twitter_url', 'github_url', 'profile_picture'
+    ]
+    
+    update_data = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    if 'first_name' in update_data and 'last_name' in update_data:
+        update_data['full_name'] = f"{update_data['first_name']} {update_data['last_name']}"
+    
+    if update_data:
+        await db.employees.update_one({"user_id": current_user.id}, {"$set": update_data})
+    
+    return await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+
 @api_router.get("/employees", response_model=List[Employee])
 async def get_employees(branch_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
     query = {"branch_id": branch_id} if branch_id else {}
