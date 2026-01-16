@@ -13,6 +13,48 @@ Build a full-stack HR platform with:
 
 ## Latest Updates (Jan 16, 2026)
 
+### Roles & Permissions Enhancement (COMPLETED)
+**What was implemented:**
+- **Backend API fixes:**
+  - Fixed route ordering issue where `/api/roles/stats` was incorrectly matched as `/api/roles/{role_id}`
+  - Added missing `/api/users` endpoint for admin to fetch all users
+  - All role CRUD operations working (create, read, update, delete, duplicate)
+  - User role assignment and removal working
+  - 72 granular permissions across 15 categories
+  
+- **Frontend UI** at `/settings/roles`:
+  - **Stats Cards**: Total Roles, System Roles, Custom Roles, Permissions count
+  - **3 Tabs**:
+    1. **Roles Tab** - List of roles with details panel showing permissions and assigned users
+    2. **Permission Matrix Tab** - Visual matrix showing permissions vs roles
+    3. **User Assignments Tab** - All users with role selection dropdowns
+  - Create/Edit/Duplicate/Delete roles
+  - Assign users to roles
+  - Search and filter functionality
+
+**Backend APIs:**
+- `/api/permissions` - Get all 72 available permissions
+- `/api/permissions/categories` - Get permissions grouped by 15 categories
+- `/api/roles` - CRUD operations for roles
+- `/api/roles/stats` - Role statistics (total, system, custom roles)
+- `/api/roles/{role_id}/users` - Get users assigned to a role
+- `/api/roles/{role_id}/assign` - Assign role to user
+- `/api/roles/{role_id}/remove` - Remove role from user
+- `/api/roles/duplicate/{role_id}` - Duplicate a role
+- `/api/roles/initialize-defaults` - Initialize default system roles
+- `/api/users` - Get all users (admin only)
+
+### Employee Form Enhancement (COMPLETED)
+**What was implemented:**
+- Switched from simple employee form to comprehensive **6-tab employee form**
+- **Tab 1 - Personal**: Full name, Employee ID, emails, addresses, phones, emergency contact, demographics (DOB, gender, marital status, SSN)
+- **Tab 2 - Employment**: Job title, role, corporation, branch, department, division, work location, reporting manager, hire date, employment status, probation end date
+- **Tab 3 - Payroll**: Bank details (name, account, routing number), tax code, salary, currency, benefits enrolled
+- **Tab 4 - Time & Leave**: Holiday allowance, sick leave allowance, working hours, shift pattern
+- **Tab 5 - Talent**: Certifications, professional memberships, skills, performance notes
+- **Tab 6 - Compliance**: Visa status, passport number, right to work verification, DBS check status
+- Employee list now shows: Employee ID, Name, Job Title, Role, Manager, Email, Portal Access, Status
+
 ### Enhanced Reporting Dashboard (COMPLETED)
 **What was implemented:**
 - **Comprehensive analytics dashboard** at `/reports`
