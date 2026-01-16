@@ -987,12 +987,12 @@ const WorkforcePlanning = () => {
                     <SelectItem value="2026">2026</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={filters.department} onValueChange={(v) => setFilters({ ...filters, department: v })}>
+                <Select value={filters.department || "all"} onValueChange={(v) => setFilters({ ...filters, department: v === "all" ? "" : v })}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="All Departments" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {departments.map(d => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
@@ -1071,12 +1071,12 @@ const WorkforcePlanning = () => {
           <div className="bg-white rounded-2xl border border-slate-200">
             <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <Select value={filters.department} onValueChange={(v) => setFilters({ ...filters, department: v })}>
+                <Select value={filters.department || "all"} onValueChange={(v) => setFilters({ ...filters, department: v === "all" ? "" : v })}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="All Departments" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {departments.map(d => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
