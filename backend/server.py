@@ -1069,6 +1069,35 @@ async def login(data: LoginRequest):
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+@api_router.post("/auth/change-password")
+async def change_password(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Change user's password"""
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    
+    if not current_password or not new_password:
+        raise HTTPException(status_code=400, detail="Both current and new password required")
+    
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Get user from database
+    user = await db.users.find_one({"id": current_user.id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify current password
+    if not bcrypt.checkpw(current_password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Hash new password
+    new_password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    # Update password
+    await db.users.update_one({"id": current_user.id}, {"$set": {"password_hash": new_password_hash}})
+    
+    return {"message": "Password changed successfully"}
+
 # ============= SETTINGS ROUTES =============
 
 @api_router.get("/settings", response_model=Settings)
