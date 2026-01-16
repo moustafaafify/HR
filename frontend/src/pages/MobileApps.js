@@ -73,18 +73,50 @@ const MobileApps = () => {
     logoUrl: '',
     splashColor: '#2D4F38',
     enabledModules: {
+      // Core
       dashboard: true,
+      profile: true,
+      notifications: true,
+      // Organization
+      corporations: true,
+      branches: true,
+      departments: true,
+      divisions: true,
+      orgChart: true,
+      // People
       employees: true,
+      recruitment: true,
+      onboarding: true,
+      offboarding: true,
+      // Time & Attendance
       leaves: true,
       attendance: true,
+      timesheets: true,
+      overtime: true,
+      teamCalendar: true,
+      // Finance
       payroll: true,
       expenses: true,
-      tickets: true,
-      notifications: true,
-      training: true,
       benefits: true,
+      // Performance & Development
+      performance: true,
+      appraisals: true,
+      training: true,
+      skills: true,
+      successionPlanning: true,
+      recognition: true,
+      // Operations
+      projects: true,
+      assets: true,
       documents: true,
-      profile: true
+      travel: true,
+      // Support & Communication
+      tickets: true,
+      complaints: true,
+      communications: true,
+      disciplinary: true,
+      // Reports
+      reports: true
     },
     pushNotifications: {
       enabled: true,
