@@ -723,7 +723,7 @@ const Tickets = () => {
                           <div className="flex items-center gap-4 mt-2 text-xs text-stone-500">
                             <span className="flex items-center gap-1"><User size={12} />{ticket.requester_name}</span>
                             <span className="flex items-center gap-1"><Clock size={12} />{formatRelativeTime(ticket.created_at)}</span>
-                            {ticket.assigned_to_name && <span className="flex items-center gap-1"><UserPlus size={12} />{ticket.assigned_to_name}</span>}
+                            {ticket.assigned_to_name && <span className="flex items-center gap-1"><UserPlus size={12} />{ticket.assigned_to_name}{ticket.assigned_to_role && <span className="text-stone-400">({ticket.assigned_to_role})</span>}</span>}
                           </div>
                         </div>
                       </div>
