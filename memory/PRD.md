@@ -218,13 +218,14 @@ A comprehensive visitor management system for tracking guests:
 - `frontend/src/pages/Analytics.js` - HR Analytics Dashboard
 - `frontend/src/pages/WorkforcePlanning.js` - Workforce Planning Module
 - `frontend/src/pages/ComplianceLegal.js` - Compliance & Legal Module
+- `frontend/src/pages/VisitorManagement.js` - Visitor Management Module
 - `frontend/src/hooks/usePushNotifications.js` - Push notification hook
 
 ### Modified Files
-- `backend/server.py` - Analytics endpoints, push notification endpoints, workforce planning endpoints, compliance & legal endpoints
+- `backend/server.py` - Analytics endpoints, push notification endpoints, workforce planning endpoints, compliance & legal endpoints, visitor management endpoints
 - `backend/.env` - VAPID keys
-- `frontend/src/App.js` - Analytics route, Workforce Planning route, Compliance route
-- `frontend/src/components/Layout.js` - Analytics nav item, Workforce Planning nav item, Compliance nav item, Shield icon import
+- `frontend/src/App.js` - Analytics route, Workforce Planning route, Compliance route, Visitors route
+- `frontend/src/components/Layout.js` - Analytics nav item, Workforce Planning nav item, Compliance nav item, Visitors nav item
 - `frontend/src/pages/Settings.js` - Push notifications section
 - `frontend/src/contexts/BrandingContext.js` - Theme management
 
