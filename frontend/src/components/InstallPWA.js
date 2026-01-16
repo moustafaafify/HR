@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Smartphone, Share } from 'lucide-react';
+import axios from 'axios';
 
-// Try to import mobile config, but don't fail if not available
-let useMobileConfig;
-try {
-  useMobileConfig = require('../contexts/MobileConfigContext').useMobileConfig;
-} catch (e) {
-  useMobileConfig = null;
-}
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const InstallPWA = () => {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -15,19 +10,31 @@ const InstallPWA = () => {
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  
-  // Get mobile config if available
-  let mobileConfig = { primaryColor: '#2D4F38', secondaryColor: '#4F7942', appName: 'HR Portal' };
-  try {
-    if (useMobileConfig) {
-      const configContext = useMobileConfig();
-      if (configContext?.config) {
-        mobileConfig = configContext.config;
+  const [mobileConfig, setMobileConfig] = useState({
+    primaryColor: '#2D4F38',
+    secondaryColor: '#4F7942',
+    appName: 'HR Portal'
+  });
+
+  // Fetch mobile config on mount
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/settings/mobile`);
+        if (response.data) {
+          setMobileConfig(prev => ({
+            ...prev,
+            primaryColor: response.data.primaryColor || prev.primaryColor,
+            secondaryColor: response.data.secondaryColor || prev.secondaryColor,
+            appName: response.data.appName || prev.appName
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch mobile config:', error);
       }
-    }
-  } catch (e) {
-    // Context not available, use defaults
-  }
+    };
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     // Check if already installed (standalone mode)
