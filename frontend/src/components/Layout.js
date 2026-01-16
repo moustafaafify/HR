@@ -284,6 +284,14 @@ const Layout = () => {
           { path: '/settings', icon: SettingsIcon, label: 'Settings' },
         ] : []),
       ]
+    },
+    {
+      id: 'compliance',
+      label: 'Compliance',
+      icon: Shield,
+      items: [
+        { path: '/compliance', icon: Shield, label: isAdmin ? 'Compliance & Legal' : 'My Compliance' },
+      ]
     }
   ];
 
