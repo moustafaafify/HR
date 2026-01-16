@@ -13,6 +13,40 @@ Build a full-stack HR platform with:
 
 ## Latest Updates (Jan 16, 2026)
 
+### Dynamic Currency Display (COMPLETED - This Session)
+**Problem:** Currency symbols were hardcoded as '$' throughout the application, ignoring the user's currency selection in Settings.
+
+**Solution:**
+- Added `useCurrency()` hook from `CurrencyContext` to affected pages
+- Replaced all hardcoded '$' symbols with `formatCurrency()` function
+- Currency now dynamically changes based on Settings selection
+
+**Files Updated:**
+- `Travel.js` - Budget displays, cost breakdowns
+- `Assets.js` - Total asset value
+- `Reports.js` - Expense amounts in stats and exports
+- `Recruitment.js` - Salary displays
+- `Payroll.js` - Replaced local formatCurrency with global context
+
+**Testing:** Verified currency changes from USD ($) to EUR (€) across all updated pages.
+
+### Translation Management Section (COMPLETED - This Session)
+**Problem:** Admin needed a way to view and manage translations for all supported languages.
+
+**Solution:** Added new "Translation Management" section in Settings page with:
+- **Language Selector:** Choose from 6 available languages (Spanish, French, Arabic, German, Chinese)
+- **Search Functionality:** Filter translations by key, English text, or translated text
+- **Translation Table:** Shows Key, English (Base), and Target Language columns
+- **Status Indicators:** Green dot for translated, amber for missing
+- **Statistics Dashboard:** Shows Translated count, Missing count, Total Languages, Total Keys
+- **98 translation keys** covering all HR platform terminology
+
+**Features:**
+- Real-time search filtering
+- Dynamic language switching
+- Visual translation coverage indicators
+- Base language is always English for comparison
+
 ### Roles & Permissions Enhancement (COMPLETED)
 **What was implemented:**
 - **Backend API fixes:**
