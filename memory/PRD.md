@@ -13,7 +13,7 @@ Build a full-stack HR platform with:
 
 ## Latest Updates (Jan 16, 2026)
 
-### Enhanced Reporting Dashboard (NEW)
+### Enhanced Reporting Dashboard (COMPLETED)
 **What was implemented:**
 - **Comprehensive analytics dashboard** at `/reports`
 - **7 Report tabs:**
@@ -28,7 +28,10 @@ Build a full-stack HR platform with:
   - Bar charts for trends and distributions
   - Donut charts for categorical breakdowns
 - **Stats cards** with trend indicators
-- **Refresh and Export buttons**
+- **Export functionality:**
+  - **Export to CSV** - Tab-specific data download
+  - **Export to PDF** - Print dialog with formatted report
+  - **Export All Data** - Complete organization report (CSV)
 - **Admin-only access** in sidebar under Core section
 
 **Backend APIs:**
