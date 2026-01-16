@@ -658,11 +658,11 @@ const Reports = () => {
                 <div class="stat-label">Total Claims</div>
               </div>
               <div class="stat-card">
-                <div class="stat-value">$${expenseData?.total_amount?.toLocaleString() || 0}</div>
+                <div class="stat-value">${formatCurrency(expenseData?.total_amount || 0)}</div>
                 <div class="stat-label">Total Amount</div>
               </div>
               <div class="stat-card">
-                <div class="stat-value">$${expenseData?.approved_amount?.toLocaleString() || 0}</div>
+                <div class="stat-value">${formatCurrency(expenseData?.approved_amount || 0)}</div>
                 <div class="stat-label">Approved</div>
               </div>
               <div class="stat-card">
@@ -673,7 +673,7 @@ const Reports = () => {
             <h2>By Category</h2>
             <table>
               <tr><th>Category</th><th>Count</th><th>Amount</th></tr>
-              ${expenseData?.by_category?.map((d, i) => `<tr><td>${d.name}</td><td>${d.value}</td><td>$${expenseData?.amount_by_category?.[i]?.value || 0}</td></tr>`).join('') || ''}
+              ${expenseData?.by_category?.map((d, i) => `<tr><td>${d.name}</td><td>${d.value}</td><td>${formatCurrency(expenseData?.amount_by_category?.[i]?.value || 0)}</td></tr>`).join('') || ''}
             </table>
           </div>
         `;
