@@ -808,6 +808,9 @@ const VisitorManagement = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => openViewVisitor(visitor)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => handlePrintBadge(visitor.id)}>
                           <Printer className="w-4 h-4" />
                         </Button>
@@ -822,6 +825,84 @@ const VisitorManagement = () => {
                 <div className="text-center py-12">
                   <Building2 className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
                   <p className="text-slate-500 dark:text-slate-400">No visitors currently on site</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
+        
+        {/* History Tab (Admin only) */}
+        {isAdmin && (
+          <TabsContent value="history" className="mt-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 className="font-semibold text-slate-900 dark:text-white">Visitor History</h3>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={historyFilters.start_date}
+                    onChange={(e) => setHistoryFilters({ ...historyFilters, start_date: e.target.value })}
+                    className="w-[140px] bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
+                  />
+                  <span className="text-slate-400">to</span>
+                  <Input
+                    type="date"
+                    value={historyFilters.end_date}
+                    onChange={(e) => setHistoryFilters({ ...historyFilters, end_date: e.target.value })}
+                    className="w-[140px] bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
+                  />
+                  <Button variant="outline" onClick={fetchHistory} size="sm">
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              {history.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left border-b border-slate-200 dark:border-slate-700">
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Visitor</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Company</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Host</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Date</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Check In</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Check Out</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Status</th>
+                        <th className="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {history.map((visitor) => (
+                        <tr key={visitor.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                          <td className="py-3">
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {visitor.first_name} {visitor.last_name}
+                            </p>
+                          </td>
+                          <td className="py-3 text-sm text-slate-600 dark:text-slate-400">{visitor.company || '-'}</td>
+                          <td className="py-3 text-sm text-slate-600 dark:text-slate-400">{visitor.host_name || '-'}</td>
+                          <td className="py-3 text-sm text-slate-600 dark:text-slate-400">{formatDate(visitor.expected_date)}</td>
+                          <td className="py-3 text-sm text-slate-600 dark:text-slate-400">{formatTime(visitor.check_in_time) || '-'}</td>
+                          <td className="py-3 text-sm text-slate-600 dark:text-slate-400">{formatTime(visitor.check_out_time) || '-'}</td>
+                          <td className="py-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(visitor.status)}`}>
+                              {visitor.status?.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <Button size="sm" variant="ghost" onClick={() => openViewVisitor(visitor)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Clock className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                  <p className="text-slate-500 dark:text-slate-400">No visitor history found for selected period</p>
                 </div>
               )}
             </div>
