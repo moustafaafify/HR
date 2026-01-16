@@ -11421,6 +11421,655 @@ async def get_project_analytics(project_id: str, current_user: User = Depends(ge
         "budget_utilization": round((total_spent / project.get("budget", 1) * 100) if project.get("budget") else 0)
     }
 
+# ============= BENEFITS MODELS =============
+
+class BenefitPlan(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    
+    # Plan type
+    category: str  # health, dental, vision, life, disability, retirement, wellness, other
+    plan_type: str  # individual, family, employee_only, employee_spouse, employee_children
+    
+    # Provider info
+    provider_name: Optional[str] = None
+    provider_contact: Optional[str] = None
+    provider_website: Optional[str] = None
+    
+    # Costs
+    employee_cost_monthly: float = 0
+    employer_cost_monthly: float = 0
+    deductible: float = 0
+    out_of_pocket_max: float = 0
+    
+    # Coverage
+    coverage_amount: Optional[float] = None
+    coverage_details: Optional[str] = None
+    
+    # Eligibility
+    eligibility_rules: Optional[str] = None  # e.g., "full-time employees after 30 days"
+    waiting_period_days: int = 0
+    eligible_employee_types: List[str] = Field(default_factory=lambda: ["full_time"])
+    
+    # Enrollment
+    enrollment_start: Optional[str] = None
+    enrollment_end: Optional[str] = None
+    is_open_enrollment: bool = False
+    
+    # Status
+    is_active: bool = True
+    
+    # Metadata
+    corporation_id: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class BenefitEnrollment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    employee_name: Optional[str] = None
+    plan_id: str
+    plan_name: Optional[str] = None
+    plan_category: Optional[str] = None
+    
+    # Coverage
+    coverage_type: str  # individual, family, employee_spouse, employee_children
+    coverage_start_date: str
+    coverage_end_date: Optional[str] = None
+    
+    # Dependents covered
+    dependents: List[Dict[str, Any]] = Field(default_factory=list)  # [{name, relationship, dob}]
+    
+    # Beneficiaries (for life insurance)
+    beneficiaries: List[Dict[str, Any]] = Field(default_factory=list)  # [{name, relationship, percentage}]
+    
+    # Cost
+    employee_contribution: float = 0
+    employer_contribution: float = 0
+    
+    # Status
+    status: str = "active"  # pending, active, terminated, on_hold
+    termination_date: Optional[str] = None
+    termination_reason: Optional[str] = None
+    
+    # Metadata
+    enrolled_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class BenefitClaim(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    enrollment_id: str
+    employee_id: str
+    employee_name: Optional[str] = None
+    plan_id: str
+    plan_name: Optional[str] = None
+    
+    # Claim details
+    claim_type: str  # medical, dental, vision, prescription, wellness
+    claim_date: str
+    service_date: str
+    provider_name: Optional[str] = None
+    description: Optional[str] = None
+    
+    # Amounts
+    claim_amount: float
+    covered_amount: float = 0
+    employee_responsibility: float = 0
+    
+    # Status
+    status: str = "submitted"  # submitted, under_review, approved, denied, paid
+    denial_reason: Optional[str] = None
+    
+    # Processing
+    processed_date: Optional[str] = None
+    payment_date: Optional[str] = None
+    
+    # Documents
+    receipt_url: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# ============= BENEFITS API ENDPOINTS =============
+
+@api_router.get("/benefits/stats")
+async def get_benefits_stats(current_user: User = Depends(get_current_user)):
+    """Get benefits statistics"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    plans = await db.benefit_plans.find({"is_active": True}, {"_id": 0}).to_list(100)
+    
+    if is_admin:
+        enrollments = await db.benefit_enrollments.find({"status": "active"}, {"_id": 0}).to_list(5000)
+        claims = await db.benefit_claims.find({}, {"_id": 0}).to_list(5000)
+    else:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return {"total_plans": len(plans), "my_enrollments": 0}
+        enrollments = await db.benefit_enrollments.find({"employee_id": employee["id"], "status": "active"}, {"_id": 0}).to_list(100)
+        claims = await db.benefit_claims.find({"employee_id": employee["id"]}, {"_id": 0}).to_list(500)
+    
+    # Stats by category
+    by_category = {}
+    for plan in plans:
+        cat = plan.get("category", "other")
+        if cat not in by_category:
+            by_category[cat] = 0
+        by_category[cat] += 1
+    
+    # Enrollment stats
+    total_employee_cost = sum(e.get("employee_contribution", 0) for e in enrollments)
+    total_employer_cost = sum(e.get("employer_contribution", 0) for e in enrollments)
+    
+    # Claims stats
+    total_claims = len(claims)
+    pending_claims = len([c for c in claims if c.get("status") in ["submitted", "under_review"]])
+    total_claim_amount = sum(c.get("claim_amount", 0) for c in claims)
+    
+    return {
+        "total_plans": len(plans),
+        "active_enrollments": len(enrollments),
+        "plans_by_category": by_category,
+        "total_employee_cost_monthly": round(total_employee_cost, 2),
+        "total_employer_cost_monthly": round(total_employer_cost, 2),
+        "total_claims": total_claims,
+        "pending_claims": pending_claims,
+        "total_claim_amount": round(total_claim_amount, 2)
+    }
+
+
+@api_router.get("/benefits/plans")
+async def get_benefit_plans(
+    category: Optional[str] = None,
+    is_active: Optional[bool] = True,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all benefit plans"""
+    query = {}
+    if is_active is not None:
+        query["is_active"] = is_active
+    if category:
+        query["category"] = category
+    
+    plans = await db.benefit_plans.find(query, {"_id": 0}).sort("category", 1).to_list(100)
+    return plans
+
+
+@api_router.get("/benefits/plans/{plan_id}")
+async def get_benefit_plan(plan_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific benefit plan"""
+    plan = await db.benefit_plans.find_one({"id": plan_id}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Get enrollment count
+    enrollment_count = await db.benefit_enrollments.count_documents({"plan_id": plan_id, "status": "active"})
+    plan["enrollment_count"] = enrollment_count
+    
+    return plan
+
+
+@api_router.post("/benefits/plans")
+async def create_benefit_plan(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new benefit plan"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create benefit plans")
+    
+    plan = BenefitPlan(**data)
+    await db.benefit_plans.insert_one(plan.model_dump())
+    return plan.model_dump()
+
+
+@api_router.put("/benefits/plans/{plan_id}")
+async def update_benefit_plan(plan_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a benefit plan"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update benefit plans")
+    
+    plan = await db.benefit_plans.find_one({"id": plan_id}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.benefit_plans.update_one({"id": plan_id}, {"$set": data})
+    return await db.benefit_plans.find_one({"id": plan_id}, {"_id": 0})
+
+
+@api_router.delete("/benefits/plans/{plan_id}")
+async def delete_benefit_plan(plan_id: str, current_user: User = Depends(get_current_user)):
+    """Deactivate a benefit plan"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete benefit plans")
+    
+    # Check for active enrollments
+    active_enrollments = await db.benefit_enrollments.count_documents({"plan_id": plan_id, "status": "active"})
+    if active_enrollments > 0:
+        # Soft delete - just deactivate
+        await db.benefit_plans.update_one({"id": plan_id}, {"$set": {"is_active": False}})
+        return {"message": "Plan deactivated (has active enrollments)"}
+    
+    await db.benefit_plans.delete_one({"id": plan_id})
+    return {"message": "Plan deleted"}
+
+
+# Enrollments
+
+@api_router.get("/benefits/enrollments")
+async def get_benefit_enrollments(
+    status: Optional[str] = None,
+    plan_id: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get benefit enrollments"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    query = {}
+    
+    if not is_admin:
+        # Employees can only see their own enrollments
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        query["employee_id"] = employee["id"]
+    elif employee_id:
+        query["employee_id"] = employee_id
+    
+    if status:
+        query["status"] = status
+    if plan_id:
+        query["plan_id"] = plan_id
+    
+    enrollments = await db.benefit_enrollments.find(query, {"_id": 0}).sort("enrolled_at", -1).to_list(1000)
+    return enrollments
+
+
+@api_router.get("/benefits/enrollments/my")
+async def get_my_enrollments(current_user: User = Depends(get_current_user)):
+    """Get current user's enrollments"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        return []
+    
+    enrollments = await db.benefit_enrollments.find(
+        {"employee_id": employee["id"]}, 
+        {"_id": 0}
+    ).sort("enrolled_at", -1).to_list(100)
+    
+    # Enrich with plan details
+    for enrollment in enrollments:
+        plan = await db.benefit_plans.find_one({"id": enrollment["plan_id"]}, {"_id": 0})
+        if plan:
+            enrollment["plan"] = plan
+    
+    return enrollments
+
+
+@api_router.post("/benefits/enrollments")
+async def create_enrollment(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Enroll in a benefit plan"""
+    plan = await db.benefit_plans.find_one({"id": data.get("plan_id")}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    if not plan.get("is_active"):
+        raise HTTPException(status_code=400, detail="Plan is not active")
+    
+    # Determine employee
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    if is_admin and data.get("employee_id"):
+        employee = await db.employees.find_one({"id": data["employee_id"]}, {"_id": 0})
+    else:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Check if already enrolled in same plan
+    existing = await db.benefit_enrollments.find_one({
+        "employee_id": employee["id"],
+        "plan_id": plan["id"],
+        "status": "active"
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Already enrolled in this plan")
+    
+    enrollment_data = {
+        **data,
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "plan_name": plan.get("name"),
+        "plan_category": plan.get("category"),
+        "employee_contribution": plan.get("employee_cost_monthly", 0),
+        "employer_contribution": plan.get("employer_cost_monthly", 0),
+        "status": "active" if is_admin else "pending"
+    }
+    
+    enrollment = BenefitEnrollment(**enrollment_data)
+    await db.benefit_enrollments.insert_one(enrollment.model_dump())
+    return enrollment.model_dump()
+
+
+@api_router.put("/benefits/enrollments/{enrollment_id}")
+async def update_enrollment(enrollment_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an enrollment"""
+    enrollment = await db.benefit_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or enrollment["employee_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.benefit_enrollments.update_one({"id": enrollment_id}, {"$set": data})
+    return await db.benefit_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+
+
+@api_router.post("/benefits/enrollments/{enrollment_id}/approve")
+async def approve_enrollment(enrollment_id: str, current_user: User = Depends(get_current_user)):
+    """Approve a pending enrollment"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can approve enrollments")
+    
+    await db.benefit_enrollments.update_one(
+        {"id": enrollment_id},
+        {"$set": {"status": "active", "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Enrollment approved"}
+
+
+@api_router.post("/benefits/enrollments/{enrollment_id}/terminate")
+async def terminate_enrollment(enrollment_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Terminate an enrollment"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can terminate enrollments")
+    
+    await db.benefit_enrollments.update_one(
+        {"id": enrollment_id},
+        {"$set": {
+            "status": "terminated",
+            "termination_date": data.get("termination_date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+            "termination_reason": data.get("reason"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    return {"message": "Enrollment terminated"}
+
+
+# Claims
+
+@api_router.get("/benefits/claims")
+async def get_benefit_claims(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get benefit claims"""
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    query = {}
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee:
+            return []
+        query["employee_id"] = employee["id"]
+    
+    if status:
+        query["status"] = status
+    
+    claims = await db.benefit_claims.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return claims
+
+
+@api_router.post("/benefits/claims")
+async def submit_claim(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Submit a benefit claim"""
+    employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Verify enrollment
+    enrollment = await db.benefit_enrollments.find_one({"id": data.get("enrollment_id"), "status": "active"}, {"_id": 0})
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Active enrollment not found")
+    
+    if enrollment["employee_id"] != employee["id"]:
+        raise HTTPException(status_code=403, detail="Not your enrollment")
+    
+    plan = await db.benefit_plans.find_one({"id": enrollment["plan_id"]}, {"_id": 0})
+    
+    claim_data = {
+        **data,
+        "employee_id": employee["id"],
+        "employee_name": employee.get("full_name"),
+        "plan_id": enrollment["plan_id"],
+        "plan_name": plan.get("name") if plan else None,
+        "status": "submitted"
+    }
+    
+    claim = BenefitClaim(**claim_data)
+    await db.benefit_claims.insert_one(claim.model_dump())
+    return claim.model_dump()
+
+
+@api_router.put("/benefits/claims/{claim_id}")
+async def update_claim(claim_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a claim (admin: process, employee: edit pending)"""
+    claim = await db.benefit_claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or claim["employee_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if claim["status"] != "submitted":
+            raise HTTPException(status_code=400, detail="Can only edit submitted claims")
+    
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # If admin is approving/denying
+    if is_admin and "status" in data:
+        if data["status"] == "approved":
+            data["processed_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        elif data["status"] == "denied":
+            data["processed_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        elif data["status"] == "paid":
+            data["payment_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    await db.benefit_claims.update_one({"id": claim_id}, {"$set": data})
+    return await db.benefit_claims.find_one({"id": claim_id}, {"_id": 0})
+
+
+@api_router.delete("/benefits/claims/{claim_id}")
+async def delete_claim(claim_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a submitted claim"""
+    claim = await db.benefit_claims.find_one({"id": claim_id}, {"_id": 0})
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    
+    is_admin = current_user.role in ["super_admin", "corp_admin"]
+    if not is_admin:
+        employee = await db.employees.find_one({"user_id": current_user.id}, {"_id": 0})
+        if not employee or claim["employee_id"] != employee["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if claim["status"] != "submitted":
+            raise HTTPException(status_code=400, detail="Can only delete submitted claims")
+    
+    await db.benefit_claims.delete_one({"id": claim_id})
+    return {"message": "Claim deleted"}
+
+
+# Seed default benefit plans
+@api_router.post("/benefits/seed-defaults")
+async def seed_default_benefits(current_user: User = Depends(get_current_user)):
+    """Seed default benefit plans"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can seed benefits")
+    
+    # Check if plans already exist
+    existing = await db.benefit_plans.count_documents({})
+    if existing > 0:
+        return {"message": "Benefits already seeded", "count": existing}
+    
+    default_plans = [
+        {
+            "name": "Basic Health Insurance",
+            "description": "Comprehensive health coverage including preventive care, hospitalization, and prescription drugs",
+            "category": "health",
+            "plan_type": "individual",
+            "provider_name": "BlueCross BlueShield",
+            "employee_cost_monthly": 150,
+            "employer_cost_monthly": 450,
+            "deductible": 1500,
+            "out_of_pocket_max": 6000,
+            "coverage_details": "80% coverage after deductible, preventive care 100% covered",
+            "eligibility_rules": "Full-time employees after 30 days",
+            "waiting_period_days": 30,
+            "is_active": True
+        },
+        {
+            "name": "Family Health Insurance",
+            "description": "Health coverage for employee and dependents",
+            "category": "health",
+            "plan_type": "family",
+            "provider_name": "BlueCross BlueShield",
+            "employee_cost_monthly": 400,
+            "employer_cost_monthly": 800,
+            "deductible": 3000,
+            "out_of_pocket_max": 12000,
+            "coverage_details": "80% coverage after deductible for family",
+            "eligibility_rules": "Full-time employees after 30 days",
+            "waiting_period_days": 30,
+            "is_active": True
+        },
+        {
+            "name": "Dental Plan",
+            "description": "Dental coverage including preventive, basic, and major services",
+            "category": "dental",
+            "plan_type": "individual",
+            "provider_name": "Delta Dental",
+            "employee_cost_monthly": 25,
+            "employer_cost_monthly": 35,
+            "deductible": 50,
+            "out_of_pocket_max": 1500,
+            "coverage_details": "Preventive 100%, Basic 80%, Major 50%",
+            "eligibility_rules": "All employees after 30 days",
+            "waiting_period_days": 30,
+            "is_active": True
+        },
+        {
+            "name": "Vision Plan",
+            "description": "Vision coverage including eye exams, frames, and lenses",
+            "category": "vision",
+            "plan_type": "individual",
+            "provider_name": "VSP",
+            "employee_cost_monthly": 10,
+            "employer_cost_monthly": 15,
+            "deductible": 0,
+            "coverage_details": "$150 frame allowance, $25 copay for exams",
+            "eligibility_rules": "All employees",
+            "waiting_period_days": 0,
+            "is_active": True
+        },
+        {
+            "name": "Life Insurance - Basic",
+            "description": "Company-paid basic life insurance",
+            "category": "life",
+            "plan_type": "individual",
+            "provider_name": "MetLife",
+            "employee_cost_monthly": 0,
+            "employer_cost_monthly": 25,
+            "coverage_amount": 50000,
+            "coverage_details": "1x annual salary up to $50,000",
+            "eligibility_rules": "All full-time employees",
+            "waiting_period_days": 0,
+            "is_active": True
+        },
+        {
+            "name": "Life Insurance - Supplemental",
+            "description": "Additional voluntary life insurance",
+            "category": "life",
+            "plan_type": "individual",
+            "provider_name": "MetLife",
+            "employee_cost_monthly": 50,
+            "employer_cost_monthly": 0,
+            "coverage_amount": 100000,
+            "coverage_details": "Up to 5x annual salary",
+            "eligibility_rules": "All employees",
+            "waiting_period_days": 0,
+            "is_active": True
+        },
+        {
+            "name": "401(k) Retirement Plan",
+            "description": "Company 401(k) plan with employer match",
+            "category": "retirement",
+            "plan_type": "individual",
+            "provider_name": "Fidelity",
+            "employee_cost_monthly": 0,
+            "employer_cost_monthly": 0,
+            "coverage_details": "100% match up to 3%, 50% match on next 2%",
+            "eligibility_rules": "All employees after 90 days",
+            "waiting_period_days": 90,
+            "is_active": True
+        },
+        {
+            "name": "Wellness Program",
+            "description": "Gym membership reimbursement and wellness incentives",
+            "category": "wellness",
+            "plan_type": "individual",
+            "employee_cost_monthly": 0,
+            "employer_cost_monthly": 50,
+            "coverage_details": "$50/month gym reimbursement, wellness incentives up to $500/year",
+            "eligibility_rules": "All employees",
+            "waiting_period_days": 0,
+            "is_active": True
+        },
+        {
+            "name": "Short-Term Disability",
+            "description": "Income protection for short-term disabilities",
+            "category": "disability",
+            "plan_type": "individual",
+            "provider_name": "Unum",
+            "employee_cost_monthly": 15,
+            "employer_cost_monthly": 20,
+            "coverage_details": "60% of salary up to $1,500/week for up to 26 weeks",
+            "eligibility_rules": "Full-time employees after 90 days",
+            "waiting_period_days": 90,
+            "is_active": True
+        },
+        {
+            "name": "Long-Term Disability",
+            "description": "Income protection for long-term disabilities",
+            "category": "disability",
+            "plan_type": "individual",
+            "provider_name": "Unum",
+            "employee_cost_monthly": 25,
+            "employer_cost_monthly": 30,
+            "coverage_details": "60% of salary up to $10,000/month",
+            "eligibility_rules": "Full-time employees after 90 days",
+            "waiting_period_days": 90,
+            "is_active": True
+        }
+    ]
+    
+    for plan_data in default_plans:
+        plan = BenefitPlan(**plan_data)
+        await db.benefit_plans.insert_one(plan.model_dump())
+    
+    return {"message": f"Seeded {len(default_plans)} default benefit plans"}
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
