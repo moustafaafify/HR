@@ -1220,9 +1220,12 @@ const Settings = () => {
               <div className="col-span-4 px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 English (Base)
               </div>
-              <div className="col-span-5 px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+              <div className="col-span-4 px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-2">
                 {getLanguageName(selectedTranslationLang || settings.language_2 || 'es')}
                 <span className="text-xs font-normal text-slate-400">(Translation)</span>
+              </div>
+              <div className="col-span-1 px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider text-center">
+                Actions
               </div>
             </div>
 
@@ -1241,15 +1244,20 @@ const Settings = () => {
                       index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
                     }`}
                   >
-                    <div className="col-span-3 px-4 py-3">
+                    <div className="col-span-3 px-4 py-3 flex items-center gap-2">
                       <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-700">
                         {item.key}
                       </code>
+                      {item.isCustom && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded-full font-medium">
+                          Custom
+                        </span>
+                      )}
                     </div>
                     <div className="col-span-4 px-4 py-3 text-sm text-slate-700">
                       {item.english}
                     </div>
-                    <div className="col-span-5 px-4 py-3">
+                    <div className="col-span-4 px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm flex-1 ${
                           item.translated 
@@ -1265,6 +1273,17 @@ const Settings = () => {
                           <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Missing translation" />
                         )}
                       </div>
+                    </div>
+                    <div className="col-span-1 px-4 py-3 flex items-center justify-center">
+                      {item.isCustom && (
+                        <button
+                          onClick={() => deleteTranslationKey(item.key)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete translation key"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
