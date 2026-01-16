@@ -444,6 +444,11 @@ const VisitorManagement = () => {
     setCheckInDialog(true);
   };
   
+  const openViewVisitor = (visitor) => {
+    setSelectedVisitor(visitor);
+    setViewDialog(true);
+  };
+  
   const filteredVisitors = visitors.filter(v => {
     if (filters.search) {
       const search = filters.search.toLowerCase();
