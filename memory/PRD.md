@@ -13,7 +13,36 @@ Build a full-stack HR platform with:
 
 ## Latest Updates (Jan 16, 2026)
 
-### Notifications Module (NEW)
+### Dashboard Redesign - Bento Grid Layout (NEW)
+**What was implemented:**
+- Modern Bento Grid layout with responsive design
+- Personalized welcome message with date
+- Quick Actions cards with gradient backgrounds:
+  - Admin: Add Employee, Post Job, Send Announcement, View Reports
+  - Employee: Request Leave, Submit Expense, Create Ticket, View Benefits
+- Notifications widget with unread count badge
+- Organization Overview (dark card) with all org stats
+- Support Tickets widget with status breakdown
+- Recent Tickets list with improved design
+- Upcoming Events / Calendar preview
+- Quick Links section for easy navigation
+
+### Bulk Employee Import (NEW)
+**What was implemented:**
+- Bulk Import button in Employees page header
+- CSV upload dialog with step-by-step process:
+  1. Upload Step: Drag & drop or choose CSV file
+  2. Preview Step: Review parsed data before import
+  3. Results Step: Success/failure counts with details
+- Downloadable CSV template with all supported fields
+- Backend API: `/api/employees/bulk-import`
+  - Creates User and Employee records
+  - Generates temporary passwords
+  - Sends welcome notification to new employees
+  - Returns detailed results with temp passwords for credential sharing
+- Backend API: `/api/employees/import-template` for field definitions
+
+### Notifications Module (COMPLETED)
 **Problem:** Users had no way to receive real-time updates about ticket assignments, status changes, benefit approvals, and company announcements.
 
 **Features Implemented:**
