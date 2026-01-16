@@ -1260,27 +1260,28 @@ const WorkforcePlanning = () => {
       
       {/* Headcount Plan Dialog */}
       <Dialog open={headcountPlanDialog} onOpenChange={setHeadcountPlanDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <DialogHeader>
-            <DialogTitle>{selectedItem ? 'Edit Headcount Plan' : 'New Headcount Plan'}</DialogTitle>
+            <DialogTitle className="text-slate-900 dark:text-white">{selectedItem ? 'Edit Headcount Plan' : 'New Headcount Plan'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Plan Name *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Plan Name *</label>
                 <Input
                   value={headcountForm.name}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, name: e.target.value })}
                   placeholder="e.g., Q1 2025 Engineering Hiring"
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Department</label>
                 <Select value={headcountForm.department_id || "all"} onValueChange={(v) => setHeadcountForm({ ...headcountForm, department_id: v === "all" ? "" : v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue placeholder="All Departments" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="all">All Departments</SelectItem>
                     {departments.map(d => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
@@ -1289,12 +1290,12 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fiscal Year</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Fiscal Year</label>
                 <Select value={headcountForm.fiscal_year} onValueChange={(v) => setHeadcountForm({ ...headcountForm, fiscal_year: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="2024">2024</SelectItem>
                     <SelectItem value="2025">2025</SelectItem>
                     <SelectItem value="2026">2026</SelectItem>
@@ -1302,12 +1303,12 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Quarter (Optional)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Quarter (Optional)</label>
                 <Select value={headcountForm.quarter || "full_year"} onValueChange={(v) => setHeadcountForm({ ...headcountForm, quarter: v === "full_year" ? "" : v })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
                     <SelectValue placeholder="Select quarter" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectItem value="full_year">Full Year</SelectItem>
                     <SelectItem value="Q1">Q1</SelectItem>
                     <SelectItem value="Q2">Q2</SelectItem>
@@ -1317,56 +1318,62 @@ const WorkforcePlanning = () => {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Current Headcount</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Current Headcount</label>
                 <Input
                   type="number"
                   value={headcountForm.current_headcount}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, current_headcount: parseInt(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Planned Hires</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Planned Hires</label>
                 <Input
                   type="number"
                   value={headcountForm.planned_hires}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, planned_hires: parseInt(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Planned Departures</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Planned Departures</label>
                 <Input
                   type="number"
                   value={headcountForm.planned_departures}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, planned_departures: parseInt(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Target Headcount</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Target Headcount</label>
                 <Input
                   type="number"
                   value={headcountForm.target_headcount}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, target_headcount: parseInt(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Budget Allocated ($)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Budget Allocated ($)</label>
                 <Input
                   type="number"
                   value={headcountForm.budget_allocated}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, budget_allocated: parseFloat(e.target.value) || 0 })}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Notes</label>
                 <Textarea
                   value={headcountForm.notes}
                   onChange={(e) => setHeadcountForm({ ...headcountForm, notes: e.target.value })}
                   rows={3}
+                  className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setHeadcountPlanDialog(false)}>Cancel</Button>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <Button variant="outline" onClick={() => setHeadcountPlanDialog(false)} className="dark:border-slate-600 dark:text-slate-200">Cancel</Button>
               <Button onClick={handleSaveHeadcountPlan} data-testid="save-headcount-plan-btn">
                 {selectedItem ? 'Update Plan' : 'Create Plan'}
               </Button>
