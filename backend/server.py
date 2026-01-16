@@ -12342,6 +12342,238 @@ async def get_tickets(
     return tickets
 
 
+# ============= TICKET TEMPLATES =============
+
+class TicketTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    subject_template: str
+    body_template: str
+    category: str = "other"
+    priority: str = "medium"
+    tags: List[str] = Field(default_factory=list)
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.get("/tickets/templates")
+async def get_ticket_templates(current_user: User = Depends(get_current_user)):
+    """Get all ticket templates"""
+    templates = await db.ticket_templates.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return templates
+
+
+@api_router.post("/tickets/templates")
+async def create_ticket_template(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a ticket template (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create templates")
+    
+    template = TicketTemplate(**data)
+    await db.ticket_templates.insert_one(template.model_dump())
+    return template.model_dump()
+
+
+@api_router.post("/tickets/templates/seed-defaults")
+async def seed_default_templates(current_user: User = Depends(get_current_user)):
+    """Seed default ticket templates"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can seed templates")
+    
+    existing = await db.ticket_templates.count_documents({})
+    if existing > 0:
+        return {"message": "Templates already exist", "count": existing}
+    
+    default_templates = [
+        {"name": "Password Reset", "description": "Request a password reset", "subject_template": "Password Reset Request", "body_template": "I need to reset my password for [System Name].\n\nReason: [Forgot password / Account locked / Security concern]", "category": "it", "priority": "high"},
+        {"name": "New Equipment Request", "description": "Request new equipment", "subject_template": "New Equipment Request - [Equipment Type]", "body_template": "Equipment Type: [Laptop/Monitor/Keyboard/Mouse/Other]\nJustification: [Reason]\nCurrent equipment status: [Working/Not working/None]", "category": "it", "priority": "medium"},
+        {"name": "VPN Access Request", "description": "Request VPN access", "subject_template": "VPN Access Request", "body_template": "Purpose: [Work from home / Travel / Other]\nDuration: [Temporary / Permanent]\nStart Date: [Date]", "category": "it", "priority": "medium"},
+        {"name": "Software Installation", "description": "Request software installation", "subject_template": "Software Installation Request - [Software Name]", "body_template": "Software Name: [Name]\nVersion: [If specific]\nPurpose: [Business justification]", "category": "it", "priority": "low"},
+        {"name": "Leave Balance Inquiry", "description": "Question about leave balance", "subject_template": "Leave Balance Inquiry", "body_template": "Leave Type: [Annual/Sick/Personal]\nQuestion: [Describe your inquiry]", "category": "hr", "priority": "low"},
+        {"name": "Payroll Discrepancy", "description": "Report paycheck issue", "subject_template": "Payroll Discrepancy - [Pay Period]", "body_template": "Pay Period: [Date range]\nExpected Amount: [Amount]\nReceived Amount: [Amount]\nDiscrepancy: [Difference]", "category": "payroll", "priority": "high"},
+        {"name": "Benefits Enrollment", "description": "Benefits enrollment question", "subject_template": "Benefits Enrollment Question", "body_template": "Benefit Type: [Health/Dental/Vision/401k/Other]\nQuestion: [Your specific question]", "category": "benefits", "priority": "medium"},
+        {"name": "Facility Maintenance", "description": "Report facility issue", "subject_template": "Facility Maintenance - [Issue Type]", "body_template": "Location: [Building/Floor/Room]\nIssue Type: [HVAC/Lighting/Plumbing/Other]\nDescription: [Detailed description]", "category": "facilities", "priority": "medium"}
+    ]
+    
+    for template_data in default_templates:
+        template = TicketTemplate(**template_data)
+        await db.ticket_templates.insert_one(template.model_dump())
+    
+    return {"message": f"Seeded {len(default_templates)} default templates"}
+
+
+@api_router.put("/tickets/templates/{template_id}")
+async def update_ticket_template(template_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a ticket template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update templates")
+    await db.ticket_templates.update_one({"id": template_id}, {"$set": data})
+    return await db.ticket_templates.find_one({"id": template_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/templates/{template_id}")
+async def delete_ticket_template(template_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a ticket template"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete templates")
+    await db.ticket_templates.delete_one({"id": template_id})
+    return {"message": "Template deleted"}
+
+
+# ============= AUTO-ASSIGNMENT RULES =============
+
+class AssignmentRule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    category: str
+    assignee_id: str
+    assignee_name: Optional[str] = None
+    priority_filter: Optional[str] = None
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.get("/tickets/assignment-rules")
+async def get_assignment_rules(current_user: User = Depends(get_current_user)):
+    """Get all assignment rules (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can view assignment rules")
+    rules = await db.assignment_rules.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return rules
+
+
+@api_router.post("/tickets/assignment-rules")
+async def create_assignment_rule(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create an assignment rule"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create assignment rules")
+    assignee = await db.employees.find_one({"id": data.get("assignee_id")}, {"_id": 0})
+    if assignee:
+        data["assignee_name"] = assignee.get("full_name")
+    rule = AssignmentRule(**data)
+    await db.assignment_rules.insert_one(rule.model_dump())
+    return rule.model_dump()
+
+
+@api_router.put("/tickets/assignment-rules/{rule_id}")
+async def update_assignment_rule(rule_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update an assignment rule"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update assignment rules")
+    if "assignee_id" in data:
+        assignee = await db.employees.find_one({"id": data["assignee_id"]}, {"_id": 0})
+        if assignee:
+            data["assignee_name"] = assignee.get("full_name")
+    await db.assignment_rules.update_one({"id": rule_id}, {"$set": data})
+    return await db.assignment_rules.find_one({"id": rule_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/assignment-rules/{rule_id}")
+async def delete_assignment_rule(rule_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an assignment rule"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete assignment rules")
+    await db.assignment_rules.delete_one({"id": rule_id})
+    return {"message": "Rule deleted"}
+
+
+# ============= CANNED RESPONSES =============
+
+class CannedResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    shortcut: Optional[str] = None
+    content: str
+    category: Optional[str] = None
+    is_active: bool = True
+    usage_count: int = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.get("/tickets/canned-responses")
+async def get_canned_responses(category: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get canned responses (admin only)"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can view canned responses")
+    query = {"is_active": True}
+    if category:
+        query["$or"] = [{"category": category}, {"category": None}]
+    responses = await db.canned_responses.find(query, {"_id": 0}).sort("usage_count", -1).to_list(100)
+    return responses
+
+
+@api_router.post("/tickets/canned-responses")
+async def create_canned_response(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create canned responses")
+    response = CannedResponse(**data)
+    await db.canned_responses.insert_one(response.model_dump())
+    return response.model_dump()
+
+
+@api_router.post("/tickets/canned-responses/seed-defaults")
+async def seed_default_canned_responses(current_user: User = Depends(get_current_user)):
+    """Seed default canned responses"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can seed canned responses")
+    existing = await db.canned_responses.count_documents({})
+    if existing > 0:
+        return {"message": "Canned responses already exist", "count": existing}
+    
+    default_responses = [
+        {"name": "Acknowledge Receipt", "shortcut": "/ack", "content": "Thank you for submitting this ticket. I've received your request and will begin working on it shortly."},
+        {"name": "Request More Info", "shortcut": "/moreinfo", "content": "To better assist you, could you please provide more details about:\n1. \n2. \n3. "},
+        {"name": "Password Reset Complete", "shortcut": "/pwreset", "content": "Your password has been reset successfully. Please check your email for instructions to set your new password.", "category": "it"},
+        {"name": "VPN Instructions", "shortcut": "/vpn", "content": "Your VPN access has been granted. Download the client from [link], install, and use your network credentials to connect.", "category": "it"},
+        {"name": "Equipment Order Placed", "shortcut": "/equipment", "content": "Your equipment request has been approved. Expected delivery: [date]. I'll notify you when it arrives.", "category": "it"},
+        {"name": "Payroll Reviewed", "shortcut": "/payroll", "content": "I've reviewed your payroll inquiry. [Explanation]. Any correction will be in your next paycheck.", "category": "payroll"},
+        {"name": "Leave Balance Confirmed", "shortcut": "/leave", "content": "Your current leave balances:\n- Annual: X days\n- Sick: X days\n- Personal: X days", "category": "hr"},
+        {"name": "Issue Resolved", "shortcut": "/resolved", "content": "Great news! The issue has been resolved. Please test and confirm everything works. Feel free to reopen if needed."},
+        {"name": "Escalation Notice", "shortcut": "/escalate", "content": "I'm escalating this to our specialized team for further investigation. You'll receive an update within [timeframe]."},
+        {"name": "Facilities Work Scheduled", "shortcut": "/facilities", "content": "Your request has been scheduled.\n- Date: \n- Duration: \n- Contact: \n\nPlease ensure the area is accessible.", "category": "facilities"}
+    ]
+    
+    for response_data in default_responses:
+        response = CannedResponse(**response_data)
+        await db.canned_responses.insert_one(response.model_dump())
+    
+    return {"message": f"Seeded {len(default_responses)} default canned responses"}
+
+
+@api_router.put("/tickets/canned-responses/{response_id}")
+async def update_canned_response(response_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update canned responses")
+    await db.canned_responses.update_one({"id": response_id}, {"$set": data})
+    return await db.canned_responses.find_one({"id": response_id}, {"_id": 0})
+
+
+@api_router.delete("/tickets/canned-responses/{response_id}")
+async def delete_canned_response(response_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete canned responses")
+    await db.canned_responses.delete_one({"id": response_id})
+    return {"message": "Response deleted"}
+
+
+@api_router.post("/tickets/canned-responses/{response_id}/use")
+async def use_canned_response(response_id: str, current_user: User = Depends(get_current_user)):
+    """Increment usage count for a canned response"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can use canned responses")
+    await db.canned_responses.update_one({"id": response_id}, {"$inc": {"usage_count": 1}})
+    return await db.canned_responses.find_one({"id": response_id}, {"_id": 0})
+
+
+# ============= TICKET ROUTES (with ID parameter - must be after specific routes) =============
+
 @api_router.get("/tickets/{ticket_id}")
 async def get_ticket(ticket_id: str, current_user: User = Depends(get_current_user)):
     """Get a specific ticket with comments"""
