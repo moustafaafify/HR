@@ -443,6 +443,20 @@ const Layout = () => {
           </h1>
         </div>
         <div className="flex items-center gap-1">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-lg transition-colors"
+            style={{ backgroundColor: darkMode ? 'var(--muted, #334155)' : 'transparent' }}
+            data-testid="dark-mode-toggle-mobile"
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? (
+              <Sun size={20} style={{ color: '#fbbf24' }} />
+            ) : (
+              <Moon size={20} style={{ color: 'var(--muted-foreground, #64748b)' }} />
+            )}
+          </button>
           <NotificationBell />
           <Link to="/profile" className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium" style={{ backgroundColor: 'var(--primary, #2D4F38)' }}>
             {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
