@@ -186,6 +186,23 @@ A comprehensive visitor management system for tracking guests:
 - `POST/GET/PUT /api/compliance/incidents` - Incident reporting
 - `POST/GET/PUT/DELETE /api/compliance/certifications` - Certification CRUD
 
+### Visitor Management
+- `GET /api/visitors/dashboard` - Admin visitor dashboard
+- `GET /api/visitors/my-dashboard` - Employee visitor dashboard
+- `POST /api/visitors` - Pre-register a visitor
+- `GET /api/visitors` - List visitors (filtered by role)
+- `GET /api/visitors/today` - Get today's visitors
+- `GET /api/visitors/my` - Get user's own visitors
+- `GET /api/visitors/{id}` - Get visitor details
+- `PUT /api/visitors/{id}` - Update visitor
+- `DELETE /api/visitors/{id}` - Cancel visitor registration
+- `POST /api/visitors/{id}/check-in` - Check in a visitor
+- `POST /api/visitors/{id}/check-out` - Check out a visitor
+- `POST /api/visitors/{id}/print-badge` - Generate and print badge
+- `GET /api/visitors/{id}/badge` - Get badge data
+- `POST /api/visitors/walk-in` - Quick walk-in registration
+- `GET /api/visitors/history` - Admin visitor history
+
 ### Push Notifications
 - `GET /api/push/vapid-public-key`
 - `POST /api/push/subscribe`
