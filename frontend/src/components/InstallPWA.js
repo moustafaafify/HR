@@ -1,12 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Smartphone, Share } from 'lucide-react';
 
+// Try to import mobile config, but don't fail if not available
+let useMobileConfig;
+try {
+  useMobileConfig = require('../contexts/MobileConfigContext').useMobileConfig;
+} catch (e) {
+  useMobileConfig = null;
+}
+
 const InstallPWA = () => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  
+  // Get mobile config if available
+  let mobileConfig = { primaryColor: '#2D4F38', secondaryColor: '#4F7942', appName: 'HR Portal' };
+  try {
+    if (useMobileConfig) {
+      const configContext = useMobileConfig();
+      if (configContext?.config) {
+        mobileConfig = configContext.config;
+      }
+    }
+  } catch (e) {
+    // Context not available, use defaults
+  }
 
   useEffect(() => {
     // Check if already installed (standalone mode)
