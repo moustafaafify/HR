@@ -423,13 +423,22 @@ const Layout = () => {
         {/* Header */}
         <div className={`p-4 border-b border-stone-100 flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!sidebarCollapsed && (
-            <h1 className="text-xl font-bold text-[#2D4F38] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              HR Platform
-            </h1>
+            <div className="flex items-center gap-2">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded" />
+              ) : null}
+              <h1 className="text-xl font-bold text-[#2D4F38] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                {branding.app_name || 'HR Platform'}
+              </h1>
+            </div>
           )}
           {sidebarCollapsed && (
-            <div className="w-9 h-9 rounded-lg bg-[#2D4F38] flex items-center justify-center">
-              <span className="text-white font-bold text-sm">HR</span>
+            <div className="w-9 h-9 rounded-lg bg-[#2D4F38] flex items-center justify-center overflow-hidden">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-white font-bold text-sm">{(branding.app_name || 'HR').substring(0, 2).toUpperCase()}</span>
+              )}
             </div>
           )}
           <div className="flex items-center gap-1">
