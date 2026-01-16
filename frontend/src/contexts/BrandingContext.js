@@ -38,8 +38,13 @@ export const BrandingProvider = ({ children }) => {
         updateFavicon(newBranding.favicon_url);
       }
       
-      // Update manifest dynamically
+      // Update manifest and meta tags
       updateManifest(newBranding);
+      
+      // Update apple touch icons if logo is set
+      if (newBranding.logo_url) {
+        updateAppleTouchIcons(newBranding.logo_url);
+      }
       
     } catch (error) {
       console.error('Failed to fetch branding:', error);
@@ -50,22 +55,25 @@ export const BrandingProvider = ({ children }) => {
     // Update all favicon links
     const links = document.querySelectorAll("link[rel*='icon']");
     links.forEach(link => {
-      link.href = url;
+      if (!link.rel.includes('apple-touch-icon')) {
+        link.href = url;
+      }
     });
-    
-    // Also update apple-touch-icon
+  };
+
+  const updateAppleTouchIcons = (url) => {
     const appleLinks = document.querySelectorAll("link[rel='apple-touch-icon']");
     appleLinks.forEach(link => {
       link.href = url;
     });
   };
 
-  const updateManifest = async (brandingData) => {
+  const updateManifest = (brandingData) => {
     try {
       // Point manifest to dynamic API endpoint
       let manifestLink = document.querySelector('link[rel="manifest"]');
       if (manifestLink) {
-        // Use API endpoint for dynamic manifest
+        // Use API endpoint for dynamic manifest with cache busting
         manifestLink.href = `${API}/manifest.json?t=${Date.now()}`;
       }
 
@@ -79,92 +87,6 @@ export const BrandingProvider = ({ children }) => {
       // Update description
       const descriptionMeta = document.querySelector('meta[name="description"]');
       if (descriptionMeta) descriptionMeta.content = `${brandingData.app_name} - Your complete HR management solution`;
-
-    } catch (error) {
-      console.error('Failed to update manifest:', error);
-    }
-  };
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "152x152",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "384x384",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable"
-          }
-        ] : [
-          {
-            src: "/icons/icon-72x72.png",
-            sizes: "72x72",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: "/icons/icon-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: "/icons/icon-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any"
-          }
-        ],
-        categories: ["business", "productivity"],
-        shortcuts: [
-          {
-            name: "Dashboard",
-            short_name: "Dashboard",
-            description: "Go to Dashboard",
-            url: "/dashboard?source=pwa",
-            icons: [{ src: brandingData.logo_url || "/icons/icon-96x96.png", sizes: "96x96" }]
-          }
-        ]
-      };
-
-      // Create a blob URL for the manifest
-      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const manifestUrl = URL.createObjectURL(manifestBlob);
-
-      // Update manifest link
-      let manifestLink = document.querySelector('link[rel="manifest"]');
-      if (manifestLink) {
-        manifestLink.href = manifestUrl;
-      }
-
-      // Update meta tags
-      const appNameMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if (appNameMeta) appNameMeta.content = brandingData.app_name;
-
-      const applicationNameMeta = document.querySelector('meta[name="application-name"]');
-      if (applicationNameMeta) applicationNameMeta.content = brandingData.app_name;
 
     } catch (error) {
       console.error('Failed to update manifest:', error);
