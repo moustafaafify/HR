@@ -12736,11 +12736,53 @@ async def update_ticket(ticket_id: str, data: Dict[str, Any], current_user: User
         elif new_status == "in_progress" and not ticket.get("first_response_at"):
             data["first_response_at"] = datetime.now(timezone.utc).isoformat()
     
-    # If assigning, get assignee name
+    # If assigning, get assignee name and role, send notification
     if "assigned_to" in data and data["assigned_to"]:
-        assignee = await db.employees.find_one({"id": data["assigned_to"]}, {"_id": 0})
+        old_assignee = ticket.get("assigned_to")
+        new_assignee_id = data["assigned_to"]
+        
+        assignee = await db.employees.find_one({"id": new_assignee_id}, {"_id": 0})
         if assignee:
             data["assigned_to_name"] = assignee.get("full_name")
+            data["assigned_to_role"] = assignee.get("job_title")
+            
+            # Send notification to new assignee if different from old
+            if new_assignee_id != old_assignee and assignee.get("user_id"):
+                await create_notification_for_user(
+                    user_id=assignee["user_id"],
+                    notification_type=NotificationType.TICKET,
+                    title=f"Ticket Assigned: {ticket.get('ticket_number')}",
+                    message=f"You have been assigned ticket '{ticket.get('subject')}' ({ticket.get('priority')} priority)",
+                    link=f"/tickets",
+                    reference_id=ticket_id,
+                    reference_type="ticket",
+                    priority="high" if ticket.get("priority") in ["urgent", "high"] else "normal"
+                )
+        else:
+            raise HTTPException(status_code=400, detail="Assignee not found")
+    
+    # Send notification to requester on status change
+    if new_status and new_status != old_status:
+        # Find requester's user_id
+        requester_employee = await db.employees.find_one({"id": ticket.get("requester_id")}, {"_id": 0})
+        if requester_employee and requester_employee.get("user_id"):
+            status_messages = {
+                "in_progress": "Your ticket is now being worked on",
+                "pending": "Your ticket is pending additional information",
+                "resolved": "Your ticket has been resolved",
+                "closed": "Your ticket has been closed"
+            }
+            if new_status in status_messages:
+                await create_notification_for_user(
+                    user_id=requester_employee["user_id"],
+                    notification_type=NotificationType.TICKET,
+                    title=f"Ticket Update: {ticket.get('ticket_number')}",
+                    message=f"{status_messages[new_status]}. Subject: {ticket.get('subject')}",
+                    link=f"/tickets",
+                    reference_id=ticket_id,
+                    reference_type="ticket",
+                    priority="normal"
+                )
     
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
