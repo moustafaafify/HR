@@ -3,20 +3,6 @@
 ## Original Problem Statement
 Create a comprehensive, full-stack HR platform that is multi-language, multi-currency, and supports a multi-corporate structure. The platform includes a wide range of HR modules (35+).
 
-## User Personas
-- **Super Admin**: Full access to all settings, branding, and configuration
-- **Corp Admin**: Corporate-level administration
-- **Branch Manager**: Branch-level management
-- **Employee**: Self-service access to personal info, leaves, expenses
-
-## Core Requirements
-- Multi-language support (50+ languages)
-- Multi-currency support (25+ currencies with exchange rates)
-- Multi-corporate structure (corporations, branches, departments, divisions)
-- Custom branding (app name, logo, favicon)
-- Theme customization (primary/accent colors, dark mode)
-- PWA support with dynamic manifest
-
 ## Tech Stack
 - **Frontend**: React with Shadcn/UI components
 - **Backend**: FastAPI (Python)
@@ -33,21 +19,22 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 1. **Translation Management Removal (DONE)**
    - Removed the Translation Management section from Settings.js
-   - Removed ~1000 lines of translation-related code
    - File reduced from 2325 lines to ~1400 lines
 
 2. **Theme Color Customization (DONE)**
-   - Added Primary Color picker in Settings
-   - Added Accent Color picker in Settings
-   - Added Dark Mode toggle
+   - Primary Color picker in Settings (admin only)
+   - Accent Color picker in Settings (admin only)
+   - Dark Mode toggle in Settings (admin - global default)
    - Live preview of theme in Settings page
-   - CSS variables applied to:
-     - Login page (background, cards, buttons, text)
-     - Sidebar (title, active states, user avatar gradient)
-     - Navigation items
-   - Backend stores theme settings (primary_color, accent_color, dark_mode)
 
-3. **CSS Variables System (DONE)**
+3. **User Dark Mode Toggle (DONE)** ✨ NEW
+   - **Desktop**: Sun/Moon icon in top header bar (right side, next to notifications)
+   - **Mobile**: Sun/Moon icon in mobile header
+   - Stored in **localStorage** - personal preference per device
+   - Respects system preference (prefers-color-scheme) by default
+   - Works for ALL users (employees, admins, etc.)
+
+4. **CSS Variables System (DONE)**
    - `--primary` / `--primary-light` / `--primary-dark` / `--primary-rgb`
    - `--accent` / `--accent-light` / `--accent-dark` / `--accent-rgb`
    - `--background` / `--foreground`
@@ -55,11 +42,18 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
    - `--muted` / `--muted-foreground`
    - `--border` / `--sidebar-bg` / `--sidebar-border`
 
-4. **Branding System (DONE - Previous Session)**
-   - Dynamic app name, logo, and favicon via Settings
-   - Login page uses branding from BrandingContext
-   - Sidebar displays custom logo
-   - PWA manifest dynamically generated
+---
+
+## How Dark Mode Works
+
+### For Employees (Regular Users)
+1. Look for the **Moon icon** (☽) in the top-right header
+2. Click to toggle between light and dark modes
+3. Preference is saved locally and persists across sessions
+
+### For Admins
+1. Can set **global default** in Settings > Theme Customization
+2. Individual users can override with their local toggle
 
 ---
 
@@ -67,57 +61,17 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ### P0 - Critical
 - [ ] Comprehensive E2E Testing - Full regression test across all modules
-- [ ] Full Dark Mode Support - Apply CSS variables to all dashboard cards and components
+- [ ] Full Dark Mode Support - Apply CSS variables to all dashboard cards
 
 ### P1 - High Priority
-- [ ] PWA Push Notifications - Backend service and frontend subscription
-- [ ] Real Device PWA Testing - Guide for iOS/Android testing
-- [ ] Scheduled Report Delivery - Automated report emails
-- [ ] Audit Trail for Security Events - Log critical actions
+- [ ] PWA Push Notifications
+- [ ] Scheduled Report Delivery
+- [ ] Audit Trail for Security Events
 
 ### P2 - Medium Priority
-- [ ] Refactor Large Components:
-  - `Settings.js` - Currently ~1400 lines
-  - `MobileApps.js` - Large component
-  - `EmployeesNew.js` - Needs breaking down
-  - `Reports.js` - Complex reporting component
-- [ ] PWA Offline Mode - Service worker data caching
-- [ ] Export Translations as CSV/JSON
-- [ ] Department Budget Allocation
-
----
-
-## Key API Endpoints
-
-### Settings & Branding
-- `GET /api/settings` - Fetch global settings
-- `PUT /api/settings` - Update settings including theme colors
-
-### Theme Fields in Settings
-```json
-{
-  "primary_color": "#2D4F38",
-  "accent_color": "#4A7C59",
-  "dark_mode": false
-}
-```
-
----
-
-## Database Schema
-
-### Settings Collection - Theme Fields
-```json
-{
-  "id": "global_settings",
-  "primary_color": "#2D4F38",
-  "accent_color": "#4A7C59",
-  "dark_mode": false,
-  "app_name": "Lojyn HR",
-  "logo_url": "/api/uploads/branding/logo_xxx.png",
-  "favicon_url": "/api/uploads/branding/logo_xxx.png"
-}
-```
+- [ ] Refactor Large Components
+- [ ] PWA Offline Mode
+- [ ] Export Translations
 
 ---
 
@@ -127,15 +81,9 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ---
 
-## Known Limitations
-- Dark mode only fully styled for login page and sidebar
-- Dashboard cards and other pages need CSS variable updates for full dark mode support
-
----
-
 ## Files Modified This Session
-- `frontend/src/pages/Settings.js` - Added Theme Customization section
-- `frontend/src/contexts/BrandingContext.js` - Added theme color management and CSS variable application
-- `frontend/src/components/Layout.js` - Updated to use CSS variables for sidebar styling
-- `frontend/src/pages/Login.js` - Updated to use CSS variables
-- `backend/server.py` - Added primary_color, accent_color, dark_mode fields to Settings model
+- `frontend/src/pages/Settings.js` - Theme Customization section
+- `frontend/src/contexts/BrandingContext.js` - Theme color management
+- `frontend/src/components/Layout.js` - Added dark mode toggle to header
+- `frontend/src/pages/Login.js` - CSS variables support
+- `backend/server.py` - Theme fields in Settings model
