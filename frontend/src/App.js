@@ -39,6 +39,7 @@ import Overtime from './pages/Overtime';
 import Timesheets from './pages/Timesheets';
 import Projects from './pages/Projects';
 import Benefits from './pages/Benefits';
+import Profile from './pages/Profile';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -93,6 +94,7 @@ function AppRoutes() {
         <Route path="timesheets" element={<Timesheets />} />
         <Route path="projects" element={<Projects />} />
         <Route path="benefits" element={<Benefits />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
