@@ -113,7 +113,6 @@ import {
   List,
   Table,
   PieChart,
-  TrendingUp,
   TrendingDown,
   DollarSign,
   CreditCard,
