@@ -179,8 +179,43 @@ export const BrandingProvider = ({ children }) => {
 
   // Fetch branding on mount
   useEffect(() => {
-    fetchBranding();
-  }, [fetchBranding]);
+    let mounted = true;
+    
+    const loadBranding = async () => {
+      try {
+        const response = await axios.get(`${API}/settings`);
+        const settings = response.data;
+        
+        // Helper to get full URL for relative paths
+        const getFullUrl = (path) => {
+          if (!path) return '';
+          if (path.startsWith('http')) return path;
+          return `${BACKEND_URL}${path}`;
+        };
+        
+        const newBranding = {
+          app_name: settings.app_name || 'HR Portal',
+          logo_url: getFullUrl(settings.logo_url),
+          favicon_url: getFullUrl(settings.favicon_url),
+          primary_color: settings.primary_color || '#2D4F38',
+          accent_color: settings.accent_color || '#4A7C59',
+          dark_mode: settings.dark_mode || false
+        };
+        
+        if (mounted) {
+          setBranding(newBranding);
+        }
+      } catch (error) {
+        console.error('Failed to fetch branding:', error);
+      }
+    };
+    
+    loadBranding();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Apply branding changes
   useEffect(() => {
