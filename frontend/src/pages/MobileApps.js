@@ -264,8 +264,12 @@ const MobileApps = () => {
             style={{ backgroundColor: mobileConfig.primaryColor }}
           >
             <div className="flex items-center gap-2">
-              <Menu size={20} className="text-white" />
-              <span className="text-white font-semibold text-sm">{mobileConfig.appName}</span>
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt="Logo" className="w-6 h-6 rounded object-contain" />
+              ) : (
+                <Menu size={20} className="text-white" />
+              )}
+              <span className="text-white font-semibold text-sm">{branding.app_name || mobileConfig.appName}</span>
             </div>
             <div className="flex items-center gap-3">
               <Search size={18} className="text-white/80" />
