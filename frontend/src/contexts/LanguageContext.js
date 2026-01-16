@@ -248,9 +248,11 @@ const translations = {
 export const LanguageProvider = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [availableLanguages, setAvailableLanguages] = useState(['en']);
+  const [customTranslations, setCustomTranslations] = useState({});
 
   useEffect(() => {
     fetchSettings();
+    fetchCustomTranslations();
   }, []);
 
   const fetchSettings = async () => {
@@ -268,7 +270,24 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
+  const fetchCustomTranslations = async () => {
+    try {
+      const response = await axios.get(`${API}/translations`);
+      setCustomTranslations(response.data || {});
+    } catch (error) {
+      console.error('Failed to fetch custom translations:', error);
+    }
+  };
+
   const t = (key) => {
+    // First check custom translations
+    if (customTranslations[key]?.[currentLanguage]) {
+      return customTranslations[key][currentLanguage];
+    }
+    if (customTranslations[key]?.en) {
+      return customTranslations[key].en;
+    }
+    // Fall back to built-in translations
     return translations[currentLanguage]?.[key] || translations.en[key] || key;
   };
 
@@ -289,7 +308,9 @@ export const LanguageProvider = ({ children }) => {
       changeLanguage, 
       t, 
       isRTL,
-      refreshSettings: fetchSettings 
+      refreshSettings: fetchSettings,
+      refreshTranslations: fetchCustomTranslations,
+      customTranslations
     }}>
       {children}
     </LanguageContext.Provider>
