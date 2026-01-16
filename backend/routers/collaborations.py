@@ -866,7 +866,6 @@ async def get_dashboard(current_user: User = Depends(get_current_user)):
     week_ago = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = (week_ago - timedelta(days=7)).isoformat()
     
-    from datetime import timedelta
     active_users = await db.collab_messages.distinct("sender_id", {
         "created_at": {"$gte": week_ago}
     })
