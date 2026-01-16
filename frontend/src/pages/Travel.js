@@ -1314,28 +1314,28 @@ const Travel = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Transportation:</span>
-                      <span>${selectedRequest.estimated_transportation_cost?.toLocaleString() || 0}</span>
+                      <span>{formatCurrency(selectedRequest.estimated_transportation_cost || 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Accommodation:</span>
-                      <span>${selectedRequest.estimated_accommodation_cost?.toLocaleString() || 0}</span>
+                      <span>{formatCurrency(selectedRequest.estimated_accommodation_cost || 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Meals:</span>
-                      <span>${selectedRequest.estimated_meals_cost?.toLocaleString() || 0}</span>
+                      <span>{formatCurrency(selectedRequest.estimated_meals_cost || 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Other:</span>
-                      <span>${selectedRequest.estimated_other_cost?.toLocaleString() || 0}</span>
+                      <span>{formatCurrency(selectedRequest.estimated_other_cost || 0)}</span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-slate-200">
                       <span className="font-medium">Total Estimated:</span>
-                      <span className="font-bold text-indigo-600">${selectedRequest.total_estimated_cost?.toLocaleString()}</span>
+                      <span className="font-bold text-indigo-600">{formatCurrency(selectedRequest.total_estimated_cost)}</span>
                     </div>
                     {selectedRequest.total_actual_cost && (
                       <div className="flex justify-between">
                         <span className="font-medium">Total Actual:</span>
-                        <span className="font-bold text-emerald-600">${selectedRequest.total_actual_cost?.toLocaleString()}</span>
+                        <span className="font-bold text-emerald-600">{formatCurrency(selectedRequest.total_actual_cost)}</span>
                       </div>
                     )}
                   </div>
