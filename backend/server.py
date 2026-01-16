@@ -13589,6 +13589,385 @@ async def send_announcement(
     return {"message": f"Announcement sent to {len(notifications)} users", "count": len(notifications)}
 
 
+# ============= REPORTING & ANALYTICS =============
+
+@api_router.get("/reports/overview")
+async def get_reports_overview(current_user: User = Depends(get_current_user)):
+    """Get high-level overview metrics for reporting dashboard"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    # Employee metrics
+    total_employees = await db.employees.count_documents({})
+    active_employees = await db.employees.count_documents({"employment_status": "active"})
+    
+    # Calculate new hires (last 30 days)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    new_hires = await db.employees.count_documents({
+        "created_at": {"$gte": thirty_days_ago}
+    })
+    
+    # Ticket metrics
+    total_tickets = await db.tickets.count_documents({})
+    open_tickets = await db.tickets.count_documents({"status": {"$in": ["open", "in_progress"]}})
+    resolved_tickets = await db.tickets.count_documents({"status": "resolved"})
+    
+    # Leave metrics
+    pending_leaves = await db.leave_requests.count_documents({"status": "pending"})
+    approved_leaves = await db.leave_requests.count_documents({"status": "approved"})
+    
+    # Training metrics
+    total_trainings = await db.trainings.count_documents({})
+    
+    # Expense metrics
+    pending_expenses = await db.expense_claims.count_documents({"status": "pending"})
+    
+    return {
+        "employees": {
+            "total": total_employees,
+            "active": active_employees,
+            "new_hires_30d": new_hires,
+            "inactive": total_employees - active_employees
+        },
+        "tickets": {
+            "total": total_tickets,
+            "open": open_tickets,
+            "resolved": resolved_tickets,
+            "resolution_rate": round((resolved_tickets / total_tickets * 100) if total_tickets > 0 else 0, 1)
+        },
+        "leaves": {
+            "pending": pending_leaves,
+            "approved": approved_leaves
+        },
+        "trainings": {
+            "total": total_trainings
+        },
+        "expenses": {
+            "pending": pending_expenses
+        }
+    }
+
+
+@api_router.get("/reports/employees")
+async def get_employee_reports(current_user: User = Depends(get_current_user)):
+    """Get detailed employee analytics"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    employees = await db.employees.find({}, {"_id": 0}).to_list(10000)
+    departments = await db.departments.find({}, {"_id": 0}).to_list(100)
+    dept_map = {d["id"]: d["name"] for d in departments}
+    
+    # By Department
+    by_department = {}
+    for emp in employees:
+        dept_id = emp.get("department_id", "unassigned")
+        dept_name = dept_map.get(dept_id, "Unassigned")
+        by_department[dept_name] = by_department.get(dept_name, 0) + 1
+    
+    # By Employment Type
+    by_employment_type = {}
+    for emp in employees:
+        emp_type = emp.get("employment_type", "full_time")
+        by_employment_type[emp_type] = by_employment_type.get(emp_type, 0) + 1
+    
+    # By Employment Status
+    by_status = {}
+    for emp in employees:
+        status = emp.get("employment_status", "active")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By Gender
+    by_gender = {}
+    for emp in employees:
+        gender = emp.get("gender", "not_specified") or "not_specified"
+        by_gender[gender] = by_gender.get(gender, 0) + 1
+    
+    # By Work Location
+    by_location = {}
+    for emp in employees:
+        location = emp.get("work_location", "office") or "office"
+        by_location[location] = by_location.get(location, 0) + 1
+    
+    # Tenure Distribution (years)
+    tenure_distribution = {"<1": 0, "1-2": 0, "2-5": 0, "5-10": 0, "10+": 0}
+    now = datetime.now(timezone.utc)
+    for emp in employees:
+        hire_date_str = emp.get("hire_date")
+        if hire_date_str:
+            try:
+                hire_date = datetime.fromisoformat(hire_date_str.replace("Z", "+00:00")) if "T" in hire_date_str else datetime.strptime(hire_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                years = (now - hire_date).days / 365
+                if years < 1:
+                    tenure_distribution["<1"] += 1
+                elif years < 2:
+                    tenure_distribution["1-2"] += 1
+                elif years < 5:
+                    tenure_distribution["2-5"] += 1
+                elif years < 10:
+                    tenure_distribution["5-10"] += 1
+                else:
+                    tenure_distribution["10+"] += 1
+            except:
+                tenure_distribution["<1"] += 1
+    
+    # Monthly hire trend (last 12 months)
+    monthly_hires = {}
+    for i in range(12):
+        month_date = now - timedelta(days=30 * i)
+        month_key = month_date.strftime("%Y-%m")
+        monthly_hires[month_key] = 0
+    
+    for emp in employees:
+        created = emp.get("created_at", "")
+        if created:
+            month_key = created[:7]
+            if month_key in monthly_hires:
+                monthly_hires[month_key] += 1
+    
+    return {
+        "total": len(employees),
+        "by_department": [{"name": k, "value": v} for k, v in sorted(by_department.items(), key=lambda x: -x[1])],
+        "by_employment_type": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_employment_type.items()],
+        "by_status": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_status.items()],
+        "by_gender": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_gender.items()],
+        "by_location": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_location.items()],
+        "tenure_distribution": [{"name": k, "value": v} for k, v in tenure_distribution.items()],
+        "monthly_hires": [{"month": k, "count": v} for k, v in sorted(monthly_hires.items())]
+    }
+
+
+@api_router.get("/reports/tickets")
+async def get_ticket_reports(current_user: User = Depends(get_current_user)):
+    """Get detailed ticket analytics"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    tickets = await db.tickets.find({}, {"_id": 0}).to_list(10000)
+    
+    # By Status
+    by_status = {}
+    for t in tickets:
+        status = t.get("status", "open")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By Category
+    by_category = {}
+    for t in tickets:
+        category = t.get("category", "other")
+        by_category[category] = by_category.get(category, 0) + 1
+    
+    # By Priority
+    by_priority = {}
+    for t in tickets:
+        priority = t.get("priority", "medium")
+        by_priority[priority] = by_priority.get(priority, 0) + 1
+    
+    # Resolution time analysis
+    resolution_times = []
+    for t in tickets:
+        if t.get("status") == "resolved" and t.get("created_at") and t.get("updated_at"):
+            try:
+                created = datetime.fromisoformat(t["created_at"].replace("Z", "+00:00"))
+                updated = datetime.fromisoformat(t["updated_at"].replace("Z", "+00:00"))
+                hours = (updated - created).total_seconds() / 3600
+                resolution_times.append(hours)
+            except:
+                pass
+    
+    avg_resolution = round(sum(resolution_times) / len(resolution_times), 1) if resolution_times else 0
+    
+    # Weekly ticket volume (last 8 weeks)
+    now = datetime.now(timezone.utc)
+    weekly_volume = {}
+    for i in range(8):
+        week_start = now - timedelta(weeks=i)
+        week_key = week_start.strftime("%Y-W%W")
+        weekly_volume[week_key] = 0
+    
+    for t in tickets:
+        created = t.get("created_at", "")
+        if created:
+            try:
+                created_date = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                week_key = created_date.strftime("%Y-W%W")
+                if week_key in weekly_volume:
+                    weekly_volume[week_key] += 1
+            except:
+                pass
+    
+    return {
+        "total": len(tickets),
+        "by_status": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_status.items()],
+        "by_category": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_category.items()],
+        "by_priority": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_priority.items()],
+        "avg_resolution_hours": avg_resolution,
+        "weekly_volume": [{"week": k, "count": v} for k, v in sorted(weekly_volume.items())]
+    }
+
+
+@api_router.get("/reports/leaves")
+async def get_leave_reports(current_user: User = Depends(get_current_user)):
+    """Get detailed leave analytics"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    leaves = await db.leave_requests.find({}, {"_id": 0}).to_list(10000)
+    
+    # By Status
+    by_status = {}
+    for l in leaves:
+        status = l.get("status", "pending")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By Type
+    by_type = {}
+    for l in leaves:
+        leave_type = l.get("leave_type", "annual")
+        by_type[leave_type] = by_type.get(leave_type, 0) + 1
+    
+    # Total days by type
+    days_by_type = {}
+    for l in leaves:
+        leave_type = l.get("leave_type", "annual")
+        days = l.get("days_requested", 0) or 0
+        days_by_type[leave_type] = days_by_type.get(leave_type, 0) + days
+    
+    # Monthly trend
+    now = datetime.now(timezone.utc)
+    monthly_leaves = {}
+    for i in range(6):
+        month_date = now - timedelta(days=30 * i)
+        month_key = month_date.strftime("%Y-%m")
+        monthly_leaves[month_key] = 0
+    
+    for l in leaves:
+        created = l.get("created_at", "")
+        if created:
+            month_key = created[:7]
+            if month_key in monthly_leaves:
+                monthly_leaves[month_key] += 1
+    
+    return {
+        "total": len(leaves),
+        "by_status": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_status.items()],
+        "by_type": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_type.items()],
+        "days_by_type": [{"name": k.replace("_", " ").title(), "value": v} for k, v in days_by_type.items()],
+        "monthly_trend": [{"month": k, "count": v} for k, v in sorted(monthly_leaves.items())]
+    }
+
+
+@api_router.get("/reports/expenses")
+async def get_expense_reports(current_user: User = Depends(get_current_user)):
+    """Get detailed expense analytics"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    expenses = await db.expense_claims.find({}, {"_id": 0}).to_list(10000)
+    
+    # By Status
+    by_status = {}
+    for e in expenses:
+        status = e.get("status", "pending")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By Category
+    by_category = {}
+    amount_by_category = {}
+    for e in expenses:
+        category = e.get("category", "other")
+        amount = e.get("amount", 0) or 0
+        by_category[category] = by_category.get(category, 0) + 1
+        amount_by_category[category] = amount_by_category.get(category, 0) + amount
+    
+    # Total amounts
+    total_amount = sum(e.get("amount", 0) or 0 for e in expenses)
+    approved_amount = sum(e.get("amount", 0) or 0 for e in expenses if e.get("status") == "approved")
+    
+    return {
+        "total": len(expenses),
+        "total_amount": round(total_amount, 2),
+        "approved_amount": round(approved_amount, 2),
+        "by_status": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_status.items()],
+        "by_category": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_category.items()],
+        "amount_by_category": [{"name": k.replace("_", " ").title(), "value": round(v, 2)} for k, v in amount_by_category.items()]
+    }
+
+
+@api_router.get("/reports/training")
+async def get_training_reports(current_user: User = Depends(get_current_user)):
+    """Get detailed training analytics"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    trainings = await db.trainings.find({}, {"_id": 0}).to_list(1000)
+    enrollments = await db.training_enrollments.find({}, {"_id": 0}).to_list(10000)
+    
+    # By Status
+    by_status = {}
+    for e in enrollments:
+        status = e.get("status", "enrolled")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By Training
+    by_training = {}
+    training_map = {t["id"]: t.get("title", "Unknown") for t in trainings}
+    for e in enrollments:
+        training_id = e.get("training_id")
+        training_name = training_map.get(training_id, "Unknown")
+        by_training[training_name] = by_training.get(training_name, 0) + 1
+    
+    # Completion rate
+    total_enrollments = len(enrollments)
+    completed = len([e for e in enrollments if e.get("status") == "completed"])
+    completion_rate = round((completed / total_enrollments * 100) if total_enrollments > 0 else 0, 1)
+    
+    return {
+        "total_trainings": len(trainings),
+        "total_enrollments": total_enrollments,
+        "completion_rate": completion_rate,
+        "by_status": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_status.items()],
+        "by_training": [{"name": k, "value": v} for k, v in sorted(by_training.items(), key=lambda x: -x[1])[:10]]
+    }
+
+
+@api_router.get("/reports/performance")
+async def get_performance_reports(current_user: User = Depends(get_current_user)):
+    """Get performance review analytics"""
+    if current_user.role not in ["super_admin", "corp_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can access reports")
+    
+    reviews = await db.performance_reviews.find({}, {"_id": 0}).to_list(10000)
+    
+    # By Status
+    by_status = {}
+    for r in reviews:
+        status = r.get("status", "draft")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # Rating distribution
+    rating_distribution = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+    total_rating = 0
+    rated_count = 0
+    for r in reviews:
+        rating = r.get("overall_rating") or r.get("manager_rating")
+        if rating:
+            rating_key = str(int(rating))
+            if rating_key in rating_distribution:
+                rating_distribution[rating_key] += 1
+                total_rating += rating
+                rated_count += 1
+    
+    avg_rating = round(total_rating / rated_count, 2) if rated_count > 0 else 0
+    
+    return {
+        "total": len(reviews),
+        "average_rating": avg_rating,
+        "by_status": [{"name": k.replace("_", " ").title(), "value": v} for k, v in by_status.items()],
+        "rating_distribution": [{"rating": k, "count": v} for k, v in rating_distribution.items()]
+    }
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
