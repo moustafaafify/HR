@@ -119,11 +119,13 @@ function App() {
     <AuthProvider>
       <LanguageProvider>
         <CurrencyProvider>
-          <BrowserRouter>
-            <AppRoutes />
-            <Toaster position="top-right" />
-            <InstallPWA />
-          </BrowserRouter>
+          <MobileConfigProvider>
+            <BrowserRouter>
+              <AppRoutes />
+              <Toaster position="top-right" />
+              <InstallPWA />
+            </BrowserRouter>
+          </MobileConfigProvider>
         </CurrencyProvider>
       </LanguageProvider>
     </AuthProvider>
