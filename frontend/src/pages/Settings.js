@@ -934,8 +934,8 @@ const Settings = () => {
           {pushSupported && pushPermission === 'denied' && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-700">
-                <strong>Notifications blocked:</strong> You've blocked notifications in your browser. 
-                To enable, click the lock icon in your browser's address bar and allow notifications.
+                <strong>Notifications blocked:</strong> You have blocked notifications in your browser. 
+                To enable, click the lock icon in your browser address bar and allow notifications.
               </p>
             </div>
           )}
