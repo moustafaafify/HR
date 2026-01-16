@@ -377,27 +377,27 @@ const Layout = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#FCFCFA]">
+    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--background, #FCFCFA)' }}>
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between" style={{ backgroundColor: 'var(--card, white)', borderBottom: '1px solid var(--border, #e2e8f0)' }}>
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
           data-testid="mobile-menu-toggle"
         >
-          <Menu size={22} className="text-stone-700" />
+          <Menu size={22} style={{ color: 'var(--foreground, #374151)' }} />
         </button>
         <div className="flex items-center gap-2">
           {branding.logo_url && (
             <img src={branding.logo_url} alt="Logo" className="w-7 h-7 object-contain" />
           )}
-          <h1 className="text-lg font-bold text-[#2D4F38]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-lg font-bold" style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--primary, #2D4F38)' }}>
             {branding.app_name || 'HR Platform'}
           </h1>
         </div>
         <div className="flex items-center gap-1">
           <NotificationBell />
-          <Link to="/profile" className="w-8 h-8 rounded-full bg-[#2D4F38] flex items-center justify-center text-white text-sm font-medium">
+          <Link to="/profile" className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium" style={{ backgroundColor: 'var(--primary, #2D4F38)' }}>
             {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
           </Link>
         </div>
@@ -415,19 +415,18 @@ const Layout = () => {
       <aside className={`
         fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50
         ${sidebarCollapsed ? 'w-[72px]' : 'w-64'}
-        bg-white border-r border-stone-200
         transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         flex flex-col h-screen
         ${isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
-      `}>
+      `} style={{ backgroundColor: 'var(--sidebar-bg, white)', borderRight: '1px solid var(--sidebar-border, #e2e8f0)' }}>
         {/* Header */}
-        <div className={`p-4 border-b border-stone-100 flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+        <div className={`p-4 flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`} style={{ borderBottom: '1px solid var(--border, #f1f5f9)' }}>
           {!sidebarCollapsed && (
             <div className="flex items-center gap-2">
               {branding.logo_url ? (
                 <img src={branding.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded" />
               ) : null}
-              <h1 className="text-xl font-bold text-[#2D4F38] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--primary, #2D4F38)' }}>
                 {branding.app_name || 'HR Platform'}
               </h1>
             </div>
