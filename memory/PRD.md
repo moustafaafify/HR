@@ -14,18 +14,14 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 - Multi-currency support (25+ currencies with exchange rates)
 - Multi-corporate structure (corporations, branches, departments, divisions)
 - Custom branding (app name, logo, favicon)
+- Theme customization (primary/accent colors, dark mode)
 - PWA support with dynamic manifest
 
 ## Tech Stack
 - **Frontend**: React with Shadcn/UI components
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
-- **Styling**: Tailwind CSS
-
-## Current Branding
-- App Name: Lojyn HR
-- Custom logo and favicon uploaded and working
-- Dynamic PWA manifest served from `/api/manifest.json`
+- **Styling**: Tailwind CSS with CSS Variables for theming
 
 ---
 
@@ -34,27 +30,36 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 ### Session: January 16, 2026
 
 #### Completed Features
+
 1. **Translation Management Removal (DONE)**
    - Removed the Translation Management section from Settings.js
    - Removed ~1000 lines of translation-related code
-   - File reduced from 2325 lines to 1278 lines
-   - Removed unused imports (Languages, FileText, useMemo)
-   - Cleaned up translation-related state and functions
+   - File reduced from 2325 lines to ~1400 lines
 
-2. **Branding System (DONE - Previous Session)**
+2. **Theme Color Customization (DONE)**
+   - Added Primary Color picker in Settings
+   - Added Accent Color picker in Settings
+   - Added Dark Mode toggle
+   - Live preview of theme in Settings page
+   - CSS variables applied to:
+     - Login page (background, cards, buttons, text)
+     - Sidebar (title, active states, user avatar gradient)
+     - Navigation items
+   - Backend stores theme settings (primary_color, accent_color, dark_mode)
+
+3. **CSS Variables System (DONE)**
+   - `--primary` / `--primary-light` / `--primary-dark` / `--primary-rgb`
+   - `--accent` / `--accent-light` / `--accent-dark` / `--accent-rgb`
+   - `--background` / `--foreground`
+   - `--card` / `--card-foreground`
+   - `--muted` / `--muted-foreground`
+   - `--border` / `--sidebar-bg` / `--sidebar-border`
+
+4. **Branding System (DONE - Previous Session)**
    - Dynamic app name, logo, and favicon via Settings
    - Login page uses branding from BrandingContext
    - Sidebar displays custom logo
    - PWA manifest dynamically generated
-
-3. **Dynamic Currency Display (DONE - Previous Session)**
-   - Replaced hardcoded $ symbols with formatCurrency utility
-   - CurrencyContext provides global currency formatting
-
-4. **Profile Picture Upload (DONE - Previous Session)**
-   - Backend endpoint: `/api/employees/me/photo`
-   - Frontend UI with camera icon overlay
-   - upsert=True ensures employee record is created if not exists
 
 ---
 
@@ -62,6 +67,7 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ### P0 - Critical
 - [ ] Comprehensive E2E Testing - Full regression test across all modules
+- [ ] Full Dark Mode Support - Apply CSS variables to all dashboard cards and components
 
 ### P1 - High Priority
 - [ ] PWA Push Notifications - Backend service and frontend subscription
@@ -71,12 +77,11 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ### P2 - Medium Priority
 - [ ] Refactor Large Components:
-  - `Settings.js` - Currently 1278 lines (improved from 2325)
+  - `Settings.js` - Currently ~1400 lines
   - `MobileApps.js` - Large component
   - `EmployeesNew.js` - Needs breaking down
   - `Reports.js` - Complex reporting component
 - [ ] PWA Offline Mode - Service worker data caching
-- [ ] Theme Color Customization - Add to Branding section
 - [ ] Export Translations as CSV/JSON
 - [ ] Department Budget Allocation
 
@@ -86,45 +91,31 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ### Settings & Branding
 - `GET /api/settings` - Fetch global settings
-- `PUT /api/settings` - Update settings (admin only)
-- `POST /api/uploads/branding/{type}` - Upload logo/favicon
-- `GET /api/manifest.json` - Dynamic PWA manifest
+- `PUT /api/settings` - Update settings including theme colors
 
-### Employee Profile
-- `GET /api/employees/me` - Get current employee data
-- `POST /api/employees/me/photo` - Upload profile picture
-- `GET /api/uploads/employee_photos/{filename}` - Serve photos
+### Theme Fields in Settings
+```json
+{
+  "primary_color": "#2D4F38",
+  "accent_color": "#4A7C59",
+  "dark_mode": false
+}
+```
 
 ---
 
 ## Database Schema
 
-### Settings Collection
+### Settings Collection - Theme Fields
 ```json
 {
   "id": "global_settings",
+  "primary_color": "#2D4F38",
+  "accent_color": "#4A7C59",
+  "dark_mode": false,
   "app_name": "Lojyn HR",
   "logo_url": "/api/uploads/branding/logo_xxx.png",
-  "favicon_url": "/api/uploads/branding/logo_xxx.png",
-  "language_1": "en",
-  "language_2": "ar",
-  "currency": "EGP",
-  "enabled_currencies": ["EGP", "USD", ...],
-  "exchange_rates": {...},
-  "smtp": {...},
-  "sms": {...}
-}
-```
-
-### Employees Collection
-```json
-{
-  "id": "...",
-  "user_id": "...",
-  "full_name": "...",
-  "email": "...",
-  "profile_picture": "/api/uploads/employee_photos/xxx.jpg",
-  ...
+  "favicon_url": "/api/uploads/branding/logo_xxx.png"
 }
 ```
 
@@ -136,13 +127,15 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ---
 
-## Mocked Features
-- SMTP/Email sending (test endpoint exists but doesn't send)
-- SMS notifications
-- PWA Push Notifications (not yet implemented)
+## Known Limitations
+- Dark mode only fully styled for login page and sidebar
+- Dashboard cards and other pages need CSS variable updates for full dark mode support
 
 ---
 
-## Known Issues
-- Settings.js still large (1278 lines) - needs further refactoring
-- No versioned database migration strategy
+## Files Modified This Session
+- `frontend/src/pages/Settings.js` - Added Theme Customization section
+- `frontend/src/contexts/BrandingContext.js` - Added theme color management and CSS variable application
+- `frontend/src/components/Layout.js` - Updated to use CSS variables for sidebar styling
+- `frontend/src/pages/Login.js` - Updated to use CSS variables
+- `backend/server.py` - Added primary_color, accent_color, dark_mode fields to Settings model
