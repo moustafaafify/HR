@@ -162,9 +162,6 @@ const Settings = () => {
     return lang ? lang.name : code;
   };
 
-  // All languages available for translation (excluding English which is base)
-  const availableTranslationLanguages = languages.filter(lang => lang.code !== 'en');
-
   // Handle logo upload
   const handleLogoUpload = async (event) => {
     const file = event.target.files?.[0];
