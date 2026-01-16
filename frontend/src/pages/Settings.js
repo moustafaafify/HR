@@ -699,6 +699,48 @@ const Settings = () => {
     }
   };
 
+  // Filtered translations based on search
+  const filteredTranslations = useMemo(() => {
+    const baseLanguage = 'en'; // Always show English as the base
+    const targetLang = selectedTranslationLang || settings.language_2 || 'es';
+    const baseTranslations = allTranslations[baseLanguage] || {};
+    const targetTranslations = allTranslations[targetLang] || {};
+    
+    const translationKeys = Object.keys(baseTranslations);
+    
+    if (!translationSearch.trim()) {
+      return translationKeys.map(key => ({
+        key,
+        english: baseTranslations[key] || key,
+        translated: editedTranslations[`${targetLang}.${key}`] ?? targetTranslations[key] ?? ''
+      }));
+    }
+    
+    const searchLower = translationSearch.toLowerCase();
+    return translationKeys
+      .filter(key => 
+        key.toLowerCase().includes(searchLower) ||
+        (baseTranslations[key] || '').toLowerCase().includes(searchLower) ||
+        (targetTranslations[key] || '').toLowerCase().includes(searchLower)
+      )
+      .map(key => ({
+        key,
+        english: baseTranslations[key] || key,
+        translated: editedTranslations[`${targetLang}.${key}`] ?? targetTranslations[key] ?? ''
+      }));
+  }, [translationSearch, selectedTranslationLang, settings.language_2, editedTranslations]);
+
+  // Get language name from code
+  const getLanguageName = (code) => {
+    const lang = languages.find(l => l.code === code);
+    return lang ? lang.name : code;
+  };
+
+  // Available languages with translations
+  const availableTranslationLanguages = ['es', 'fr', 'ar', 'de', 'zh'].filter(code => 
+    allTranslations[code]
+  );
+
   const handleSave = async () => {
     setLoading(true);
     try {
