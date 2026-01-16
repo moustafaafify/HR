@@ -293,6 +293,7 @@ const Layout = () => {
       icon: Shield,
       items: [
         { path: '/compliance', icon: Shield, label: isAdmin ? 'Compliance & Legal' : 'My Compliance' },
+        { path: '/visitors', icon: UserCheck, label: isAdmin ? 'Visitor Management' : 'My Visitors' },
       ]
     }
   ];
