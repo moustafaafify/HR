@@ -800,12 +800,21 @@ class SmtpSettings(BaseModel):
 class SmsSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     enabled: bool = False
-    provider: str = "twilio"  # twilio, nexmo, messagebird, plivo, sns, africas_talking, infobip, clicksend
+    provider: str = "twilio"  # twilio, nexmo, messagebird, plivo, sns, africas_talking, infobip, clicksend, custom
     api_key: str = ""
     api_secret: str = ""
     sender_id: str = ""
     account_sid: str = ""  # For Twilio
     verified: bool = False
+    # Custom provider fields
+    custom_provider_name: str = ""
+    custom_api_url: str = ""
+    custom_auth_type: str = "bearer"  # bearer, basic, api_key_header, api_key_query, custom_header
+    custom_header_name: str = ""
+    custom_header_value: str = ""
+    custom_http_method: str = "POST"
+    custom_body_template: str = ""
+    custom_headers: str = ""
 
 class Settings(BaseModel):
     model_config = ConfigDict(extra="ignore")
