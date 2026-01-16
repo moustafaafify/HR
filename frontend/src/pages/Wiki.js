@@ -51,7 +51,6 @@ import {
   ClipboardCheck,
   TrendingUp,
   Activity,
-  Bell,
   MessageSquare,
   Hash,
   AtSign,
