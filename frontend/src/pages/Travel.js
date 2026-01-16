@@ -1084,12 +1084,12 @@ const Travel = () => {
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-white">
           <DollarSign className="w-8 h-8 mb-2 opacity-80" />
           <p className="text-indigo-100 text-sm">Total Budget</p>
-          <p className="text-2xl font-bold">${(stats?.total_budget || 0).toLocaleString()}</p>
+          <p className="text-2xl font-bold">{formatCurrency(stats?.total_budget || 0)}</p>
         </div>
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white">
           <TrendingUp className="w-8 h-8 mb-2 opacity-80" />
           <p className="text-purple-100 text-sm">Actual Spent</p>
-          <p className="text-2xl font-bold">${(stats?.total_actual || 0).toLocaleString()}</p>
+          <p className="text-2xl font-bold">{formatCurrency(stats?.total_actual || 0)}</p>
         </div>
       </div>
 
