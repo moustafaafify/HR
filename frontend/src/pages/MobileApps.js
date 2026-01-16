@@ -35,7 +35,28 @@ import {
   Circle,
   Wifi,
   Battery,
-  Signal
+  Signal,
+  GitBranch,
+  FolderTree,
+  Layers,
+  TrendingUp,
+  UserPlus,
+  UserMinus,
+  ClipboardCheck,
+  Network,
+  Package,
+  Megaphone,
+  AlertOctagon,
+  Gavel,
+  Plane,
+  Award,
+  Target,
+  CalendarDays,
+  Code,
+  Timer,
+  Sheet,
+  FolderKanban,
+  Receipt
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
