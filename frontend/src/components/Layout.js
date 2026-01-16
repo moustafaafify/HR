@@ -57,7 +57,8 @@ import {
   Sun,
   Moon,
   Shield,
-  UserCheck
+  UserCheck,
+  CalendarClock
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -211,6 +212,7 @@ const Layout = () => {
         { path: '/notifications', icon: Bell, label: 'Notifications' },
         ...(isAdmin ? [{ path: '/reports', icon: BarChart3, label: 'Reports' }] : []),
         ...(isAdmin ? [{ path: '/analytics', icon: Activity, label: 'HR Analytics' }] : []),
+        ...(isAdmin ? [{ path: '/scheduled-reports', icon: CalendarClock, label: 'Scheduled Reports' }] : []),
         { path: '/team-calendar', icon: CalendarDays, label: 'Calendar' },
         { path: '/communications', icon: Megaphone, label: 'Communications' },
         { path: '/documents', icon: FileCheck, label: 'Documents' },
