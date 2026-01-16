@@ -27,6 +27,57 @@ const CHART_COLORS = {
   danger: '#ef4444'
 };
 
+// Stat Card Component (moved outside to avoid re-renders)
+const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color = 'primary' }) => (
+  <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm text-slate-500 font-medium">{title}</p>
+        <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+        {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+      </div>
+      <div className={`p-3 rounded-xl ${
+        color === 'primary' ? 'bg-emerald-100' : 
+        color === 'warning' ? 'bg-amber-100' : 
+        color === 'danger' ? 'bg-red-100' : 'bg-blue-100'
+      }`}>
+        <Icon className={`${
+          color === 'primary' ? 'text-emerald-600' : 
+          color === 'warning' ? 'text-amber-600' : 
+          color === 'danger' ? 'text-red-600' : 'text-blue-600'
+        }`} size={22} />
+      </div>
+    </div>
+    {trend !== undefined && (
+      <div className={`flex items-center gap-1 mt-3 text-sm ${
+        trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-red-500' : 'text-slate-500'
+      }`}>
+        {trend === 'up' ? <ArrowUpRight size={16} /> : trend === 'down' ? <ArrowDownRight size={16} /> : null}
+        <span>{trendValue}</span>
+      </div>
+    )}
+  </div>
+);
+
+// Custom Tooltip Component (moved outside)
+const CustomTooltip = ({ active, payload, label, formatCurrency }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-200">
+        <p className="text-sm font-medium text-slate-900">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: {typeof entry.value === 'number' && entry.value > 1000 
+              ? (formatCurrency ? formatCurrency(entry.value) : entry.value.toLocaleString())
+              : entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const Analytics = () => {
   const { token } = useAuth();
   const { formatCurrency } = useCurrency();
@@ -39,11 +90,13 @@ const Analytics = () => {
   const [forecast, setForecast] = useState(null);
 
   useEffect(() => {
-    fetchAnalytics();
+    if (token) {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const fetchAnalytics = async () => {
-    if (!token) return;
+  const fetchData = async () => {
     setLoading(true);
     
     try {
