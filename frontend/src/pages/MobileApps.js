@@ -703,37 +703,87 @@ const MobileApps = () => {
           )}
 
           {activeTab === 'modules' && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="font-semibold text-slate-900 mb-4">Enabled Modules</h3>
-              <p className="text-sm text-slate-500 mb-4">Select which modules to include in the mobile app</p>
-              
-              <div className="space-y-2">
-                {moduleList.map(module => (
-                  <label 
-                    key={module.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-300 cursor-pointer transition-colors"
+            <div className="bg-white rounded-xl border border-slate-200 p-6 max-h-[600px] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-slate-900">Enabled Modules</h3>
+                  <p className="text-sm text-slate-500">Select which modules to include in the mobile app ({Object.values(mobileConfig.enabledModules).filter(Boolean).length} of {moduleList.length} enabled)</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const allEnabled = {};
+                      moduleList.forEach(m => allEnabled[m.id] = true);
+                      setMobileConfig(prev => ({ ...prev, enabledModules: allEnabled }));
+                    }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={mobileConfig.enabledModules[module.id] || false}
-                      onChange={(e) => setMobileConfig(prev => ({
-                        ...prev,
-                        enabledModules: { ...prev.enabledModules, [module.id]: e.target.checked }
-                      }))}
-                      className="w-5 h-5 rounded border-slate-300 text-[#2D4F38] focus:ring-[#2D4F38]"
-                    />
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <module.icon size={16} className="text-slate-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">{module.label}</p>
-                        <p className="text-xs text-slate-500">{module.description}</p>
-                      </div>
-                    </div>
-                  </label>
-                ))}
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const allDisabled = {};
+                      moduleList.forEach(m => allDisabled[m.id] = false);
+                      setMobileConfig(prev => ({ ...prev, enabledModules: allDisabled }));
+                    }}
+                  >
+                    Clear All
+                  </Button>
+                </div>
               </div>
+              
+              {/* Group modules by category */}
+              {['Core', 'Organization', 'People', 'Time & Attendance', 'Finance', 'Performance', 'Operations', 'Support', 'Reports'].map(category => {
+                const categoryModules = moduleList.filter(m => m.category === category);
+                if (categoryModules.length === 0) return null;
+                
+                return (
+                  <div key={category} className="mb-4">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      {category}
+                      <span className="text-[10px] font-normal text-slate-400">
+                        ({categoryModules.filter(m => mobileConfig.enabledModules[m.id]).length}/{categoryModules.length})
+                      </span>
+                    </h4>
+                    <div className="grid gap-2">
+                      {categoryModules.map(module => (
+                        <label 
+                          key={module.id}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            mobileConfig.enabledModules[module.id]
+                              ? 'border-[#2D4F38]/30 bg-[#2D4F38]/5'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={mobileConfig.enabledModules[module.id] || false}
+                            onChange={(e) => setMobileConfig(prev => ({
+                              ...prev,
+                              enabledModules: { ...prev.enabledModules, [module.id]: e.target.checked }
+                            }))}
+                            className="w-5 h-5 rounded border-slate-300 text-[#2D4F38] focus:ring-[#2D4F38]"
+                          />
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              mobileConfig.enabledModules[module.id] ? 'bg-[#2D4F38]/10' : 'bg-slate-100'
+                            }`}>
+                              <module.icon size={16} className={mobileConfig.enabledModules[module.id] ? 'text-[#2D4F38]' : 'text-slate-500'} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-800">{module.label}</p>
+                              <p className="text-xs text-slate-500">{module.description}</p>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
