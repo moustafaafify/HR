@@ -14861,6 +14861,214 @@ async def get_dynamic_manifest():
     })
 
 
+# ============= PUSH NOTIFICATION ENDPOINTS =============
+
+@api_router.get("/push/vapid-public-key")
+async def get_vapid_public_key():
+    """Get VAPID public key for browser push subscription"""
+    if not VAPID_PUBLIC_KEY:
+        raise HTTPException(status_code=500, detail="Push notifications not configured")
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(
+    data: PushSubscriptionCreate,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Subscribe to push notifications"""
+    user = await get_current_user(credentials)
+    subscription = data.subscription
+    
+    # Store subscription
+    stored = StoredPushSubscription(
+        user_id=user["id"],
+        endpoint=subscription.endpoint,
+        p256dh=subscription.keys.p256dh,
+        auth=subscription.keys.auth
+    )
+    
+    # Upsert - update if endpoint exists, insert if not
+    await db.push_subscriptions.update_one(
+        {"endpoint": subscription.endpoint},
+        {"$set": {
+            "user_id": user["id"],
+            "endpoint": subscription.endpoint,
+            "p256dh": subscription.keys.p256dh,
+            "auth": subscription.keys.auth,
+            "is_active": True,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Subscribed to push notifications"}
+
+@api_router.post("/push/unsubscribe")
+async def unsubscribe_from_push(
+    endpoint: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Unsubscribe from push notifications"""
+    user = await get_current_user(credentials)
+    
+    result = await db.push_subscriptions.delete_one({
+        "endpoint": endpoint,
+        "user_id": user["id"]
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    return {"success": True, "message": "Unsubscribed from push notifications"}
+
+@api_router.get("/push/status")
+async def get_push_status(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Check if user has active push subscription"""
+    user = await get_current_user(credentials)
+    
+    subscription = await db.push_subscriptions.find_one({
+        "user_id": user["id"],
+        "is_active": True
+    })
+    
+    return {"subscribed": subscription is not None}
+
+async def send_push_notification(user_id: str, notification: NotificationPayload):
+    """Send push notification to a specific user"""
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        logger.warning("Push notifications not configured")
+        return False
+    
+    # Get user's subscriptions
+    subscriptions = await db.push_subscriptions.find({
+        "user_id": user_id,
+        "is_active": True
+    }).to_list(100)
+    
+    if not subscriptions:
+        return False
+    
+    # Get branding for icon
+    settings = await db.settings.find_one({"id": "global_settings"})
+    icon_url = settings.get("logo_url", "/icon-192x192.png") if settings else "/icon-192x192.png"
+    
+    payload = json.dumps({
+        "title": notification.title,
+        "body": notification.body,
+        "icon": notification.icon or icon_url,
+        "badge": notification.badge or "/badge-72x72.png",
+        "tag": notification.tag,
+        "data": {
+            "url": notification.url or "/",
+            **(notification.data or {})
+        }
+    })
+    
+    success_count = 0
+    for sub in subscriptions:
+        try:
+            subscription_info = {
+                "endpoint": sub["endpoint"],
+                "keys": {
+                    "p256dh": sub["p256dh"],
+                    "auth": sub["auth"]
+                }
+            }
+            
+            webpush(
+                subscription_info=subscription_info,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_SUBJECT}
+            )
+            success_count += 1
+        except WebPushException as e:
+            logger.error(f"Push notification failed: {e}")
+            # If subscription expired (410 or 404), deactivate it
+            if e.response and e.response.status_code in [404, 410]:
+                await db.push_subscriptions.update_one(
+                    {"endpoint": sub["endpoint"]},
+                    {"$set": {"is_active": False}}
+                )
+        except Exception as e:
+            logger.error(f"Unexpected push error: {e}")
+    
+    return success_count > 0
+
+async def broadcast_push_notification(notification: NotificationPayload, user_ids: List[str] = None):
+    """Send push notification to multiple users or all users"""
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return 0
+    
+    query = {"is_active": True}
+    if user_ids:
+        query["user_id"] = {"$in": user_ids}
+    
+    subscriptions = await db.push_subscriptions.find(query).to_list(1000)
+    
+    settings = await db.settings.find_one({"id": "global_settings"})
+    icon_url = settings.get("logo_url", "/icon-192x192.png") if settings else "/icon-192x192.png"
+    
+    payload = json.dumps({
+        "title": notification.title,
+        "body": notification.body,
+        "icon": notification.icon or icon_url,
+        "badge": notification.badge or "/badge-72x72.png",
+        "tag": notification.tag,
+        "data": {
+            "url": notification.url or "/",
+            **(notification.data or {})
+        }
+    })
+    
+    success_count = 0
+    for sub in subscriptions:
+        try:
+            subscription_info = {
+                "endpoint": sub["endpoint"],
+                "keys": {
+                    "p256dh": sub["p256dh"],
+                    "auth": sub["auth"]
+                }
+            }
+            
+            webpush(
+                subscription_info=subscription_info,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_SUBJECT}
+            )
+            success_count += 1
+        except WebPushException as e:
+            if e.response and e.response.status_code in [404, 410]:
+                await db.push_subscriptions.update_one(
+                    {"endpoint": sub["endpoint"]},
+                    {"$set": {"is_active": False}}
+                )
+        except Exception as e:
+            logger.error(f"Broadcast push error: {e}")
+    
+    return success_count
+
+@api_router.post("/push/test")
+async def test_push_notification(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Send a test push notification to the current user"""
+    user = await get_current_user(credentials)
+    
+    notification = NotificationPayload(
+        title="Test Notification",
+        body="Push notifications are working! 🎉",
+        tag="test",
+        url="/notifications"
+    )
+    
+    success = await send_push_notification(user["id"], notification)
+    
+    if success:
+        return {"success": True, "message": "Test notification sent"}
+    else:
+        raise HTTPException(status_code=400, detail="No active subscriptions found")
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
