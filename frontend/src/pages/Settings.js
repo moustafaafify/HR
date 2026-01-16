@@ -542,6 +542,317 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* SMTP Integration Settings */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Mail className="text-orange-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">SMTP Email Integration</h2>
+                <p className="text-sm text-slate-500">Configure custom email server for sending notifications</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {settings.smtp?.verified && (
+                <span className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                  <CheckCircle2 size={14} />
+                  Verified
+                </span>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.smtp?.enabled || false}
+                  onChange={(e) => updateSmtpSetting('enabled', e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-slate-700">Enable</span>
+              </label>
+            </div>
+          </div>
+
+          {settings.smtp?.enabled && (
+            <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">SMTP Host *</label>
+                  <input
+                    type="text"
+                    placeholder="smtp.example.com"
+                    value={settings.smtp?.host || ''}
+                    onChange={(e) => updateSmtpSetting('host', e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Port *</label>
+                  <input
+                    type="number"
+                    placeholder="587"
+                    value={settings.smtp?.port || 587}
+                    onChange={(e) => updateSmtpSetting('port', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Username *</label>
+                  <input
+                    type="text"
+                    placeholder="your-email@example.com"
+                    value={settings.smtp?.username || ''}
+                    onChange={(e) => updateSmtpSetting('username', e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showSmtpPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={settings.smtp?.password || ''}
+                      onChange={(e) => updateSmtpSetting('password', e.target.value)}
+                      className="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showSmtpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">From Email *</label>
+                  <input
+                    type="email"
+                    placeholder="noreply@yourcompany.com"
+                    value={settings.smtp?.from_email || ''}
+                    onChange={(e) => updateSmtpSetting('from_email', e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1.5 block">From Name</label>
+                  <input
+                    type="text"
+                    placeholder="HR Platform"
+                    value={settings.smtp?.from_name || ''}
+                    onChange={(e) => updateSmtpSetting('from_name', e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Encryption</label>
+                <Select 
+                  value={settings.smtp?.encryption || 'tls'} 
+                  onValueChange={(value) => updateSmtpSetting('encryption', value)}
+                >
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="tls">TLS</SelectItem>
+                    <SelectItem value="ssl">SSL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  type="button"
+                  onClick={testSmtpConnection}
+                  disabled={testingSmtp || !settings.smtp?.host || !settings.smtp?.username}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <TestTube size={16} />
+                  {testingSmtp ? 'Testing...' : 'Test Connection'}
+                </Button>
+                <p className="text-xs text-slate-500">Test your SMTP configuration before saving</p>
+              </div>
+            </div>
+          )}
+
+          {!settings.smtp?.enabled && (
+            <div className="text-center py-8 text-slate-500">
+              <Mail size={40} className="mx-auto mb-3 opacity-30" />
+              <p>Enable SMTP integration to send emails via your own mail server</p>
+            </div>
+          )}
+        </div>
+
+        {/* SMS Integration Settings */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-violet-100 rounded-lg">
+                <MessageSquare className="text-violet-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">SMS Integration</h2>
+                <p className="text-sm text-slate-500">Configure SMS provider for sending text notifications</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {settings.sms?.verified && (
+                <span className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                  <CheckCircle2 size={14} />
+                  Verified
+                </span>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.sms?.enabled || false}
+                  onChange={(e) => updateSmsSetting('enabled', e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-slate-700">Enable</span>
+              </label>
+            </div>
+          </div>
+
+          {settings.sms?.enabled && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">SMS Provider *</label>
+                <Select 
+                  value={settings.sms?.provider || 'twilio'} 
+                  onValueChange={(value) => updateSmsSetting('provider', value)}
+                >
+                  <SelectTrigger className="w-full md:w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="twilio">Twilio</SelectItem>
+                    <SelectItem value="nexmo">Vonage (Nexmo)</SelectItem>
+                    <SelectItem value="messagebird">MessageBird</SelectItem>
+                    <SelectItem value="plivo">Plivo</SelectItem>
+                    <SelectItem value="sns">AWS SNS</SelectItem>
+                    <SelectItem value="africas_talking">Africa's Talking</SelectItem>
+                    <SelectItem value="infobip">Infobip</SelectItem>
+                    <SelectItem value="clicksend">ClickSend</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {settings.sms?.provider === 'twilio' && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">Account SID *</label>
+                    <input
+                      type="text"
+                      placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                      value={settings.sms?.account_sid || ''}
+                      onChange={(e) => updateSmsSetting('account_sid', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-200 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">Auth Token *</label>
+                    <div className="relative">
+                      <input
+                        type={showSmsSecret ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={settings.sms?.api_secret || ''}
+                        onChange={(e) => updateSmsSetting('api_secret', e.target.value)}
+                        className="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-200 outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSmsSecret(!showSmsSecret)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showSmsSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settings.sms?.provider !== 'twilio' && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">API Key *</label>
+                    <input
+                      type="text"
+                      placeholder="Your API Key"
+                      value={settings.sms?.api_key || ''}
+                      onChange={(e) => updateSmsSetting('api_key', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-200 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">API Secret *</label>
+                    <div className="relative">
+                      <input
+                        type={showSmsSecret ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={settings.sms?.api_secret || ''}
+                        onChange={(e) => updateSmsSetting('api_secret', e.target.value)}
+                        className="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-200 outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSmsSecret(!showSmsSecret)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showSmsSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Sender ID / Phone Number *</label>
+                <input
+                  type="text"
+                  placeholder="+1234567890 or COMPANY"
+                  value={settings.sms?.sender_id || ''}
+                  onChange={(e) => updateSmsSetting('sender_id', e.target.value)}
+                  className="w-full md:w-64 px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all duration-200 outline-none"
+                />
+                <p className="text-xs text-slate-500 mt-1">Phone number with country code or alphanumeric sender ID</p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  type="button"
+                  onClick={testSmsConnection}
+                  disabled={testingSms || !settings.sms?.sender_id}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <TestTube size={16} />
+                  {testingSms ? 'Testing...' : 'Test Connection'}
+                </Button>
+                <p className="text-xs text-slate-500">Validate your SMS provider credentials</p>
+              </div>
+            </div>
+          )}
+
+          {!settings.sms?.enabled && (
+            <div className="text-center py-8 text-slate-500">
+              <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
+              <p>Enable SMS integration to send text message notifications</p>
+            </div>
+          )}
+        </div>
+
         <Button 
           onClick={handleSave}
           data-testid="save-settings-button"
