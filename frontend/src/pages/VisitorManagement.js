@@ -472,8 +472,8 @@ const VisitorManagement = () => {
     const VisitIcon = getVisitTypeIcon(visitor.visit_type);
     
     return (
-      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl" data-testid={`visitor-card-${visitor.id}`}>
+        <div className="flex items-center gap-4 cursor-pointer" onClick={() => openViewVisitor(visitor)}>
           <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
             <VisitIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           </div>
@@ -486,6 +486,7 @@ const VisitorManagement = () => {
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-500">
               {formatTime(visitor.expected_time)} • {visitor.visit_type}
+              {visitor.badge_number && ` • Badge: ${visitor.badge_number}`}
             </p>
           </div>
         </div>
@@ -495,23 +496,26 @@ const VisitorManagement = () => {
           </span>
           {showActions && (
             <>
+              <Button size="sm" variant="ghost" onClick={() => openViewVisitor(visitor)} data-testid={`view-visitor-${visitor.id}`}>
+                <Eye className="w-4 h-4" />
+              </Button>
               {visitor.status === 'pre_registered' && (
-                <Button size="sm" onClick={() => openCheckIn(visitor)}>
+                <Button size="sm" onClick={() => openCheckIn(visitor)} data-testid={`checkin-visitor-${visitor.id}`}>
                   <LogIn className="w-4 h-4 mr-1" /> Check In
                 </Button>
               )}
               {visitor.status === 'checked_in' && (
                 <>
-                  <Button size="sm" variant="outline" onClick={() => handlePrintBadge(visitor.id)}>
+                  <Button size="sm" variant="outline" onClick={() => handlePrintBadge(visitor.id)} data-testid={`print-badge-${visitor.id}`}>
                     <Printer className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleCheckOut(visitor.id)}>
+                  <Button size="sm" variant="outline" onClick={() => handleCheckOut(visitor.id)} data-testid={`checkout-visitor-${visitor.id}`}>
                     <LogOut className="w-4 h-4 mr-1" /> Out
                   </Button>
                 </>
               )}
               {visitor.status === 'pre_registered' && (
-                <Button size="sm" variant="ghost" onClick={() => openEditVisitor(visitor)}>
+                <Button size="sm" variant="ghost" onClick={() => openEditVisitor(visitor)} data-testid={`edit-visitor-${visitor.id}`}>
                   <Edit2 className="w-4 h-4" />
                 </Button>
               )}
