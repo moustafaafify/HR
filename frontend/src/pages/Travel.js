@@ -811,7 +811,7 @@ const Travel = () => {
                 </div>
                 <div className="bg-slate-50 rounded-xl p-4 flex justify-between items-center">
                   <span className="font-medium text-slate-700">Total Estimated Budget:</span>
-                  <span className="text-xl font-bold text-indigo-600">${calculateTotal(requestForm).toLocaleString()}</span>
+                  <span className="text-xl font-bold text-indigo-600">{formatCurrency(calculateTotal(requestForm))}</span>
                 </div>
               </div>
 
