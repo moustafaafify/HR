@@ -14486,6 +14486,82 @@ async def get_performance_reports(current_user: User = Depends(get_current_user)
     }
 
 
+# ============= TRANSLATIONS API =============
+
+@api_router.get("/translations")
+async def get_translations():
+    """Get all custom translations"""
+    translations_doc = await db.translations.find_one({"id": "custom_translations"})
+    if translations_doc:
+        return translations_doc.get("translations", {})
+    return {}
+
+@api_router.post("/translations")
+async def create_translation(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a new translation key with translations"""
+    key = data.get("key", "").strip().lower().replace(" ", "_")
+    translations = data.get("translations", {})
+    
+    if not key:
+        raise HTTPException(status_code=400, detail="Translation key is required")
+    
+    if not translations.get("en"):
+        raise HTTPException(status_code=400, detail="English translation is required")
+    
+    # Check if key already exists
+    existing = await db.translations.find_one({"id": "custom_translations"})
+    if existing and key in existing.get("translations", {}):
+        raise HTTPException(status_code=400, detail=f"Translation key '{key}' already exists")
+    
+    # Update or create translations document
+    await db.translations.update_one(
+        {"id": "custom_translations"},
+        {
+            "$set": {
+                f"translations.{key}": translations,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    return {"success": True, "key": key}
+
+@api_router.put("/translations/{key}")
+async def update_translation(key: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update a specific translation for a key"""
+    language = data.get("language")
+    value = data.get("value")
+    
+    if not language or not value:
+        raise HTTPException(status_code=400, detail="Language and value are required")
+    
+    await db.translations.update_one(
+        {"id": "custom_translations"},
+        {
+            "$set": {
+                f"translations.{key}.{language}": value,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"success": True}
+
+@api_router.delete("/translations/{key}")
+async def delete_translation(key: str, current_user: User = Depends(get_current_user)):
+    """Delete a translation key"""
+    result = await db.translations.update_one(
+        {"id": "custom_translations"},
+        {
+            "$unset": {f"translations.{key}": ""},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    return {"success": True}
+
+
 # ============= INCLUDE ROUTER =============
 app.include_router(api_router)
 
