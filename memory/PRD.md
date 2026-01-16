@@ -1,13 +1,13 @@
 # HR Platform - Product Requirements Document
 
 ## Original Problem Statement
-Create a comprehensive, full-stack HR platform that is multi-language, multi-currency, and supports a multi-corporate structure.
+Create a comprehensive, full-stack HR platform that is multi-language, multi-currency, and supports a multi-corporate structure with 35+ HR modules.
 
 ## Tech Stack
-- **Frontend**: React with Shadcn/UI components
+- **Frontend**: React with Shadcn/UI, Recharts for visualizations
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
-- **Styling**: Tailwind CSS with CSS Variables for theming
+- **Styling**: Tailwind CSS with CSS Variables
 
 ---
 
@@ -15,130 +15,107 @@ Create a comprehensive, full-stack HR platform that is multi-language, multi-cur
 
 ### Session: January 16, 2026
 
-#### Completed Features
+#### 1. Translation Management Removal ✅
+- Removed from Settings.js (reduced ~1000 lines)
 
-1. **Translation Management Removal (DONE)**
-   - Removed the Translation Management section from Settings.js
+#### 2. Theme Color Customization ✅
+- Primary/Accent color pickers
+- Dark mode toggle (global + per-user)
+- CSS variables system
 
-2. **Theme Color Customization (DONE)**
-   - Primary/Accent Color pickers in Settings
-   - Dark Mode toggle
-   - Live preview
+#### 3. PWA Push Notifications ✅
+- VAPID key generation
+- Subscribe/unsubscribe endpoints
+- 12 admin-configurable triggers
+- Service worker integration
 
-3. **User Dark Mode Toggle (DONE)**
-   - Sun/Moon icon in top header for all users
-   - Stored in localStorage
+#### 4. HR Analytics Dashboard ✅ **NEW**
+A comprehensive analytics module with 5 tabs:
 
-4. **PWA Push Notifications (DONE)** ✨ NEW
-   - **Backend:**
-     - VAPID key generation and storage
-     - Push subscription endpoints: `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/status`
-     - Test notification endpoint: `/api/push/test`
-     - Helper functions: `send_push_notification()`, `broadcast_push_notification()`
-     - Automatic expired subscription cleanup
-   - **Frontend:**
-     - `usePushNotifications` hook for subscription management
-     - Push Notifications section in Settings with:
-       - Subscribe/Unsubscribe button
-       - Test notification button
-       - 12 configurable notification triggers (admin-controlled)
-     - Service worker handles push events and notification clicks
-   - **Configurable Triggers:**
-     - Leave requests (new, approved, rejected)
-     - Tickets (assigned, updated)
-     - Expenses (approved, rejected)
-     - Announcements
-     - Payroll processed
-     - Training reminders
-     - Birthday reminders
-     - Performance reviews due
+**Overview Tab:**
+- Total Headcount, New Hires, Terminations, Turnover Rate
+- Open Positions, Pending Candidates, Average Salary
+- Headcount Trend chart (12 months)
+- Department Distribution pie chart
+- Salary by Department bar chart
 
----
+**Turnover Tab:**
+- Monthly Terminations bar chart
+- Turnover by Tenure pie chart
+- Turnover by Department breakdown
 
-## Push Notification Triggers (Admin Configurable)
+**Hiring Tab:**
+- Hiring Funnel (Applied → Screening → Interview → Offer → Hired)
+- Monthly Hires trend
+- Hires by Source
+- Average Time to Hire
 
-| Trigger Key | Description |
-|-------------|-------------|
-| `leave_request_new` | New leave requests submitted |
-| `leave_request_approved` | Leave requests approved |
-| `leave_request_rejected` | Leave requests rejected |
-| `ticket_assigned` | Tickets assigned to user |
-| `ticket_updated` | Ticket updates |
-| `expense_approved` | Expenses approved |
-| `expense_rejected` | Expenses rejected |
-| `announcement_new` | Company announcements |
-| `payroll_processed` | Payroll processing complete |
-| `training_reminder` | Training session reminders |
-| `birthday_reminder` | Team birthday notifications |
-| `performance_review_due` | Performance review deadlines |
+**Salary Tab:**
+- Total Payroll, Average, Median, Min, Max
+- Salary Distribution histogram
+- Salary by Department
+- Top Salaries by Position
+
+**Forecast Tab:**
+- Current vs Projected Headcount
+- 6-month forecast based on historical trends
+- Projected hires/terminations per month
+- Year-end headcount projection
 
 ---
 
-## Key API Endpoints (New)
+## Key API Endpoints
+
+### Analytics
+- `GET /api/analytics/overview` - Key metrics and charts
+- `GET /api/analytics/turnover` - Turnover analysis
+- `GET /api/analytics/hiring` - Hiring funnel and trends
+- `GET /api/analytics/salary` - Salary benchmarking
+- `GET /api/analytics/forecast` - Headcount forecasting
 
 ### Push Notifications
-- `GET /api/push/vapid-public-key` - Get VAPID public key
-- `POST /api/push/subscribe` - Subscribe to push notifications
-- `POST /api/push/unsubscribe` - Unsubscribe from push notifications
-- `GET /api/push/status` - Check subscription status
-- `POST /api/push/test` - Send test notification
+- `GET /api/push/vapid-public-key`
+- `POST /api/push/subscribe`
+- `POST /api/push/unsubscribe`
+- `GET /api/push/status`
+- `POST /api/push/test`
 
 ---
 
-## Database Schema (New)
+## Files Created/Modified
 
-### push_subscriptions Collection
-```json
-{
-  "id": "uuid",
-  "user_id": "string",
-  "endpoint": "string",
-  "p256dh": "string",
-  "auth": "string",
-  "is_active": true,
-  "created_at": "ISO datetime"
-}
-```
+### New Files
+- `frontend/src/pages/Analytics.js` - HR Analytics Dashboard
+- `frontend/src/hooks/usePushNotifications.js` - Push notification hook
 
----
-
-## Environment Variables (New)
-```
-VAPID_PUBLIC_KEY="BJylUq5TSUWVeOevAI0VP2u1fHrQaaNdT2Xcn2EyCc4evNpMb9BdbLgUUESYN-DeC_sTqgL3C-VVSbc7F4q2heQ"
-VAPID_PRIVATE_KEY="MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0waw..."
-VAPID_SUBJECT="mailto:admin@hrplatform.com"
-```
+### Modified Files
+- `backend/server.py` - Analytics endpoints, push notification endpoints
+- `backend/.env` - VAPID keys
+- `frontend/src/App.js` - Analytics route
+- `frontend/src/components/Layout.js` - Analytics nav item, Activity import
+- `frontend/src/pages/Settings.js` - Push notifications section
+- `frontend/src/contexts/BrandingContext.js` - Theme management
 
 ---
 
 ## Prioritized Backlog
 
 ### P0 - Critical
-- [ ] Comprehensive E2E Testing
-- [ ] Integrate push notifications into actual leave/expense/ticket workflows
+- [ ] Full E2E Testing after all changes
+- [ ] Integrate push notifications into leave/expense workflows
 
 ### P1 - High Priority
-- [ ] Real Device PWA Testing
-- [ ] Scheduled Report Delivery
-- [ ] Audit Trail for Security Events
+- [ ] Employee Sentiment Analysis (pulse surveys)
+- [ ] AI Resume Screening
+- [ ] Compliance Tracker
 
 ### P2 - Medium Priority
-- [ ] Refactor Large Components
+- [ ] Full Dark Mode for all pages
 - [ ] PWA Offline Mode
-- [ ] Full Dark Mode Support for all pages
+- [ ] Recognition & Rewards module
 
 ---
 
 ## Test Credentials
 - **Admin**: admin@hrplatform.com / admin123
 - **Employee**: sarah.johnson@lojyn.com / sarah123
-
----
-
-## Files Modified This Session
-- `backend/server.py` - Added push notification endpoints and helper functions
-- `backend/.env` - Added VAPID keys
-- `frontend/src/pages/Settings.js` - Added Push Notifications section
-- `frontend/src/hooks/usePushNotifications.js` - NEW hook for push management
-- `frontend/src/components/Layout.js` - Dark mode toggle in header
-- `frontend/public/service-worker.js` - Already had push handlers
