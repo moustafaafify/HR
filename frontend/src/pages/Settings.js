@@ -97,11 +97,26 @@ const Settings = () => {
   const [testingSms, setTestingSms] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  
+  // Enhanced SMTP state
+  const [smtpPresets, setSmtpPresets] = useState([]);
+  const [selectedPreset, setSelectedPreset] = useState('custom');
+  const [emailLogs, setEmailLogs] = useState([]);
+  const [showEmailLogs, setShowEmailLogs] = useState(false);
+  const [sendTestEmailDialog, setSendTestEmailDialog] = useState(false);
+  const [testEmailForm, setTestEmailForm] = useState({
+    recipient: '',
+    subject: 'HR Platform - Test Email',
+    message: 'This is a test email to verify your SMTP configuration is working correctly.'
+  });
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [smtpTab, setSmtpTab] = useState('config');
 
   // Top 50 most used languages worldwide
 
   useEffect(() => {
     fetchSettings();
+    fetchSmtpPresets();
   }, []);
 
   const fetchSettings = async () => {
@@ -135,6 +150,78 @@ const Settings = () => {
       setSettings(data);
     } catch (error) {
       console.error('Failed to fetch settings:', error);
+    }
+  };
+  
+  const fetchSmtpPresets = async () => {
+    try {
+      const response = await axios.get(`${API}/settings/smtp-presets`);
+      setSmtpPresets(response.data);
+    } catch (error) {
+      console.error('Failed to fetch SMTP presets:', error);
+    }
+  };
+  
+  const fetchEmailLogs = async () => {
+    try {
+      const response = await axios.get(`${API}/settings/email-logs`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEmailLogs(response.data);
+    } catch (error) {
+      console.error('Failed to fetch email logs:', error);
+    }
+  };
+  
+  const applySmtpPreset = (presetId) => {
+    const preset = smtpPresets.find(p => p.id === presetId);
+    if (preset && preset.id !== 'custom') {
+      setSettings(prev => ({
+        ...prev,
+        smtp: {
+          ...prev.smtp,
+          host: preset.host,
+          port: preset.port,
+          encryption: preset.encryption,
+          verified: false
+        }
+      }));
+    }
+    setSelectedPreset(presetId);
+  };
+  
+  const sendTestEmailToCustom = async () => {
+    if (!testEmailForm.recipient) {
+      toast.error('Please enter a recipient email address');
+      return;
+    }
+    
+    setSendingTestEmail(true);
+    try {
+      const response = await axios.post(`${API}/settings/send-test-email`, {
+        smtp_config: settings.smtp,
+        recipient: testEmailForm.recipient,
+        subject: testEmailForm.subject,
+        message: testEmailForm.message
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setSendTestEmailDialog(false);
+        setSettings(prev => ({
+          ...prev,
+          smtp: { ...prev.smtp, verified: true }
+        }));
+        fetchEmailLogs();
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send test email');
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
