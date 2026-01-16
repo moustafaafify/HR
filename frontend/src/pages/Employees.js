@@ -15,6 +15,7 @@ const API = `${BACKEND_URL}/api`;
 const Employees = () => {
   const { t } = useLanguage();
   const { formatCurrency } = useCurrency();
+  const { token } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [corporations, setCorporations] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -22,6 +23,12 @@ const Employees = () => {
   const [divisions, setDivisions] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEmp, setEditingEmp] = useState(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [importStep, setImportStep] = useState('upload'); // upload, preview, results
+  const [csvData, setCsvData] = useState([]);
+  const [importResults, setImportResults] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({ 
     full_name: '', 
     email: '',
