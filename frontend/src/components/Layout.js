@@ -661,6 +661,26 @@ const Layout = () => {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 pt-14 lg:pt-0">
+        {/* Desktop Top Bar */}
+        <div className="hidden lg:flex items-center justify-end gap-3 px-6 py-3" style={{ borderBottom: '1px solid var(--border, #e2e8f0)' }}>
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-2.5 rounded-xl transition-all duration-200 hover:scale-105"
+            style={{ 
+              backgroundColor: darkMode ? 'var(--muted, #334155)' : 'var(--muted, #f1f5f9)',
+            }}
+            data-testid="dark-mode-toggle-desktop"
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? (
+              <Sun size={20} style={{ color: '#fbbf24' }} />
+            ) : (
+              <Moon size={20} style={{ color: 'var(--muted-foreground, #64748b)' }} />
+            )}
+          </button>
+          <NotificationBell />
+        </div>
         <div className="p-4 lg:p-6 xl:p-8 max-w-[1600px] mx-auto">
           <Outlet />
         </div>
