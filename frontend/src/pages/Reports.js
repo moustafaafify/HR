@@ -329,8 +329,8 @@ const Reports = () => {
         csvContent = 'Category,Item,Value\n';
         if (expenseData) {
           csvContent += `Total,All Expense Claims,${expenseData.total}\n`;
-          csvContent += `Amount,Total Amount,$${expenseData.total_amount}\n`;
-          csvContent += `Amount,Approved Amount,$${expenseData.approved_amount}\n`;
+          csvContent += `Amount,Total Amount,${formatCurrency(expenseData.total_amount)}\n`;
+          csvContent += `Amount,Approved Amount,${formatCurrency(expenseData.approved_amount)}\n`;
           expenseData.by_status?.forEach(d => {
             csvContent += `Status,${d.name},${d.value}\n`;
           });
@@ -338,7 +338,7 @@ const Reports = () => {
             csvContent += `Category (Count),${d.name},${d.value}\n`;
           });
           expenseData.amount_by_category?.forEach(d => {
-            csvContent += `Category (Amount),${d.name},$${d.value}\n`;
+            csvContent += `Category (Amount),${d.name},${formatCurrency(d.value)}\n`;
           });
         }
         break;
