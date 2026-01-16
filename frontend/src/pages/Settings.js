@@ -1547,7 +1547,7 @@ const Settings = () => {
                     <SelectItem value="messagebird">MessageBird</SelectItem>
                     <SelectItem value="plivo">Plivo</SelectItem>
                     <SelectItem value="sns">AWS SNS</SelectItem>
-                    <SelectItem value="africas_talking">Africa's Talking</SelectItem>
+                    <SelectItem value="africas_talking">Africa&apos;s Talking</SelectItem>
                     <SelectItem value="infobip">Infobip</SelectItem>
                     <SelectItem value="clicksend">ClickSend</SelectItem>
                     <SelectItem value="custom">Custom Provider</SelectItem>
