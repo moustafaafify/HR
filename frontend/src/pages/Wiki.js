@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { 
   Book, 
   Search, 
   ChevronRight, 
   ChevronDown,
+  ChevronLeft,
   LayoutDashboard,
   Users,
   Calendar,
@@ -43,814 +47,1182 @@ import {
   Info,
   BookOpen,
   Play,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  Hash,
+  AtSign,
+  Smile,
+  Paperclip,
+  Pin,
+  Bookmark,
+  Send,
+  Bell,
+  BellOff,
+  Filter,
+  Reply,
+  Trash2,
+  Edit2,
+  Copy,
+  Download,
+  Upload,
+  File,
+  Image,
+  Video,
+  Music,
+  Lock,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Plus,
+  Minus,
+  X,
+  Check,
+  AlertTriangle,
+  HelpCircle,
+  Lightbulb,
+  Star,
+  ThumbsUp,
+  MessageCircle,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Link,
+  Code,
+  Database,
+  Server,
+  Monitor,
+  Smartphone,
+  Printer,
+  Camera,
+  Mic,
+  Volume2,
+  Wifi,
+  Battery,
+  Power,
+  Home,
+  Menu,
+  MoreHorizontal,
+  MoreVertical,
+  Maximize,
+  Minimize,
+  Grid,
+  List,
+  Table,
+  PieChart,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  CreditCard,
+  ShoppingCart,
+  Gift,
+  Tag,
+  Percent,
+  Calculator,
+  FileText,
+  Folder,
+  FolderOpen,
+  Save,
+  Undo,
+  Redo,
+  Scissors,
+  Clipboard,
+  Type,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  ListOrdered,
+  Quote,
+  Heading1,
+  Heading2,
+  LogIn,
+  LogOut,
+  Key,
+  Unlock,
+  UserCog,
+  UserX,
+  Users2,
+  Briefcase,
+  Building,
+  Factory,
+  Landmark,
+  Map,
+  Navigation,
+  Compass,
+  Flag,
+  Bookmark as BookmarkIcon,
+  Heart as HeartIcon,
+  Share2,
+  Share,
+  Inbox,
+  Archive,
+  Trash,
+  RotateCcw,
+  History,
+  Activity,
+  Cpu,
+  HardDrive,
+  Cloud,
+  CloudOff,
+  Loader,
+  CheckSquare,
+  Square,
+  MinusSquare,
+  PlusSquare,
+  XSquare,
+  AlertCircle,
+  XCircle,
+  StopCircle,
+  PlayCircle,
+  PauseCircle,
+  SkipBack,
+  SkipForward,
+  FastForward,
+  Rewind,
+  Shuffle,
+  Repeat,
+  Volume1,
+  VolumeX,
+  Headphones,
+  Radio,
+  Tv,
+  Film,
+  Aperture,
+  Sun,
+  Moon,
+  CloudRain,
+  Umbrella,
+  Wind,
+  Thermometer,
+  Droplet,
+  Flame,
+  Snowflake,
+  Zap as ZapIcon,
+  Feather,
+  Leaf,
+  TreePine,
+  Mountain,
+  Waves,
+  Anchor,
+  Compass as CompassIcon,
+  Truck,
+  Car,
+  Bus,
+  Train,
+  Ship,
+  Rocket,
+  Satellite,
+  Globe2,
+  Languages,
+  Hash as HashIcon,
+  AtSign as AtSignIcon,
+  Asterisk,
+  Slash,
+  Percent as PercentIcon,
+  Equal,
+  PlusCircle,
+  MinusCircle,
+  Divide,
+  Infinity,
+  Pi,
+  Sigma,
+  Omega
 } from 'lucide-react';
-import { Input } from '../components/ui/input';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL}`;
 
-// Module definitions with comprehensive documentation
-const MODULES = [
-  {
-    id: 'overview',
-    name: 'Platform Overview',
-    icon: Book,
+// ============= COMPREHENSIVE MODULE DATA =============
+const WIKI_MODULES = {
+  // ==================== GETTING STARTED ====================
+  'getting-started': {
+    id: 'getting-started',
+    name: 'Getting Started Guide',
+    icon: BookOpen,
     category: 'Getting Started',
-    description: 'Introduction to the HR Platform and its capabilities',
-    content: {
-      intro: `The HR Platform is a comprehensive, enterprise-grade Human Resource Management System (HRMS) designed to streamline and automate all aspects of human resource operations. Built with modern technologies and best practices, it provides a unified solution for managing your organization's most valuable asset—its people.`,
-      features: [
-        'Multi-corporation and multi-branch support',
-        'Role-based access control with granular permissions',
-        'Real-time analytics and reporting',
-        'Mobile-responsive Progressive Web App (PWA)',
-        'Multi-language and multi-currency support',
-        'Automated workflows and approvals',
-        'Push notifications and email alerts',
-        'Comprehensive audit trails'
-      ],
-      keyMetrics: [
-        { label: '35+ Modules', description: 'Comprehensive HR coverage' },
-        { label: 'Real-time', description: 'Live data synchronization' },
-        { label: 'Secure', description: 'Enterprise-grade security' },
-        { label: 'Scalable', description: 'Grows with your organization' }
-      ]
-    }
-  },
-  {
-    id: 'employees',
-    name: 'Employee Management',
-    icon: Users,
-    category: 'Core HR',
-    description: 'Central hub for managing employee data, profiles, and records',
-    content: {
-      intro: `The Employee Management module serves as the central repository for all employee-related information. It provides a 360-degree view of each employee, from personal details to employment history, making it the foundation of your HR operations.`,
-      features: [
-        'Comprehensive employee profiles with 50+ data fields',
-        'Document storage and management',
-        'Employment history tracking',
-        'Emergency contact management',
-        'Skills and certifications tracking',
-        'Profile picture upload',
-        'Custom fields support',
-        'Bulk import/export capabilities'
-      ],
-      workflow: {
-        title: 'Employee Lifecycle',
+    shortDescription: 'Learn how to navigate and use the HR Platform effectively',
+    sections: [
+      {
+        title: 'Welcome to Lojyn HR Platform',
+        content: `
+          <p class="text-lg mb-4">Welcome to <strong>Lojyn HR</strong>, your comprehensive Human Resource Management System designed to streamline every aspect of HR operations. This guide will help you understand the platform's capabilities and how to make the most of its features.</p>
+          
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-2 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              What is Lojyn HR?
+            </h4>
+            <p class="text-indigo-700 dark:text-indigo-300">Lojyn HR is an enterprise-grade HRMS that helps organizations manage employees, track attendance, process payroll, handle leave requests, conduct performance reviews, and much more—all from a single, unified platform.</p>
+          </div>
+        `
+      },
+      {
+        title: 'System Requirements',
+        content: `
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Desktop Browser
+              </h4>
+              <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <li>• Chrome 90+ (Recommended)</li>
+                <li>• Firefox 88+</li>
+                <li>• Safari 14+</li>
+                <li>• Edge 90+</li>
+                <li>• Screen resolution: 1280x720 minimum</li>
+              </ul>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                Mobile Device
+              </h4>
+              <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <li>• iOS 14+ (iPhone, iPad)</li>
+                <li>• Android 10+</li>
+                <li>• PWA supported for offline access</li>
+                <li>• Push notifications enabled</li>
+              </ul>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Logging In',
+        type: 'steps',
         steps: [
-          { name: 'Recruitment', description: 'Candidate sourcing and selection' },
-          { name: 'Onboarding', description: 'New hire orientation and setup' },
-          { name: 'Active Employment', description: 'Day-to-day HR operations' },
-          { name: 'Development', description: 'Training and career growth' },
-          { name: 'Offboarding', description: 'Exit process and knowledge transfer' }
+          {
+            number: 1,
+            title: 'Navigate to Login Page',
+            description: 'Open your browser and go to the HR platform URL provided by your administrator. You will see the login screen.',
+            tip: 'Bookmark the URL for quick access'
+          },
+          {
+            number: 2,
+            title: 'Enter Your Credentials',
+            description: 'Enter your company email address and password. These credentials are provided by your HR administrator.',
+            tip: 'Check your email for welcome credentials if you are a new user'
+          },
+          {
+            number: 3,
+            title: 'Click Sign In',
+            description: 'Click the "Sign In" button to access your dashboard. If successful, you will be redirected to the main dashboard.',
+            tip: 'If you forgot your password, click "Forgot Password" to reset it'
+          },
+          {
+            number: 4,
+            title: 'Two-Factor Authentication (if enabled)',
+            description: 'If 2FA is enabled for your account, enter the verification code sent to your phone or email.',
+            tip: 'Keep your authentication app handy for quick verification'
+          }
         ]
       },
-      bestPractices: [
-        'Keep employee profiles updated regularly',
-        'Ensure emergency contacts are always current',
-        'Upload and organize important documents',
-        'Track certifications and their expiry dates'
-      ]
-    }
+      {
+        title: 'Understanding the Interface',
+        content: `
+          <div class="space-y-6">
+            <div class="bg-slate-100 dark:bg-slate-800 rounded-xl p-6">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-4">Navigation Sidebar</h4>
+              <p class="text-slate-600 dark:text-slate-400 mb-4">The left sidebar contains all the main navigation items, organized into logical groups:</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
+                  <h5 class="font-medium text-slate-800 dark:text-white mb-2">Core</h5>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Dashboard, Collaborations, Notifications, Reports, Analytics, Scheduled Reports, Calendar, Communications, Documents</p>
+                </div>
+                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
+                  <h5 class="font-medium text-slate-800 dark:text-white mb-2">People</h5>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Employees, Onboarding, Offboarding, Visitors, Organization Charts</p>
+                </div>
+                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
+                  <h5 class="font-medium text-slate-800 dark:text-white mb-2">Work</h5>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Leaves, Attendance, Shifts, Travel, Disciplinary Actions</p>
+                </div>
+                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
+                  <h5 class="font-medium text-slate-800 dark:text-white mb-2">Finance</h5>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Payroll, Expenses, Assets, Benefits</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'User Roles & Permissions',
+        content: `
+          <p class="mb-4">The platform supports different user roles, each with specific permissions:</p>
+          <div class="space-y-4">
+            <div class="flex items-start gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <div>
+                <h4 class="font-semibold text-purple-800 dark:text-purple-300">Super Administrator</h4>
+                <p class="text-sm text-purple-700 dark:text-purple-400">Full access to all modules, settings, and configurations. Can manage all corporations, branches, and users.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              </div>
+              <div>
+                <h4 class="font-semibold text-blue-800 dark:text-blue-300">Corporation Administrator</h4>
+                <p class="text-sm text-blue-700 dark:text-blue-400">Access to manage their assigned corporation. Can manage employees, branches, departments within their corporation.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+              <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              </div>
+              <div>
+                <h4 class="font-semibold text-green-800 dark:text-green-300">Employee</h4>
+                <p class="text-sm text-green-700 dark:text-green-400">Access to personal profile, leave requests, attendance, payslips, and self-service features.</p>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    ]
   },
-  {
-    id: 'leaves',
-    name: 'Leave Management',
-    icon: Calendar,
-    category: 'Core HR',
-    description: 'Streamlined leave requests, approvals, and balance tracking',
-    content: {
-      intro: `The Leave Management module automates the entire leave request process, from submission to approval. It maintains accurate leave balances, prevents scheduling conflicts, and provides managers with clear visibility into team availability.`,
-      features: [
-        'Multiple leave types (Annual, Sick, Personal, Maternity, etc.)',
-        'Half-day leave support',
-        'Leave balance tracking and carryover',
-        'Multi-level approval workflows',
-        'Team calendar integration',
-        'Leave policy configuration',
-        'Holiday calendar management',
-        'Automatic balance calculations'
-      ],
-      workflow: {
-        title: 'Leave Request Flow',
+
+  // ==================== COLLABORATIONS ====================
+  'collaborations': {
+    id: 'collaborations',
+    name: 'Collaborations Hub',
+    icon: MessageSquare,
+    category: 'Core',
+    shortDescription: 'Central hub for team communication, file sharing, and productivity',
+    screenshot: '/uploads/wiki/collaborations.png',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Collaborations Hub</strong> is your central workspace for team communication—think of it as an internal Slack or Microsoft Teams. It brings conversations, files, tasks, and tools together in one searchable, secure place.</p>
+          
+          <div class="grid md:grid-cols-4 gap-4 my-6">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white text-center">
+              <div class="text-3xl font-bold">Real-time</div>
+              <div class="text-sm opacity-90">Message Refresh</div>
+            </div>
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white text-center">
+              <div class="text-3xl font-bold">Secure</div>
+              <div class="text-sm opacity-90">Private Channels</div>
+            </div>
+            <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white text-center">
+              <div class="text-3xl font-bold">Organized</div>
+              <div class="text-sm opacity-90">By Channels</div>
+            </div>
+            <div class="bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl p-4 text-white text-center">
+              <div class="text-3xl font-bold">Productive</div>
+              <div class="text-sm opacity-90">Built-in Tasks</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Accessing Collaborations',
+        type: 'steps',
         steps: [
-          { name: 'Request', description: 'Employee submits leave request' },
-          { name: 'Review', description: 'Manager reviews team calendar' },
-          { name: 'Approve/Reject', description: 'Decision with optional comments' },
-          { name: 'Notification', description: 'Employee notified of decision' },
-          { name: 'Update', description: 'Balance automatically adjusted' }
+          {
+            number: 1,
+            title: 'Navigate to Collaborations',
+            description: 'Click on "Collaborations" in the left sidebar under the Core section. You can also use the keyboard shortcut Ctrl+K and search for "Collaborations".',
+            tip: 'The Collaborations icon shows a notification badge when you have unread messages'
+          },
+          {
+            number: 2,
+            title: 'Explore the Interface',
+            description: 'The Collaborations page has a dark sidebar on the left showing Channels, Direct Messages, and quick access links (Mentions, Files, Tasks, Saved Items). The main area shows the welcome screen or active conversation.',
+            tip: 'Collapse the sidebar by clicking the arrow icon for more space'
+          }
         ]
       },
-      leaveTypes: [
-        { type: 'Annual Leave', default: '20 days', description: 'Paid vacation time' },
-        { type: 'Sick Leave', default: '10 days', description: 'Medical absences' },
-        { type: 'Personal Leave', default: '5 days', description: 'Personal matters' },
-        { type: 'Maternity Leave', default: '90 days', description: 'New mothers' },
-        { type: 'Paternity Leave', default: '14 days', description: 'New fathers' },
-        { type: 'Bereavement', default: '5 days', description: 'Family loss' }
-      ]
-    }
-  },
-  {
-    id: 'attendance',
-    name: 'Attendance & Time',
-    icon: Clock,
-    category: 'Core HR',
-    description: 'Time tracking, attendance monitoring, and shift management',
-    content: {
-      intro: `The Attendance module provides comprehensive time tracking capabilities, enabling organizations to monitor work hours, manage shifts, and ensure compliance with labor regulations. It integrates seamlessly with payroll for accurate compensation calculations.`,
-      features: [
-        'Clock-in/Clock-out functionality',
-        'Geolocation tracking (optional)',
-        'Shift scheduling and management',
-        'Overtime calculation',
-        'Late arrival tracking',
-        'Early departure monitoring',
-        'Timesheet management',
-        'Integration with payroll'
-      ],
-      workflow: {
-        title: 'Daily Attendance Flow',
+      {
+        title: 'Understanding the Sidebar',
+        content: `
+          <div class="space-y-4">
+            <div class="bg-slate-800 rounded-xl p-5 text-white">
+              <h4 class="font-semibold mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                Search Bar
+              </h4>
+              <p class="text-slate-300 text-sm mb-3">Search for messages, files, channels, and polls across all your conversations.</p>
+              <div class="bg-slate-700 rounded-lg p-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <span class="text-slate-400">Search...</span>
+                <svg class="w-4 h-4 text-slate-500 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+              </div>
+              <p class="text-slate-400 text-xs mt-2">Click the filter icon for advanced search options</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                <h4 class="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                  <span class="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">@</span>
+                  Mentions
+                </h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400">View all messages where you've been @mentioned. Never miss an important notification directed at you.</p>
+              </div>
+              <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                <h4 class="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                  <span class="w-6 h-6 rounded bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">📁</span>
+                  All Files
+                </h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400">Browse all files shared across channels. Filter by file type, search by name, and download with one click.</p>
+              </div>
+              <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                <h4 class="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                  <span class="w-6 h-6 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center">✓</span>
+                  Tasks
+                </h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400">Kanban-style task board with To Do, In Progress, and Done columns. Create, assign, and track tasks visually.</p>
+              </div>
+              <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                <h4 class="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                  <span class="w-6 h-6 rounded bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">🔖</span>
+                  Saved Items
+                </h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400">Your bookmarked messages and files. Save important information for quick access later.</p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Creating a Channel',
+        type: 'steps',
         steps: [
-          { name: 'Clock In', description: 'Employee marks arrival' },
-          { name: 'Work Period', description: 'Time tracked automatically' },
-          { name: 'Breaks', description: 'Optional break tracking' },
-          { name: 'Clock Out', description: 'Employee marks departure' },
-          { name: 'Review', description: 'Manager reviews timesheets' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'payroll',
-    name: 'Payroll Management',
-    icon: Wallet,
-    category: 'Finance',
-    description: 'Salary processing, payslips, and compensation management',
-    content: {
-      intro: `The Payroll module handles all aspects of employee compensation, from salary structure definition to payslip generation. It automates calculations for allowances, deductions, taxes, and ensures timely and accurate salary disbursement.`,
-      features: [
-        'Salary structure configuration',
-        'Multiple allowance types',
-        'Tax calculation and compliance',
-        'Payslip generation and distribution',
-        'Payroll run management',
-        'Bank transfer integration',
-        'Year-end tax reports',
-        'Multi-currency support'
-      ],
-      workflow: {
-        title: 'Payroll Processing',
-        steps: [
-          { name: 'Configure', description: 'Set up salary structures' },
-          { name: 'Calculate', description: 'Process earnings and deductions' },
-          { name: 'Review', description: 'Verify calculations' },
-          { name: 'Approve', description: 'Management approval' },
-          { name: 'Disburse', description: 'Process payments' },
-          { name: 'Distribute', description: 'Send payslips to employees' }
+          {
+            number: 1,
+            title: 'Click the + Button',
+            description: 'Next to the "CHANNELS" header in the sidebar, click the + (plus) icon to open the Create Channel dialog.',
+            tip: 'You can create channels for teams, projects, topics, or any grouping that makes sense'
+          },
+          {
+            number: 2,
+            title: 'Enter Channel Details',
+            description: 'Fill in the channel name (use lowercase with hyphens, e.g., "marketing-team"). Add an optional description to help others understand the channel\'s purpose.',
+            tip: 'Good channel names: #general, #engineering, #sales-leads, #project-alpha'
+          },
+          {
+            number: 3,
+            title: 'Choose Visibility',
+            description: 'Select "Public" if anyone can join, or "Private" if only invited members can see and join the channel.',
+            tip: 'Private channels are shown with a lock icon 🔒'
+          },
+          {
+            number: 4,
+            title: 'Select Category (Optional)',
+            description: 'If channel categories have been set up, you can organize your channel under a specific category for better organization.',
+            tip: 'Categories help group related channels together'
+          },
+          {
+            number: 5,
+            title: 'Create the Channel',
+            description: 'Click "Create Channel" to finalize. You will be automatically redirected to your new channel.',
+            tip: 'A system message will announce that you created the channel'
+          }
         ]
       },
-      components: [
-        { name: 'Basic Salary', type: 'Earning', description: 'Base compensation' },
-        { name: 'Housing Allowance', type: 'Earning', description: 'Housing support' },
-        { name: 'Transport Allowance', type: 'Earning', description: 'Travel support' },
-        { name: 'Tax', type: 'Deduction', description: 'Income tax' },
-        { name: 'Social Security', type: 'Deduction', description: 'Government contribution' },
-        { name: 'Health Insurance', type: 'Deduction', description: 'Medical coverage' }
-      ]
-    }
-  },
-  {
-    id: 'expenses',
-    name: 'Expense Management',
-    icon: Receipt,
-    category: 'Finance',
-    description: 'Expense claims, reimbursements, and budget tracking',
-    content: {
-      intro: `The Expense Management module streamlines the process of submitting, approving, and reimbursing employee expenses. It provides visibility into spending patterns and helps enforce expense policies across the organization.`,
-      features: [
-        'Digital receipt upload',
-        'Category-based expense tracking',
-        'Multi-level approval workflows',
-        'Budget monitoring',
-        'Reimbursement processing',
-        'Expense reports and analytics',
-        'Policy compliance checks',
-        'Integration with accounting'
-      ],
-      workflow: {
-        title: 'Expense Claim Process',
+      {
+        title: 'Sending Messages',
+        content: `
+          <div class="space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-4">Message Input Area</h4>
+              <p class="text-slate-600 dark:text-slate-400 mb-4">The message input is located at the bottom of the chat area. It includes:</p>
+              
+              <div class="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 mb-4">
+                <div class="flex items-center gap-2 mb-3 pb-3 border-b border-slate-200 dark:border-slate-600">
+                  <button class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded"><strong>B</strong></button>
+                  <button class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded"><em>I</em></button>
+                  <button class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded font-mono text-sm">&lt;/&gt;</button>
+                  <button class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded">🔗</button>
+                  <div class="w-px h-4 bg-slate-300 dark:bg-slate-500 mx-1"></div>
+                  <button class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded">⚡</button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="p-2 text-slate-400">📎</button>
+                  <div class="flex-1 bg-white dark:bg-slate-600 rounded-lg px-3 py-2 text-slate-400 text-sm">
+                    Message #general. Use @mention, **bold**, *italic*, \`code\`
+                  </div>
+                  <button class="p-2 bg-indigo-600 text-white rounded-lg">➤</button>
+                </div>
+              </div>
+              
+              <h5 class="font-medium text-slate-800 dark:text-white mb-2">Formatting Toolbar</h5>
+              <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <li><strong>B (Bold)</strong> - Wraps selected text with **asterisks** for bold formatting</li>
+                <li><strong>I (Italic)</strong> - Wraps selected text with *asterisks* for italic formatting</li>
+                <li><strong>&lt;/&gt; (Code)</strong> - Wraps text with \`backticks\` for inline code</li>
+                <li><strong>🔗 (Link)</strong> - Inserts [text](url) format for clickable links</li>
+                <li><strong>⚡ (Quick Replies)</strong> - Access saved message templates</li>
+              </ul>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5">
+              <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-3">Message Formatting Examples</h4>
+              <div class="space-y-3 text-sm">
+                <div class="flex gap-4">
+                  <code class="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">**bold text**</code>
+                  <span class="text-slate-600 dark:text-slate-400">→</span>
+                  <span><strong>bold text</strong></span>
+                </div>
+                <div class="flex gap-4">
+                  <code class="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">*italic text*</code>
+                  <span class="text-slate-600 dark:text-slate-400">→</span>
+                  <span><em>italic text</em></span>
+                </div>
+                <div class="flex gap-4">
+                  <code class="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">\`code snippet\`</code>
+                  <span class="text-slate-600 dark:text-slate-400">→</span>
+                  <code class="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-sm">code snippet</code>
+                </div>
+                <div class="flex gap-4">
+                  <code class="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">@John</code>
+                  <span class="text-slate-600 dark:text-slate-400">→</span>
+                  <span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 px-1 rounded">@John</span>
+                </div>
+                <div class="flex gap-4">
+                  <code class="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">[Click here](https://...)</code>
+                  <span class="text-slate-600 dark:text-slate-400">→</span>
+                  <a class="text-indigo-600 hover:underline">Click here</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Using @Mentions',
+        type: 'steps',
         steps: [
-          { name: 'Submit', description: 'Employee submits expense with receipt' },
-          { name: 'Categorize', description: 'Assign expense category' },
-          { name: 'Review', description: 'Manager reviews claim' },
-          { name: 'Approve', description: 'Approval or rejection' },
-          { name: 'Reimburse', description: 'Process reimbursement' }
+          {
+            number: 1,
+            title: 'Type @ Symbol',
+            description: 'In the message input, type the @ symbol. A dropdown menu will appear showing available users to mention.',
+            tip: 'The dropdown filters as you type more characters after @'
+          },
+          {
+            number: 2,
+            title: 'Select a User',
+            description: 'Click on a user\'s name from the dropdown, or continue typing to filter the list. Press Enter or Tab to select the highlighted user.',
+            tip: 'Mentioned users will receive a notification and see it in their Mentions view'
+          },
+          {
+            number: 3,
+            title: 'Send the Message',
+            description: 'Complete your message and press Enter or click the Send button. The mention will be highlighted in the sent message.',
+            tip: 'You can mention multiple users in a single message'
+          }
         ]
       },
-      categories: [
-        'Travel & Transportation',
-        'Meals & Entertainment',
-        'Office Supplies',
-        'Equipment & Technology',
-        'Training & Education',
-        'Communication',
-        'Accommodation'
-      ]
-    }
-  },
-  {
-    id: 'recruitment',
-    name: 'Recruitment',
-    icon: UserPlus,
-    category: 'Talent',
-    description: 'Job postings, applicant tracking, and hiring workflows',
-    content: {
-      intro: `The Recruitment module provides end-to-end hiring management, from job posting to offer letter generation. It helps HR teams attract, evaluate, and onboard top talent efficiently while maintaining a positive candidate experience.`,
-      features: [
-        'Job posting management',
-        'Applicant tracking system (ATS)',
-        'Resume parsing and storage',
-        'Interview scheduling',
-        'Candidate evaluation scorecards',
-        'Offer letter generation',
-        'Hiring pipeline visualization',
-        'Recruitment analytics'
-      ],
-      workflow: {
-        title: 'Hiring Pipeline',
+      {
+        title: 'Creating Polls',
+        type: 'steps',
         steps: [
-          { name: 'Job Posting', description: 'Create and publish job openings' },
-          { name: 'Applications', description: 'Receive and screen candidates' },
-          { name: 'Screening', description: 'Initial qualification review' },
-          { name: 'Interviews', description: 'Conduct interview rounds' },
-          { name: 'Evaluation', description: 'Assess and compare candidates' },
-          { name: 'Offer', description: 'Extend offer to selected candidate' },
-          { name: 'Onboarding', description: 'Begin employee onboarding' }
+          {
+            number: 1,
+            title: 'Open Poll Creator',
+            description: 'In a channel, click the chart/poll icon (📊) in the channel header toolbar. This opens the Create Poll dialog.',
+            tip: 'Polls are great for quick team decisions and gathering feedback'
+          },
+          {
+            number: 2,
+            title: 'Enter Poll Question',
+            description: 'Type your question in the "Question" field. Make it clear and specific.',
+            tip: 'Example: "What time should we have our weekly standup?"'
+          },
+          {
+            number: 3,
+            title: 'Add Options',
+            description: 'Enter at least 2 options for voters to choose from. Click "Add Option" to add more (up to 6 options).',
+            tip: 'Keep options concise and mutually exclusive'
+          },
+          {
+            number: 4,
+            title: 'Configure Settings',
+            description: 'Choose whether to allow multiple votes (checkbox) or keep voting anonymous.',
+            tip: 'Anonymous polls encourage honest feedback'
+          },
+          {
+            number: 5,
+            title: 'Create Poll',
+            description: 'Click "Create Poll" to post it to the channel. Team members can vote by clicking on options.',
+            tip: 'Poll results update in real-time as votes come in'
+          }
         ]
-      }
-    }
-  },
-  {
-    id: 'training',
-    name: 'Training & Development',
-    icon: GraduationCap,
-    category: 'Talent',
-    description: 'Learning management, course tracking, and skill development',
-    content: {
-      intro: `The Training module enables organizations to create, deliver, and track employee learning programs. It supports various training formats and provides insights into skill development across the workforce.`,
-      features: [
-        'Course catalog management',
-        'Video and document-based learning',
-        'Training assignments and tracking',
-        'Progress monitoring',
-        'Certification management',
-        'Training request workflows',
-        'Skill gap analysis',
-        'Learning path creation'
-      ],
-      workflow: {
-        title: 'Training Lifecycle',
+      },
+      {
+        title: 'Setting Your Status',
+        content: `
+          <p class="mb-4">Let your team know your availability by setting a status. Your status appears next to your name and avatar throughout the platform.</p>
+          
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center gap-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+              <div>
+                <span class="font-medium text-green-800 dark:text-green-300">Online</span>
+                <span class="text-sm text-green-600 dark:text-green-400 ml-2">- You are active and available</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+              <div>
+                <span class="font-medium text-amber-800 dark:text-amber-300">Away</span>
+                <span class="text-sm text-amber-600 dark:text-amber-400 ml-2">- You're temporarily away from your desk</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div>
+                <span class="font-medium text-red-800 dark:text-red-300">Do Not Disturb</span>
+                <span class="text-sm text-red-600 dark:text-red-400 ml-2">- You're focusing and don't want interruptions</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div class="w-3 h-3 rounded-full bg-slate-400 border-2 border-white dark:border-slate-600"></div>
+              <div>
+                <span class="font-medium text-slate-800 dark:text-slate-300">Offline</span>
+                <span class="text-sm text-slate-600 dark:text-slate-400 ml-2">- You're not currently using the platform</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
+            <h4 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-2">Custom Status Text</h4>
+            <p class="text-sm text-indigo-700 dark:text-indigo-400">You can also set a custom status message like "In a meeting until 3pm" or "Working from home today" to give more context to your availability.</p>
+          </div>
+        `
+      },
+      {
+        title: 'Message Actions',
+        content: `
+          <p class="mb-4">Hover over any message to reveal action buttons. These let you interact with the message in various ways:</p>
+          
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <span class="text-xl">😊</span>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-slate-800 dark:text-white">React</h4>
+                  <p class="text-xs text-slate-500">Add emoji reaction</p>
+                </div>
+              </div>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Express yourself with emoji reactions. Choose from 15 emojis including 👍 ❤️ 😂 🎉 🔥 and more.</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-slate-800 dark:text-white">Reply in Thread</h4>
+                  <p class="text-xs text-slate-500">Start a conversation thread</p>
+                </div>
+              </div>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Keep related discussions organized by replying in a thread. Threads appear in a side panel without cluttering the main channel.</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-slate-800 dark:text-white">Save</h4>
+                  <p class="text-xs text-slate-500">Bookmark for later</p>
+                </div>
+              </div>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Save important messages for quick access later. Find all saved items in the Saved Items section of the sidebar.</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5v16l7-3.5L19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"></path></svg>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-slate-800 dark:text-white">Pin</h4>
+                  <p class="text-xs text-slate-500">Pin to channel</p>
+                </div>
+              </div>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Pin important messages so everyone can easily find them. Pinned messages are highlighted with a pin icon.</p>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Direct Messages (DMs)',
+        type: 'steps',
         steps: [
-          { name: 'Identify', description: 'Identify training needs' },
-          { name: 'Assign', description: 'Assign courses to employees' },
-          { name: 'Learn', description: 'Employee completes training' },
-          { name: 'Assess', description: 'Evaluate learning outcomes' },
-          { name: 'Certify', description: 'Issue completion certificates' }
+          {
+            number: 1,
+            title: 'Start a DM',
+            description: 'Click the + button next to "DIRECT MESSAGES" in the sidebar, or click "Start DM" on the welcome screen.',
+            tip: 'DMs are private conversations between you and another person'
+          },
+          {
+            number: 2,
+            title: 'Select a Colleague',
+            description: 'Browse the list of team members or search by name. Each user shows their current status (Online, Away, etc.).',
+            tip: 'Look for the green dot for users who are currently online'
+          },
+          {
+            number: 3,
+            title: 'Start Chatting',
+            description: 'Click on a user to open (or create) a DM conversation. The chat interface works the same as channels.',
+            tip: 'Your DM history is preserved and searchable'
+          }
         ]
+      },
+      {
+        title: 'Task Management',
+        content: `
+          <p class="mb-4">The built-in task board helps you track work items without leaving the collaboration hub.</p>
+          
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-slate-800 dark:text-white mb-4">Kanban Board Layout</h4>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-3 h-3 rounded-full bg-slate-400"></div>
+                  <span class="font-medium text-slate-800 dark:text-white">To Do</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="bg-slate-50 dark:bg-slate-600 rounded p-2 text-sm">Task cards appear here</div>
+                </div>
+              </div>
+              <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span class="font-medium text-blue-800 dark:text-blue-300">In Progress</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="bg-white dark:bg-slate-700 rounded p-2 text-sm">Active work goes here</div>
+                </div>
+              </div>
+              <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span class="font-medium text-green-800 dark:text-green-300">Done</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="bg-white dark:bg-slate-700 rounded p-2 text-sm opacity-75 line-through">Completed tasks</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <h4 class="font-semibold text-slate-800 dark:text-white mb-3">Creating a Task</h4>
+          <ol class="list-decimal list-inside space-y-2 text-slate-600 dark:text-slate-400">
+            <li>Click "Tasks" in the sidebar to open the task board</li>
+            <li>Click the "New Task" button in the top right</li>
+            <li>Enter a title and optional description</li>
+            <li>Select an assignee from your team (or leave unassigned)</li>
+            <li>Set priority level (Low, Medium, High, Urgent)</li>
+            <li>Optionally set a due date</li>
+            <li>Click "Create Task" to add it to the To Do column</li>
+          </ol>
+        `
+      },
+      {
+        title: 'File Sharing',
+        content: `
+          <p class="mb-4">Share documents, images, videos, and other files directly in your conversations.</p>
+          
+          <div class="space-y-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-3">How to Share a File</h4>
+              <ol class="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <li>Click the 📎 paperclip icon in the message input area</li>
+                <li>Select a file from your computer</li>
+                <li>The file will upload and automatically create a message</li>
+                <li>Images will show inline previews in the chat</li>
+              </ol>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-3">Supported File Types</h4>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="text-center">
+                  <div class="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                  </div>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">Documents<br/>PDF, DOC, XLS</span>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-2">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">Images<br/>PNG, JPG, GIF</span>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 mx-auto bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-2">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">Videos<br/>MP4, MOV, AVI</span>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-2">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                  </div>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">Audio<br/>MP3, WAV, OGG</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Quick Replies / Templates',
+        content: `
+          <p class="mb-4">Save time by creating reusable message templates for common responses.</p>
+          
+          <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5 mb-6">
+            <h4 class="font-semibold text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Why Use Quick Replies?
+            </h4>
+            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-400">
+              <li>• Save frequently used responses</li>
+              <li>• Maintain consistent messaging</li>
+              <li>• Speed up your workflow</li>
+              <li>• Reduce typing for common phrases</li>
+            </ul>
+          </div>
+          
+          <h4 class="font-semibold text-slate-800 dark:text-white mb-3">Using Quick Replies</h4>
+          <ol class="list-decimal list-inside space-y-2 text-slate-600 dark:text-slate-400 mb-6">
+            <li>Click the ⚡ (lightning) icon in the formatting toolbar</li>
+            <li>Your saved templates will appear in a dropdown</li>
+            <li>Click on a template to insert its content into the message field</li>
+            <li>Edit the content if needed, then send</li>
+          </ol>
+          
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-xl p-5">
+            <h4 class="font-semibold text-slate-800 dark:text-white mb-3">Example Templates</h4>
+            <div class="space-y-3">
+              <div class="bg-white dark:bg-slate-700 rounded-lg p-3">
+                <span class="font-medium text-sm text-slate-800 dark:text-white">Thank You</span>
+                <span class="text-xs text-slate-500 ml-2">/thanks</span>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">"Thank you for your message! I will get back to you soon."</p>
+              </div>
+              <div class="bg-white dark:bg-slate-700 rounded-lg p-3">
+                <span class="font-medium text-sm text-slate-800 dark:text-white">Meeting Request</span>
+                <span class="text-xs text-slate-500 ml-2">/meet</span>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">"Would you be available for a quick call? Please let me know your availability."</p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Advanced Search',
+        content: `
+          <p class="mb-4">Find anything in your collaboration history with powerful search filters.</p>
+          
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h4 class="font-semibold text-slate-800 dark:text-white mb-4">Search Filters</h4>
+            
+            <div class="space-y-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Filter by Type</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Search only messages, files, or polls</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Date Range</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Narrow results to a specific time period</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Has Attachments</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Find messages that include files</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Pinned Only</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Show only pinned/important messages</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Tips & Best Practices',
+        content: `
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-5">
+              <h4 class="font-semibold text-green-800 dark:text-green-300 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Do's
+              </h4>
+              <ul class="space-y-2 text-sm text-green-700 dark:text-green-400">
+                <li>✓ Use channels for team-wide discussions</li>
+                <li>✓ Use DMs for private 1-on-1 conversations</li>
+                <li>✓ Use threads to keep conversations organized</li>
+                <li>✓ Pin important announcements</li>
+                <li>✓ Set your status to let others know your availability</li>
+                <li>✓ Use @mentions sparingly and appropriately</li>
+              </ul>
+            </div>
+            
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-5">
+              <h4 class="font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Don'ts
+              </h4>
+              <ul class="space-y-2 text-sm text-red-700 dark:text-red-400">
+                <li>✗ Don't overuse @mentions or @channel</li>
+                <li>✗ Don't share sensitive information in public channels</li>
+                <li>✗ Don't have long conversations in main channels (use threads)</li>
+                <li>✗ Don't upload very large files (compress first)</li>
+                <li>✗ Don't delete messages others might need</li>
+              </ul>
+            </div>
+          </div>
+        `
       }
-    }
+    ]
   },
-  {
-    id: 'performance',
-    name: 'Performance Management',
-    icon: Target,
-    category: 'Talent',
-    description: 'Goal setting, reviews, and performance tracking',
-    content: {
-      intro: `The Performance Management module facilitates continuous performance evaluation through goal setting, regular feedback, and structured reviews. It helps align individual performance with organizational objectives.`,
-      features: [
-        'Goal setting and tracking (OKRs/KPIs)',
-        'Self-assessment capabilities',
-        'Manager evaluations',
-        '360-degree feedback',
-        'Performance review cycles',
-        'Rating scales and competencies',
-        'Performance improvement plans',
-        'Historical performance data'
-      ],
-      workflow: {
-        title: 'Performance Review Cycle',
-        steps: [
-          { name: 'Goal Setting', description: 'Define objectives and KPIs' },
-          { name: 'Ongoing Feedback', description: 'Regular check-ins and feedback' },
-          { name: 'Self-Assessment', description: 'Employee self-evaluation' },
-          { name: 'Manager Review', description: 'Manager assessment and rating' },
-          { name: 'Calibration', description: 'Cross-team alignment' },
-          { name: 'Feedback Session', description: 'Review discussion' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'appraisals',
-    name: 'Appraisals',
-    icon: Award,
-    category: 'Talent',
-    description: 'Formal appraisal cycles and employee evaluations',
-    content: {
-      intro: `The Appraisals module manages formal evaluation cycles, enabling organizations to conduct structured assessments of employee performance. It supports various appraisal methodologies and provides comprehensive evaluation frameworks.`,
-      features: [
-        'Appraisal cycle management',
-        'Customizable evaluation forms',
-        'Multiple rating scales',
-        'Competency-based assessments',
-        'Goal achievement tracking',
-        'Peer feedback integration',
-        'Appraisal history',
-        'Compensation recommendations'
-      ],
-      workflow: {
-        title: 'Appraisal Process',
-        steps: [
-          { name: 'Create Cycle', description: 'Define appraisal period and criteria' },
-          { name: 'Self-Assessment', description: 'Employees complete self-review' },
-          { name: 'Manager Review', description: 'Managers evaluate team members' },
-          { name: 'Calibration', description: 'Ensure rating consistency' },
-          { name: 'Finalize', description: 'Complete and acknowledge' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'compliance',
-    name: 'Compliance & Legal',
-    icon: Shield,
-    category: 'Operations',
-    description: 'Policy management, compliance tracking, and legal documentation',
-    content: {
-      intro: `The Compliance & Legal module ensures your organization maintains regulatory compliance and manages legal documentation effectively. It tracks policy acknowledgments, compliance training, and incidents.`,
-      features: [
-        'Policy creation and versioning',
-        'Employee acknowledgment tracking',
-        'Compliance training management',
-        'Legal document management',
-        'Digital signature collection',
-        'Incident reporting',
-        'Certification tracking',
-        'Audit trail maintenance'
-      ],
-      workflow: {
-        title: 'Policy Compliance Flow',
-        steps: [
-          { name: 'Create Policy', description: 'Draft and review policy' },
-          { name: 'Publish', description: 'Make policy active' },
-          { name: 'Distribute', description: 'Notify affected employees' },
-          { name: 'Acknowledge', description: 'Collect acknowledgments' },
-          { name: 'Monitor', description: 'Track compliance status' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'visitors',
-    name: 'Visitor Management',
-    icon: UserCheck,
-    category: 'Operations',
-    description: 'Guest registration, check-in/out, and badge printing',
-    content: {
-      intro: `The Visitor Management module provides a professional system for managing guests and visitors to your facilities. It enhances security, creates a welcoming experience, and maintains visitor records for compliance.`,
-      features: [
-        'Pre-registration of visitors',
-        'Walk-in registration',
-        'Digital check-in/check-out',
-        'ID verification',
-        'Badge printing',
-        'Host notifications',
-        'NDA signing',
-        'Visitor history and reports'
-      ],
-      workflow: {
-        title: 'Visitor Check-in Process',
-        steps: [
-          { name: 'Pre-register', description: 'Host registers expected visitor' },
-          { name: 'Arrival', description: 'Visitor arrives at reception' },
-          { name: 'Verify', description: 'ID verification and NDA' },
-          { name: 'Badge', description: 'Print visitor badge' },
-          { name: 'Notify', description: 'Alert host of arrival' },
-          { name: 'Check-out', description: 'Record departure time' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'workforce',
-    name: 'Workforce Planning',
-    icon: Users,
-    category: 'Operations',
-    description: 'Headcount planning, resource allocation, and capacity management',
-    content: {
-      intro: `The Workforce Planning module helps organizations optimize their human capital by providing tools for headcount planning, skills gap analysis, and resource allocation. It enables data-driven decisions about workforce composition.`,
-      features: [
-        'Headcount planning by department',
-        'Budget allocation tracking',
-        'Skills gap analysis',
-        'Resource allocation to projects',
-        'Scenario modeling',
-        'Utilization tracking',
-        'Capacity planning',
-        'Workforce forecasting'
-      ],
-      workflow: {
-        title: 'Workforce Planning Cycle',
-        steps: [
-          { name: 'Analyze', description: 'Assess current workforce' },
-          { name: 'Forecast', description: 'Project future needs' },
-          { name: 'Plan', description: 'Create headcount plans' },
-          { name: 'Allocate', description: 'Assign resources' },
-          { name: 'Monitor', description: 'Track utilization' }
-        ]
-      }
-    }
-  },
-  {
+
+  // ==================== SCHEDULED REPORTS ====================
+  'scheduled-reports': {
     id: 'scheduled-reports',
     name: 'Scheduled Reports',
     icon: CalendarClock,
-    category: 'Analytics',
-    description: 'Automated report delivery and scheduling',
-    content: {
-      intro: `The Scheduled Reports module automates the delivery of HR reports to stakeholders. Configure reports to be generated and emailed on a regular schedule, ensuring decision-makers always have access to up-to-date information.`,
-      features: [
-        'Multiple report types (Analytics, Leave, Attendance, etc.)',
-        'Flexible scheduling (Daily, Weekly, Monthly)',
-        'Multiple recipients support',
-        'PDF and CSV formats',
-        'Date range customization',
-        'On-demand report generation',
-        'Run history tracking',
-        'Report preview capability'
-      ],
-      workflow: {
-        title: 'Report Scheduling Flow',
+    category: 'Core',
+    shortDescription: 'Automate report delivery to stakeholders on a schedule',
+    screenshot: '/uploads/wiki/scheduled_reports.png',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Scheduled Reports</strong> module allows you to automate the generation and delivery of HR reports. Instead of manually creating and sending reports, you can configure them once and have them delivered automatically on a daily, weekly, or monthly basis.</p>
+          
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-2">Key Benefits</h4>
+            <ul class="space-y-2 text-indigo-700 dark:text-indigo-400">
+              <li>• <strong>Save Time</strong> - No more manual report generation</li>
+              <li>• <strong>Consistency</strong> - Reports are delivered on schedule, every time</li>
+              <li>• <strong>Stakeholder Visibility</strong> - Keep leadership informed automatically</li>
+              <li>• <strong>Multiple Formats</strong> - PDF and CSV export options</li>
+            </ul>
+          </div>
+        `
+      },
+      {
+        title: 'Available Report Types',
+        content: `
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              </div>
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">HR Analytics</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Headcount, turnover rates, department distribution, hiring metrics</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              </div>
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Leave Report</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Leave requests, balances, approvals, and utilization</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Attendance Report</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Clock-in/out times, working hours, late arrivals</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Compliance Report</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Policy acknowledgments, trainings, certifications</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+              </div>
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Workforce Report</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Headcount plans, allocations, skills gaps</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <div class="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              </div>
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Employee Directory</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Employee list, departments, contact info</p>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Creating a Scheduled Report',
+        type: 'steps',
         steps: [
-          { name: 'Configure', description: 'Set up report parameters' },
-          { name: 'Schedule', description: 'Define frequency and time' },
-          { name: 'Generate', description: 'System generates report' },
-          { name: 'Deliver', description: 'Email sent to recipients' },
-          { name: 'Track', description: 'Monitor delivery status' }
+          {
+            number: 1,
+            title: 'Navigate to Scheduled Reports',
+            description: 'Click on "Scheduled Reports" in the left sidebar under Core. You\'ll see the dashboard with existing schedules and statistics.',
+            tip: 'Only administrators can create and manage scheduled reports'
+          },
+          {
+            number: 2,
+            title: 'Click Create Schedule',
+            description: 'Click the "Create Schedule" button in the top right corner to open the configuration dialog.',
+            tip: 'You can also duplicate an existing schedule by clicking edit and modifying it'
+          },
+          {
+            number: 3,
+            title: 'Enter Report Details',
+            description: 'Fill in the report name (e.g., "Weekly HR Summary") and an optional description. Choose the report type from the dropdown.',
+            tip: 'Use descriptive names that include the frequency (Weekly, Monthly, etc.)'
+          },
+          {
+            number: 4,
+            title: 'Configure Schedule',
+            description: 'Choose the frequency (Daily, Weekly, or Monthly). For weekly reports, select the day of the week. For monthly, select the day of the month. Set the time for delivery.',
+            tip: 'Consider your stakeholders\' time zones when setting the delivery time'
+          },
+          {
+            number: 5,
+            title: 'Add Recipients',
+            description: 'Enter email addresses of recipients, separated by commas. Optionally add CC recipients for additional visibility.',
+            tip: 'You can include external email addresses (e.g., board members)'
+          },
+          {
+            number: 6,
+            title: 'Choose Format & Options',
+            description: 'Select the output format (PDF, CSV, or both). Choose the date range for data. Optionally include charts and visualizations.',
+            tip: 'PDF is best for presentations, CSV for further analysis in Excel'
+          },
+          {
+            number: 7,
+            title: 'Create the Schedule',
+            description: 'Click "Create Schedule" to save. The report will be generated and sent according to your schedule.',
+            tip: 'You can run the report immediately using the "Run Now" button'
+          }
         ]
       },
-      reportTypes: [
-        { name: 'HR Analytics', description: 'Headcount, turnover, department stats' },
-        { name: 'Leave Report', description: 'Leave requests and balances' },
-        { name: 'Attendance Report', description: 'Clock-in/out and working hours' },
-        { name: 'Compliance Report', description: 'Policies, trainings, incidents' },
-        { name: 'Workforce Planning', description: 'Headcount plans and allocations' },
-        { name: 'Visitor Report', description: 'Visitor logs and check-ins' },
-        { name: 'Employee Directory', description: 'Employee list and departments' }
-      ]
-    }
-  },
-  {
-    id: 'analytics',
-    name: 'HR Analytics',
-    icon: BarChart3,
-    category: 'Analytics',
-    description: 'Comprehensive HR metrics, dashboards, and insights',
-    content: {
-      intro: `The HR Analytics module provides deep insights into your workforce through interactive dashboards and reports. It transforms HR data into actionable intelligence, enabling data-driven decision making.`,
-      features: [
-        'Real-time dashboards',
-        'Headcount and turnover analysis',
-        'Hiring funnel metrics',
-        'Salary benchmarking',
-        'Workforce forecasting',
-        'Department comparisons',
-        'Trend analysis',
-        'Custom report builder'
-      ],
-      metrics: [
-        { name: 'Headcount', description: 'Total active employees' },
-        { name: 'Turnover Rate', description: 'Annual employee turnover percentage' },
-        { name: 'Time to Hire', description: 'Average days to fill positions' },
-        { name: 'Cost per Hire', description: 'Average recruitment cost' },
-        { name: 'Employee Satisfaction', description: 'Survey-based satisfaction score' },
-        { name: 'Training Hours', description: 'Average training hours per employee' }
-      ]
-    }
-  },
-  {
-    id: 'assets',
-    name: 'Asset Management',
-    icon: Package,
-    category: 'Operations',
-    description: 'Company equipment and asset tracking',
-    content: {
-      intro: `The Asset Management module tracks company equipment assigned to employees. It maintains a complete inventory of assets, their condition, and assignment history, ensuring accountability and efficient resource utilization.`,
-      features: [
-        'Asset inventory management',
-        'Assignment tracking',
-        'Condition monitoring',
-        'Maintenance scheduling',
-        'Depreciation tracking',
-        'Asset categories',
-        'Barcode/QR code support',
-        'Return and disposal workflows'
-      ],
-      workflow: {
-        title: 'Asset Lifecycle',
-        steps: [
-          { name: 'Procure', description: 'Add asset to inventory' },
-          { name: 'Assign', description: 'Allocate to employee' },
-          { name: 'Track', description: 'Monitor condition and usage' },
-          { name: 'Maintain', description: 'Schedule maintenance' },
-          { name: 'Return', description: 'Collect on termination' },
-          { name: 'Dispose', description: 'Retire or sell asset' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'documents',
-    name: 'Document Management',
-    icon: FileCheck,
-    category: 'Operations',
-    description: 'Document storage, approvals, and version control',
-    content: {
-      intro: `The Document Management module provides a centralized repository for HR-related documents. It supports document approvals, version control, and ensures secure access to sensitive information.`,
-      features: [
-        'Secure document storage',
-        'Version control',
-        'Document categorization',
-        'Approval workflows',
-        'Digital signatures',
-        'Access control',
-        'Document templates',
-        'Expiry tracking'
-      ],
-      categories: [
-        'Employment Contracts',
-        'Policy Documents',
-        'Training Certificates',
-        'Performance Reviews',
-        'Legal Agreements',
-        'ID Documents',
-        'Tax Forms'
-      ]
-    }
-  },
-  {
-    id: 'tickets',
-    name: 'Help Desk / Tickets',
-    icon: Ticket,
-    category: 'Support',
-    description: 'Internal support tickets and issue tracking',
-    content: {
-      intro: `The Tickets module provides an internal help desk system for employees to raise HR-related queries and issues. It ensures timely resolution and maintains a knowledge base of common questions.`,
-      features: [
-        'Ticket submission',
-        'Category-based routing',
-        'Priority levels',
-        'Assignment and escalation',
-        'Status tracking',
-        'SLA monitoring',
-        'Ticket history',
-        'Resolution analytics'
-      ],
-      workflow: {
-        title: 'Ticket Resolution Flow',
-        steps: [
-          { name: 'Submit', description: 'Employee raises ticket' },
-          { name: 'Categorize', description: 'Auto or manual categorization' },
-          { name: 'Assign', description: 'Route to appropriate team' },
-          { name: 'Resolve', description: 'Address the issue' },
-          { name: 'Close', description: 'Confirm resolution' }
-        ]
-      }
-    }
-  },
-  {
-    id: 'communications',
-    name: 'Communications',
-    icon: Megaphone,
-    category: 'Support',
-    description: 'Company announcements and internal communications',
-    content: {
-      intro: `The Communications module facilitates internal communication through announcements, newsletters, and targeted messages. It ensures important information reaches the right employees at the right time.`,
-      features: [
-        'Company-wide announcements',
-        'Targeted communications',
-        'Rich text formatting',
-        'Attachment support',
-        'Read receipts',
-        'Scheduled publishing',
-        'Communication history',
-        'Push notifications'
-      ]
-    }
-  },
-  {
-    id: 'org-structure',
-    name: 'Organization Structure',
-    icon: Network,
-    category: 'Administration',
-    description: 'Corporations, branches, departments, and divisions',
-    content: {
-      intro: `The Organization Structure module defines your company's hierarchy. It supports multi-corporation setups with branches, departments, and divisions, providing the foundation for role-based access and reporting.`,
-      features: [
-        'Multi-corporation support',
-        'Branch management',
-        'Department configuration',
-        'Division setup',
-        'Reporting relationships',
-        'Organization chart',
-        'Cost center mapping',
-        'Location management'
-      ],
-      hierarchy: [
-        { level: 1, name: 'Corporation', description: 'Top-level legal entity' },
-        { level: 2, name: 'Branch', description: 'Physical or logical business unit' },
-        { level: 3, name: 'Department', description: 'Functional area (HR, Finance, etc.)' },
-        { level: 4, name: 'Division', description: 'Sub-unit within department' }
-      ]
-    }
-  },
-  {
-    id: 'settings',
-    name: 'System Settings',
-    icon: Settings,
-    category: 'Administration',
-    description: 'Global configuration, integrations, and preferences',
-    content: {
-      intro: `The Settings module provides centralized configuration for the entire platform. It includes branding, language settings, email configuration, and various integrations.`,
-      features: [
-        'Language configuration',
-        'Currency settings',
-        'Exchange rates',
-        'Branding customization',
-        'Theme settings (Light/Dark mode)',
-        'Email (SMTP) configuration',
-        'SMS provider setup',
-        'Push notification settings'
-      ],
-      sections: [
-        { name: 'General', description: 'Language, currency, timezone' },
-        { name: 'Branding', description: 'Logo, colors, app name' },
-        { name: 'Email', description: 'SMTP server configuration' },
-        { name: 'Notifications', description: 'Push notification triggers' },
-        { name: 'Integrations', description: 'Third-party connections' }
-      ]
-    }
-  }
-];
-
-// Category colors
-const CATEGORY_COLORS = {
-  'Getting Started': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800' },
-  'Core HR': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-800' },
-  'Finance': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', border: 'border-green-200 dark:border-green-800' },
-  'Talent': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-800' },
-  'Operations': { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-800' },
-  'Analytics': { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-800' },
-  'Support': { bg: 'bg-teal-100 dark:bg-teal-900/30', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-200 dark:border-teal-800' },
-  'Administration': { bg: 'bg-slate-100 dark:bg-slate-700', text: 'text-slate-700 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-600' }
-};
-
-// Flowchart component
-const WorkflowDiagram = ({ workflow }) => {
-  if (!workflow) return null;
-  
-  return (
-    <div className="my-6">
-      <h4 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-        <Workflow size={20} className="text-indigo-600" />
-        {workflow.title}
-      </h4>
-      <div className="relative">
-        {/* Desktop horizontal flow */}
-        <div className="hidden md:flex items-center justify-between gap-2 overflow-x-auto pb-4">
-          {workflow.steps.map((step, index) => (
-            <React.Fragment key={index}>
-              <div className="flex-shrink-0 w-36">
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl p-4 text-center shadow-lg">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
-                    {index + 1}
-                  </div>
-                  <p className="font-semibold text-sm">{step.name}</p>
+      {
+        title: 'Managing Schedules',
+        content: `
+          <p class="mb-4">Once created, you can manage your scheduled reports from the main dashboard.</p>
+          
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h4 class="font-semibold text-slate-800 dark:text-white mb-4">Available Actions</h4>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-2 px-1">
-                  {step.description}
-                </p>
-              </div>
-              {index < workflow.steps.length - 1 && (
-                <ArrowRight className="flex-shrink-0 text-indigo-400" size={24} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-        
-        {/* Mobile vertical flow */}
-        <div className="md:hidden space-y-3">
-          {workflow.steps.map((step, index) => (
-            <div key={index} className="flex items-start gap-3">
-              <div className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                  {index + 1}
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Run Now</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Generate and send the report immediately, outside of the regular schedule.</p>
                 </div>
-                {index < workflow.steps.length - 1 && (
-                  <div className="w-0.5 h-8 bg-indigo-200 dark:bg-indigo-800 mt-2" />
-                )}
               </div>
-              <div className="flex-1 pb-4">
-                <p className="font-semibold text-slate-800 dark:text-white">{step.name}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{step.description}</p>
+              
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Pause / Resume</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Temporarily stop a schedule without deleting it. Resume when ready.</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">View History</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">See all past runs, including status (success/failed) and timestamps.</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </div>
+                <div>
+                  <h5 class="font-medium text-slate-800 dark:text-white">Edit</h5>
+                  <p class="text-sm text-slate-600 dark:text-slate-400">Modify any aspect of the schedule: name, frequency, recipients, format.</p>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+          </div>
+        `
+      }
+    ]
+  }
 };
 
-// Feature list component
-const FeatureList = ({ features }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
-    {features.map((feature, index) => (
-      <div key={index} className="flex items-start gap-2">
-        <CheckCircle2 className="text-green-500 flex-shrink-0 mt-0.5" size={18} />
-        <span className="text-slate-700 dark:text-slate-300 text-sm">{feature}</span>
-      </div>
-    ))}
-  </div>
-);
-
-// Info card component
-const InfoCard = ({ title, items, type = 'default' }) => {
-  const colors = {
-    default: 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600',
-    info: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-    success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
-    warning: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-  };
-  
-  return (
-    <div className={`rounded-xl border p-4 my-4 ${colors[type]}`}>
-      {title && (
-        <h5 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
-          <Info size={16} className="text-blue-500" />
-          {title}
-        </h5>
-      )}
-      <ul className="space-y-2">
-        {items.map((item, index) => (
-          <li key={index} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-            <Circle size={6} className="text-slate-400 mt-1.5 flex-shrink-0" />
-            {typeof item === 'string' ? item : (
-              <span><strong>{item.name || item.type || item.label}:</strong> {item.description || item.default}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
+// ============= WIKI COMPONENT =============
 const Wiki = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedModule, setSelectedModule] = useState('overview');
-  const [expandedCategories, setExpandedCategories] = useState(['Getting Started', 'Core HR']);
+  const [selectedModule, setSelectedModule] = useState('getting-started');
+  const [activeSection, setActiveSection] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Group modules by category
-  const groupedModules = MODULES.reduce((acc, module) => {
-    if (!acc[module.category]) {
-      acc[module.category] = [];
-    }
-    acc[module.category].push(module);
+  // Get current module
+  const currentModule = WIKI_MODULES[selectedModule];
+
+  // Get all modules as array
+  const moduleList = Object.values(WIKI_MODULES);
+
+  // Group by category
+  const categories = moduleList.reduce((acc, mod) => {
+    if (!acc[mod.category]) acc[mod.category] = [];
+    acc[mod.category].push(mod);
     return acc;
   }, {});
 
   // Filter modules based on search
-  const filteredModules = MODULES.filter(module =>
-    module.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    module.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredModules = moduleList.filter(mod =>
+    mod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    mod.shortDescription.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get current module
-  const currentModule = MODULES.find(m => m.id === selectedModule) || MODULES[0];
-
-  // Toggle category expansion
-  const toggleCategory = (category) => {
-    setExpandedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
-  };
-
-  // Check if user is admin
+  // Check if admin
   const isAdmin = user?.role === 'super_admin' || user?.role === 'corp_admin';
 
   if (!isAdmin) {
@@ -859,392 +1231,247 @@ const Wiki = () => {
         <div className="max-w-2xl mx-auto text-center py-16">
           <Shield className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Access Restricted</h2>
-          <p className="text-slate-500 dark:text-slate-400">
-            Only administrators can access the documentation wiki.
-          </p>
+          <p className="text-slate-500 dark:text-slate-400">Only administrators can access the documentation wiki.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-80 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-screen sticky top-0 overflow-y-auto">
-          {/* Header */}
-          <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-                <BookOpen className="text-indigo-600 dark:text-indigo-400" size={24} />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+      {/* Sidebar */}
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-300`}>
+        {/* Header */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                  <BookOpen className="text-indigo-600 dark:text-indigo-400" size={22} />
+                </div>
+                <div>
+                  <h1 className="font-bold text-slate-800 dark:text-white">HR Wiki</h1>
+                  <p className="text-xs text-slate-500">Complete Documentation</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">HR Wiki</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Documentation & Guides</p>
-              </div>
-            </div>
-            
-            {/* Search */}
+            )}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+            >
+              {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Search */}
+        {!sidebarCollapsed && (
+          <div className="p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search modules..."
-                className="pl-10 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600"
+                placeholder="Search documentation..."
+                className="pl-10"
               />
             </div>
           </div>
+        )}
 
-          {/* Navigation */}
-          <nav className="p-4">
-            {searchTerm ? (
-              // Search results
-              <div className="space-y-1">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-2">
-                  {filteredModules.length} result{filteredModules.length !== 1 ? 's' : ''}
-                </p>
-                {filteredModules.map((module) => {
-                  const Icon = module.icon;
-                  return (
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto p-4">
+          {searchTerm ? (
+            <div className="space-y-1">
+              <p className="text-xs text-slate-500 mb-2">{filteredModules.length} results</p>
+              {filteredModules.map(mod => {
+                const Icon = mod.icon;
+                return (
+                  <button
+                    key={mod.id}
+                    onClick={() => {
+                      setSelectedModule(mod.id);
+                      setActiveSection(0);
+                      setSearchTerm('');
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                      selectedModule === mod.id
+                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <Icon size={18} />
+                    {!sidebarCollapsed && <span className="text-sm">{mod.name}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(categories).map(([category, mods]) => (
+                <div key={category}>
+                  {!sidebarCollapsed && (
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
+                      {category}
+                    </h3>
+                  )}
+                  <div className="space-y-1">
+                    {mods.map(mod => {
+                      const Icon = mod.icon;
+                      return (
+                        <button
+                          key={mod.id}
+                          onClick={() => {
+                            setSelectedModule(mod.id);
+                            setActiveSection(0);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                            selectedModule === mod.id
+                              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                              : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
+                          title={mod.name}
+                        >
+                          <Icon size={18} className="flex-shrink-0" />
+                          {!sidebarCollapsed && (
+                            <span className="text-sm truncate">{mod.name}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        {currentModule && (
+          <div className="max-w-5xl mx-auto p-8">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
+              <BookOpen size={16} />
+              <span>Wiki</span>
+              <ChevronRight size={14} />
+              <span>{currentModule.category}</span>
+              <ChevronRight size={14} />
+              <span className="text-slate-800 dark:text-white font-medium">{currentModule.name}</span>
+            </div>
+
+            {/* Module Header */}
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-8 mb-8 text-white">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <currentModule.icon size={32} />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">{currentModule.name}</h1>
+                  <p className="text-lg opacity-90">{currentModule.shortDescription}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Screenshot if available */}
+            {currentModule.screenshot && (
+              <div className="mb-8">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                  <img 
+                    src={`${API}${currentModule.screenshot}`}
+                    alt={`${currentModule.name} Screenshot`}
+                    className="w-full rounded-lg shadow-lg"
+                    onError={(e) => e.target.style.display = 'none'}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Section Navigation */}
+            {currentModule.sections && currentModule.sections.length > 1 && (
+              <div className="mb-8 overflow-x-auto">
+                <div className="flex gap-2 min-w-max pb-2">
+                  {currentModule.sections.map((section, index) => (
                     <button
-                      key={module.id}
-                      onClick={() => {
-                        setSelectedModule(module.id);
-                        setSearchTerm('');
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                        selectedModule === module.id
+                      key={index}
+                      onClick={() => setActiveSection(index)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                        activeSection === index
                           ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                          : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
-                      <Icon size={18} />
-                      <span className="text-sm font-medium">{module.name}</span>
+                      {section.title}
                     </button>
-                  );
-                })}
-              </div>
-            ) : (
-              // Category navigation
-              <div className="space-y-2">
-                {Object.entries(groupedModules).map(([category, modules]) => (
-                  <div key={category}>
-                    <button
-                      onClick={() => toggleCategory(category)}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <span className={`text-sm font-semibold ${CATEGORY_COLORS[category]?.text || 'text-slate-700 dark:text-slate-300'}`}>
-                        {category}
-                      </span>
-                      {expandedCategories.includes(category) ? (
-                        <ChevronDown size={16} className="text-slate-400" />
-                      ) : (
-                        <ChevronRight size={16} className="text-slate-400" />
-                      )}
-                    </button>
-                    
-                    {expandedCategories.includes(category) && (
-                      <div className="ml-2 mt-1 space-y-0.5">
-                        {modules.map((module) => {
-                          const Icon = module.icon;
-                          return (
-                            <button
-                              key={module.id}
-                              onClick={() => setSelectedModule(module.id)}
-                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                                selectedModule === module.id
-                                  ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                                  : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400'
-                              }`}
-                            >
-                              <Icon size={16} />
-                              <span className="text-sm">{module.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-8 max-w-5xl">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
-            <BookOpen size={16} />
-            <span>Wiki</span>
-            <ChevronRight size={14} />
-            <span>{currentModule.category}</span>
-            <ChevronRight size={14} />
-            <span className="text-slate-800 dark:text-white font-medium">{currentModule.name}</span>
-          </div>
-
-          {/* Module Header */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-            <div className="flex items-start gap-4">
-              <div className={`p-4 rounded-2xl ${CATEGORY_COLORS[currentModule.category]?.bg}`}>
-                <currentModule.icon className={CATEGORY_COLORS[currentModule.category]?.text} size={32} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-                    {currentModule.name}
-                  </h2>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${CATEGORY_COLORS[currentModule.category]?.bg} ${CATEGORY_COLORS[currentModule.category]?.text}`}>
-                    {currentModule.category}
-                  </span>
+                  ))}
                 </div>
-                <p className="text-lg text-slate-600 dark:text-slate-400">
-                  {currentModule.description}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Introduction */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Info className="text-indigo-600" size={22} />
-              Overview
-            </h3>
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">
-              {currentModule.content.intro}
-            </p>
-            
-            {/* Key Metrics for Overview */}
-            {currentModule.content.keyMetrics && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                {currentModule.content.keyMetrics.map((metric, index) => (
-                  <div key={index} className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white text-center">
-                    <p className="text-2xl font-bold">{metric.label}</p>
-                    <p className="text-sm opacity-90">{metric.description}</p>
-                  </div>
-                ))}
               </div>
             )}
-          </div>
 
-          {/* Features */}
-          {currentModule.content.features && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Zap className="text-amber-500" size={22} />
-                Key Features
-              </h3>
-              <FeatureList features={currentModule.content.features} />
-            </div>
-          )}
-
-          {/* Workflow Diagram */}
-          {currentModule.content.workflow && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <WorkflowDiagram workflow={currentModule.content.workflow} />
-            </div>
-          )}
-
-          {/* Leave Types (for Leave module) */}
-          {currentModule.content.leaveTypes && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Calendar className="text-blue-500" size={22} />
-                Leave Types
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentModule.content.leaveTypes.map((leave, index) => (
-                  <div key={index} className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                    <p className="font-semibold text-slate-800 dark:text-white">{leave.type}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{leave.description}</p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">Default: {leave.default}</p>
+            {/* Active Section Content */}
+            {currentModule.sections && currentModule.sections[activeSection] && (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">
+                  {currentModule.sections[activeSection].title}
+                </h2>
+                
+                {/* Render content based on type */}
+                {currentModule.sections[activeSection].type === 'steps' ? (
+                  <div className="space-y-6">
+                    {currentModule.sections[activeSection].steps.map((step, index) => (
+                      <div key={index} className="flex gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
+                            {step.number}
+                          </div>
+                          {index < currentModule.sections[activeSection].steps.length - 1 && (
+                            <div className="w-0.5 h-full bg-indigo-200 dark:bg-indigo-800 mx-auto mt-2" style={{ minHeight: '40px' }} />
+                          )}
+                        </div>
+                        <div className="flex-1 pb-6">
+                          <h4 className="font-semibold text-lg text-slate-800 dark:text-white mb-2">{step.title}</h4>
+                          <p className="text-slate-600 dark:text-slate-400 mb-3">{step.description}</p>
+                          {step.tip && (
+                            <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                              <Lightbulb className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                              <p className="text-sm text-amber-700 dark:text-amber-400"><strong>Tip:</strong> {step.tip}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div 
+                    className="prose prose-slate dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: currentModule.sections[activeSection].content }}
+                  />
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Payroll Components */}
-          {currentModule.content.components && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Wallet className="text-green-500" size={22} />
-                Salary Components
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentModule.content.components.map((comp, index) => (
-                  <div key={index} className={`rounded-xl p-4 border ${
-                    comp.type === 'Earning' 
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                  }`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-semibold text-slate-800 dark:text-white">{comp.name}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        comp.type === 'Earning' 
-                          ? 'bg-green-200 text-green-700 dark:bg-green-800 dark:text-green-300' 
-                          : 'bg-red-200 text-red-700 dark:bg-red-800 dark:text-red-300'
-                      }`}>
-                        {comp.type}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{comp.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Report Types (for Scheduled Reports) */}
-          {currentModule.content.reportTypes && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <FileCheck className="text-indigo-500" size={22} />
-                Available Report Types
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentModule.content.reportTypes.map((report, index) => (
-                  <div key={index} className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 flex items-start gap-3">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                      <BarChart3 className="text-indigo-600 dark:text-indigo-400" size={18} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-800 dark:text-white">{report.name}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{report.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Analytics Metrics */}
-          {currentModule.content.metrics && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <BarChart3 className="text-indigo-500" size={22} />
-                Key Metrics
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentModule.content.metrics.map((metric, index) => (
-                  <div key={index} className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                    <p className="font-semibold text-slate-800 dark:text-white">{metric.name}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{metric.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Organization Hierarchy */}
-          {currentModule.content.hierarchy && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Network className="text-purple-500" size={22} />
-                Organization Hierarchy
-              </h3>
-              <div className="space-y-3">
-                {currentModule.content.hierarchy.map((level, index) => (
-                  <div key={index} className="flex items-center gap-4" style={{ marginLeft: `${(level.level - 1) * 24}px` }}>
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-                      {level.level}
-                    </div>
-                    <div className="flex-1 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                      <p className="font-semibold text-slate-800 dark:text-white">{level.name}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{level.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Categories (for various modules) */}
-          {currentModule.content.categories && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <FolderTree className="text-amber-500" size={22} />
-                Categories
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {currentModule.content.categories.map((category, index) => (
-                  <span key={index} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium">
-                    {category}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Settings Sections */}
-          {currentModule.content.sections && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 mb-8">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Settings className="text-slate-500" size={22} />
-                Configuration Sections
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentModule.content.sections.map((section, index) => (
-                  <div key={index} className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                    <p className="font-semibold text-slate-800 dark:text-white flex items-center gap-2">
-                      <ChevronRight size={16} className="text-indigo-500" />
-                      {section.name}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 ml-6">{section.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Best Practices */}
-          {currentModule.content.bestPractices && (
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-8 mb-8">
-              <h3 className="text-xl font-bold text-green-800 dark:text-green-300 mb-4 flex items-center gap-2">
-                <CheckCircle2 className="text-green-600" size={22} />
-                Best Practices
-              </h3>
-              <ul className="space-y-3">
-                {currentModule.content.bestPractices.map((practice, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-green-200 dark:bg-green-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 size={14} className="text-green-700 dark:text-green-300" />
-                    </div>
-                    <span className="text-green-800 dark:text-green-200">{practice}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Play className="text-indigo-600" size={22} />
-              Quick Actions
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {currentModule.id !== 'overview' && (
-                <a
-                  href={`/${currentModule.id === 'org-structure' ? 'corporations' : currentModule.id === 'scheduled-reports' ? 'scheduled-reports' : currentModule.id}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                >
-                  <ExternalLink size={16} />
-                  Go to {currentModule.name}
-                </a>
-              )}
+            {/* Navigation Footer */}
+            <div className="flex justify-between mt-8">
               <button
-                onClick={() => setSelectedModule('overview')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
+                onClick={() => setActiveSection(Math.max(0, activeSection - 1))}
+                disabled={activeSection === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700"
               >
-                <BookOpen size={16} />
-                Back to Overview
+                <ChevronLeft size={18} />
+                Previous
+              </button>
+              <button
+                onClick={() => setActiveSection(Math.min(currentModule.sections.length - 1, activeSection + 1))}
+                disabled={activeSection === currentModule.sections.length - 1}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700"
+              >
+                Next
+                <ChevronRight size={18} />
               </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
