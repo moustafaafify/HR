@@ -904,6 +904,44 @@ const MobileApps = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* PWA Testing Checklist */}
+                <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                    <CheckCircle2 size={18} />
+                    PWA Testing Checklist
+                  </h4>
+                  <p className="text-sm text-purple-700 mb-3">
+                    After installing on your device, verify these features:
+                  </p>
+                  <ul className="text-sm text-purple-800 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">1</span>
+                      <span><strong>App Icon:</strong> Check that your custom logo appears on the home screen</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">2</span>
+                      <span><strong>App Name:</strong> Verify "{mobileConfig.appName || 'HR Portal'}" shows under the icon</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">3</span>
+                      <span><strong>Splash Screen:</strong> Look for branded splash on app launch</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">4</span>
+                      <span><strong>Standalone Mode:</strong> App opens without browser UI (no address bar)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">5</span>
+                      <span><strong>Theme Color:</strong> Status bar uses your brand color</span>
+                    </li>
+                  </ul>
+                  <div className="mt-4 p-3 bg-purple-100 rounded-lg">
+                    <p className="text-xs text-purple-700">
+                      <strong>Tip:</strong> If branding doesn't appear after install, try uninstalling and reinstalling the app, or clear browser cache before installing.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
