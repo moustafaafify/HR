@@ -52,10 +52,40 @@ import {
   ChevronLeft,
   Ticket,
   Bell,
-  Smartphone
+  Smartphone,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
+
+// Helper to apply dark mode CSS variables
+const applyDarkMode = (isDark) => {
+  const root = document.documentElement;
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+    root.style.setProperty('--background', '#0f172a');
+    root.style.setProperty('--foreground', '#f8fafc');
+    root.style.setProperty('--card', '#1e293b');
+    root.style.setProperty('--card-foreground', '#f8fafc');
+    root.style.setProperty('--muted', '#334155');
+    root.style.setProperty('--muted-foreground', '#94a3b8');
+    root.style.setProperty('--border', '#334155');
+    root.style.setProperty('--sidebar-bg', '#0f172a');
+    root.style.setProperty('--sidebar-border', '#1e293b');
+  } else {
+    document.body.classList.remove('dark-mode');
+    root.style.setProperty('--background', '#FCFCFA');
+    root.style.setProperty('--foreground', '#0f172a');
+    root.style.setProperty('--card', '#ffffff');
+    root.style.setProperty('--card-foreground', '#0f172a');
+    root.style.setProperty('--muted', '#f1f5f9');
+    root.style.setProperty('--muted-foreground', '#64748b');
+    root.style.setProperty('--border', '#e2e8f0');
+    root.style.setProperty('--sidebar-bg', '#ffffff');
+    root.style.setProperty('--sidebar-border', '#e2e8f0');
+  }
+};
 
 const Layout = () => {
   const { user, logout, token } = useAuth();
@@ -68,6 +98,12 @@ const Layout = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [darkMode, setDarkMode] = useState(() => {
+    // Check localStorage first, then fall back to system preference
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [recentNotifications, setRecentNotifications] = useState([]);
 
