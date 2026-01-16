@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import {
   BarChart3,
   Users,
@@ -24,7 +31,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Building2,
-  Briefcase
+  Briefcase,
+  FileText,
+  FileSpreadsheet,
+  Printer,
+  ChevronDown
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
