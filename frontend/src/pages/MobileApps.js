@@ -921,7 +921,7 @@ const MobileApps = () => {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">2</span>
-                      <span><strong>App Name:</strong> Verify "{mobileConfig.appName || 'HR Portal'}" shows under the icon</span>
+                      <span><strong>App Name:</strong> Verify &ldquo;{mobileConfig.appName || 'HR Portal'}&rdquo; shows under the icon</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-bold flex-shrink-0">3</span>
@@ -938,7 +938,7 @@ const MobileApps = () => {
                   </ul>
                   <div className="mt-4 p-3 bg-purple-100 rounded-lg">
                     <p className="text-xs text-purple-700">
-                      <strong>Tip:</strong> If branding doesn't appear after install, try uninstalling and reinstalling the app, or clear browser cache before installing.
+                      <strong>Tip:</strong> If branding doesn&apos;t appear after install, try uninstalling and reinstalling the app, or clear browser cache before installing.
                     </p>
                   </div>
                 </div>
