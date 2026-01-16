@@ -3876,58 +3876,206 @@ async def delete_role(role_id: str, current_user: User = Depends(get_current_use
 
 @api_router.post("/roles/initialize-defaults")
 async def initialize_default_roles(current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.SUPER_ADMIN:
-        raise HTTPException(status_code=403, detail="Only super admin can initialize roles")
+    """Initialize default system roles"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can initialize roles")
     
     existing_roles = await db.roles.count_documents({})
     if existing_roles > 0:
-        raise HTTPException(status_code=400, detail="Roles already initialized")
+        return {"message": "Roles already initialized", "count": existing_roles}
     
-    default_roles = [
-        {
-            "name": "super_admin",
-            "display_name": "Super Administrator",
-            "description": "Full system access with all permissions",
-            "permissions": [p["id"] for p in AVAILABLE_PERMISSIONS],
-            "is_system_role": True
-        },
-        {
-            "name": "corp_admin",
-            "display_name": "Corporate Administrator",
-            "description": "Manage corporation and employees",
-            "permissions": [
-                "employees.view", "employees.create", "employees.edit", "employees.reset_password",
-                "leaves.view", "leaves.approve", "attendance.view", "attendance.manage",
-                "reviews.view", "reviews.create", "organization.view", "payroll.view"
-            ],
-            "is_system_role": True
-        },
-        {
-            "name": "branch_manager",
-            "display_name": "Branch Manager",
-            "description": "Manage branch employees and operations",
-            "permissions": [
-                "employees.view", "leaves.view", "leaves.approve", 
-                "attendance.view", "attendance.manage", "reviews.view", "reviews.create"
-            ],
-            "is_system_role": True
-        },
-        {
-            "name": "employee",
-            "display_name": "Employee",
-            "description": "Basic employee access",
-            "permissions": [
-                "leaves.view", "leaves.create", "attendance.view"
-            ],
-            "is_system_role": True
-        },
-    ]
+    role_colors = {
+        "super_admin": "#dc2626",
+        "corp_admin": "#ea580c",
+        "hr_manager": "#2563eb",
+        "department_head": "#7c3aed",
+        "team_lead": "#0891b2",
+        "employee": "#64748b"
+    }
     
-    for role_data in default_roles:
+    for role_data in DEFAULT_ROLES:
+        role_data["color"] = role_colors.get(role_data["name"], "#64748b")
         role = Role(**role_data)
         await db.roles.insert_one(role.model_dump())
     
-    return {"message": f"Initialized {len(default_roles)} default roles"}
+    return {"message": f"Initialized {len(DEFAULT_ROLES)} default roles"}
+
+
+@api_router.get("/roles/stats")
+async def get_roles_stats(current_user: User = Depends(get_current_user)):
+    """Get statistics about roles and user assignments"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view role stats")
+    
+    roles = await db.roles.find({}, {"_id": 0}).to_list(100)
+    stats = []
+    
+    for role in roles:
+        user_count = await db.users.count_documents({"role": role["name"]})
+        stats.append({
+            "role_id": role["id"],
+            "role_name": role["name"],
+            "display_name": role["display_name"],
+            "user_count": user_count,
+            "permission_count": len(role.get("permissions", [])),
+            "is_system_role": role.get("is_system_role", False),
+            "level": role.get("level", 5)
+        })
+    
+    return {
+        "total_roles": len(roles),
+        "system_roles": len([r for r in roles if r.get("is_system_role")]),
+        "custom_roles": len([r for r in roles if not r.get("is_system_role")]),
+        "roles": sorted(stats, key=lambda x: x["level"])
+    }
+
+
+@api_router.get("/roles/{role_id}/users")
+async def get_users_with_role(role_id: str, current_user: User = Depends(get_current_user)):
+    """Get all users assigned to a specific role"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view role users")
+    
+    role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    users = await db.users.find({"role": role["name"]}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    
+    # Enrich with employee data
+    enriched_users = []
+    for user in users:
+        employee = await db.employees.find_one({"user_id": user["id"]}, {"_id": 0})
+        enriched_users.append({
+            **user,
+            "employee": employee
+        })
+    
+    return {
+        "role": role,
+        "users": enriched_users,
+        "count": len(enriched_users)
+    }
+
+
+@api_router.post("/roles/{role_id}/assign")
+async def assign_role_to_user(role_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Assign a role to a user"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can assign roles")
+    
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update user's role
+    await db.users.update_one({"id": user_id}, {"$set": {"role": role["name"]}})
+    
+    # Create notification
+    await create_notification_for_user(
+        user_id=user_id,
+        notification_type=NotificationType.SYSTEM,
+        title="Role Updated",
+        message=f"Your role has been changed to {role['display_name']}",
+        priority="high"
+    )
+    
+    return {"message": f"Role '{role['display_name']}' assigned to user", "user_id": user_id}
+
+
+@api_router.post("/roles/{role_id}/remove")
+async def remove_role_from_user(role_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Remove role from user (sets to default employee role)"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can remove roles")
+    
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Can't remove super_admin role from self
+    if user_id == current_user.id and user.get("role") == "super_admin":
+        raise HTTPException(status_code=400, detail="Cannot remove your own super admin role")
+    
+    # Set to employee role
+    await db.users.update_one({"id": user_id}, {"$set": {"role": "employee"}})
+    
+    return {"message": "Role removed, user set to Employee role", "user_id": user_id}
+
+
+@api_router.post("/roles/duplicate/{role_id}")
+async def duplicate_role(role_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Duplicate an existing role with new name"""
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only super admin can duplicate roles")
+    
+    source_role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    if not source_role:
+        raise HTTPException(status_code=404, detail="Source role not found")
+    
+    new_name = data.get("name")
+    new_display_name = data.get("display_name")
+    
+    if not new_name or not new_display_name:
+        raise HTTPException(status_code=400, detail="name and display_name are required")
+    
+    # Check if name already exists
+    existing = await db.roles.find_one({"name": new_name})
+    if existing:
+        raise HTTPException(status_code=400, detail="Role name already exists")
+    
+    new_role = Role(
+        name=new_name,
+        display_name=new_display_name,
+        description=data.get("description", f"Copy of {source_role['display_name']}"),
+        permissions=source_role.get("permissions", []).copy(),
+        is_system_role=False,
+        level=data.get("level", source_role.get("level", 5)),
+        color=data.get("color", source_role.get("color", "#64748b"))
+    )
+    
+    await db.roles.insert_one(new_role.model_dump())
+    return new_role
+
+
+@api_router.get("/users/with-permissions")
+async def get_users_by_permission(permission: str, current_user: User = Depends(get_current_user)):
+    """Get all users who have a specific permission"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can view users by permission")
+    
+    # Find roles with this permission
+    roles_with_permission = await db.roles.find(
+        {"permissions": permission}, 
+        {"_id": 0, "name": 1, "display_name": 1}
+    ).to_list(100)
+    
+    role_names = [r["name"] for r in roles_with_permission]
+    
+    # Find users with these roles
+    users = await db.users.find(
+        {"role": {"$in": role_names}}, 
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    return {
+        "permission": permission,
+        "roles": roles_with_permission,
+        "users": users,
+        "count": len(users)
+    }
 
 # ============= RECRUITMENT ROUTES =============
 
