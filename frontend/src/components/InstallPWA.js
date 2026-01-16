@@ -135,16 +135,16 @@ const InstallPWA = () => {
           {/* Header with gradient */}
           <div 
             className="px-6 py-5 text-white relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #2D4F38, #4F7942)' }}
+            style={{ background: `linear-gradient(135deg, ${mobileConfig.primaryColor}, ${mobileConfig.secondaryColor})` }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-[#2D4F38] font-black text-xl">HR</span>
+                  <span style={{ color: mobileConfig.primaryColor }} className="font-black text-xl">HR</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-xl">Install HR Portal</h3>
+                  <h3 className="font-bold text-xl">Install {mobileConfig.appName}</h3>
                   <p className="text-white/80 text-sm">Get the full app experience</p>
                 </div>
               </div>
