@@ -100,6 +100,7 @@ function AppRoutes() {
         <Route path="profile" element={<Profile />} />
         <Route path="tickets" element={<Tickets />} />
         <Route path="notifications" element={<Notifications />} />
+        <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
         <Route path="settings/roles" element={<RolesPermissions />} />
         <Route path="settings/workflows" element={<Workflows />} />
