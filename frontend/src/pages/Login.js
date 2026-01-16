@@ -53,13 +53,17 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-lg p-6 sm:p-8">
           <div className="flex items-center justify-center mb-6 sm:mb-8">
-            <div className="p-3 sm:p-4 bg-indigo-950 rounded-full">
-              <Building2 className="text-white" size={28} />
-            </div>
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt="Logo" className="w-14 h-14 object-contain" />
+            ) : (
+              <div className="p-3 sm:p-4 bg-indigo-950 rounded-full">
+                <Building2 className="text-white" size={28} />
+              </div>
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-center text-indigo-950 mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            HR Platform
+            {branding.app_name || 'HR Platform'}
           </h1>
           <p className="text-center text-slate-500 mb-6 sm:mb-8 text-sm sm:text-base">
             {isLogin ? t('login') : t('register')}
