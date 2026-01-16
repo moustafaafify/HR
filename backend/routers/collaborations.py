@@ -977,4 +977,525 @@ async def get_collaboration_users(current_user: User = Depends(get_current_user)
         {"_id": 0, "password_hash": 0}
     ).to_list(500)
     
-    return [{"id": u["id"], "name": u.get("full_name", ""), "email": u.get("email", "")} for u in users]
+    # Get user statuses
+    statuses = {}
+    status_docs = await db.collab_user_status.find({}, {"_id": 0}).to_list(500)
+    for s in status_docs:
+        statuses[s["user_id"]] = s
+    
+    result = []
+    for u in users:
+        user_status = statuses.get(u["id"], {})
+        result.append({
+            "id": u["id"], 
+            "name": u.get("full_name", ""), 
+            "email": u.get("email", ""),
+            "status": user_status.get("status", "offline"),
+            "status_text": user_status.get("status_text"),
+            "status_emoji": user_status.get("status_emoji")
+        })
+    
+    return result
+
+
+# ============= POLLS =============
+
+@router.post("/channels/{channel_id}/polls")
+async def create_poll(
+    channel_id: str,
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Create a poll in a channel"""
+    options = [
+        {"id": str(uuid.uuid4())[:8], "text": opt, "votes": []}
+        for opt in data.get("options", [])
+    ]
+    
+    poll = Poll(
+        channel_id=channel_id,
+        question=data.get("question"),
+        options=options,
+        allow_multiple=data.get("allow_multiple", False),
+        is_anonymous=data.get("is_anonymous", False),
+        ends_at=data.get("ends_at"),
+        created_by=current_user.id,
+        created_by_name=current_user.full_name
+    )
+    
+    await db.collab_polls.insert_one(poll.model_dump())
+    
+    # Create message for poll
+    message = Message(
+        channel_id=channel_id,
+        content=f"📊 Poll: {poll.question}",
+        content_type="poll",
+        sender_id=current_user.id,
+        sender_name=current_user.full_name,
+        attachments=[{"type": "poll", "poll_id": poll.id}]
+    )
+    await db.collab_messages.insert_one(message.model_dump())
+    
+    # Update poll with message_id
+    await db.collab_polls.update_one({"id": poll.id}, {"$set": {"message_id": message.id}})
+    
+    return {**poll.model_dump(), "message_id": message.id}
+
+
+@router.get("/channels/{channel_id}/polls")
+async def get_polls(channel_id: str, current_user: User = Depends(get_current_user)):
+    """Get polls in a channel"""
+    polls = await db.collab_polls.find(
+        {"channel_id": channel_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return polls
+
+
+@router.get("/polls/{poll_id}")
+async def get_poll(poll_id: str, current_user: User = Depends(get_current_user)):
+    """Get a single poll"""
+    poll = await db.collab_polls.find_one({"id": poll_id}, {"_id": 0})
+    if not poll:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    return poll
+
+
+@router.post("/polls/{poll_id}/vote")
+async def vote_poll(
+    poll_id: str,
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Vote on a poll"""
+    poll = await db.collab_polls.find_one({"id": poll_id}, {"_id": 0})
+    if not poll:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    
+    if poll.get("is_closed"):
+        raise HTTPException(status_code=400, detail="Poll is closed")
+    
+    option_ids = data.get("option_ids", [])
+    if not poll.get("allow_multiple") and len(option_ids) > 1:
+        raise HTTPException(status_code=400, detail="Multiple votes not allowed")
+    
+    # Remove existing votes
+    for opt in poll["options"]:
+        if current_user.id in opt.get("votes", []):
+            opt["votes"].remove(current_user.id)
+    
+    # Add new votes
+    for opt in poll["options"]:
+        if opt["id"] in option_ids:
+            if current_user.id not in opt.get("votes", []):
+                opt["votes"].append(current_user.id)
+    
+    await db.collab_polls.update_one({"id": poll_id}, {"$set": {"options": poll["options"]}})
+    
+    return await db.collab_polls.find_one({"id": poll_id}, {"_id": 0})
+
+
+@router.post("/polls/{poll_id}/close")
+async def close_poll(poll_id: str, current_user: User = Depends(get_current_user)):
+    """Close a poll"""
+    poll = await db.collab_polls.find_one({"id": poll_id}, {"_id": 0})
+    if not poll:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    
+    if poll["created_by"] != current_user.id and current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only poll creator can close")
+    
+    await db.collab_polls.update_one({"id": poll_id}, {"$set": {"is_closed": True}})
+    return {"message": "Poll closed"}
+
+
+# ============= USER STATUS =============
+
+@router.get("/status")
+async def get_my_status(current_user: User = Depends(get_current_user)):
+    """Get current user's status"""
+    status = await db.collab_user_status.find_one({"user_id": current_user.id}, {"_id": 0})
+    if not status:
+        status = UserStatus(user_id=current_user.id).model_dump()
+    return status
+
+
+@router.put("/status")
+async def update_my_status(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Update current user's status"""
+    status_data = {
+        "user_id": current_user.id,
+        "status": data.get("status", "online"),
+        "status_text": data.get("status_text"),
+        "status_emoji": data.get("status_emoji"),
+        "clear_at": data.get("clear_at"),
+        "last_active": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.collab_user_status.update_one(
+        {"user_id": current_user.id},
+        {"$set": status_data},
+        upsert=True
+    )
+    
+    return status_data
+
+
+@router.get("/status/all")
+async def get_all_statuses(current_user: User = Depends(get_current_user)):
+    """Get all user statuses"""
+    statuses = await db.collab_user_status.find({}, {"_id": 0}).to_list(500)
+    return {s["user_id"]: s for s in statuses}
+
+
+# ============= CHANNEL CATEGORIES =============
+
+@router.get("/categories")
+async def get_categories(current_user: User = Depends(get_current_user)):
+    """Get channel categories"""
+    categories = await db.collab_categories.find({}, {"_id": 0}).sort("order", 1).to_list(50)
+    return categories
+
+
+@router.post("/categories")
+async def create_category(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a channel category"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Admin only")
+    
+    # Get max order
+    max_order = await db.collab_categories.find_one(sort=[("order", -1)])
+    next_order = (max_order.get("order", 0) + 1) if max_order else 0
+    
+    category = ChannelCategory(
+        name=data.get("name"),
+        order=data.get("order", next_order),
+        created_by=current_user.id
+    )
+    
+    await db.collab_categories.insert_one(category.model_dump())
+    return category.model_dump()
+
+
+@router.put("/categories/{category_id}")
+async def update_category(
+    category_id: str,
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Update a category"""
+    await db.collab_categories.update_one({"id": category_id}, {"$set": data})
+    return await db.collab_categories.find_one({"id": category_id}, {"_id": 0})
+
+
+@router.delete("/categories/{category_id}")
+async def delete_category(category_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a category"""
+    await db.collab_categories.delete_one({"id": category_id})
+    # Remove category from channels
+    await db.collab_channels.update_many(
+        {"category_id": category_id},
+        {"$unset": {"category_id": ""}}
+    )
+    return {"message": "Category deleted"}
+
+
+# ============= QUICK REPLIES =============
+
+@router.get("/quick-replies")
+async def get_quick_replies(current_user: User = Depends(get_current_user)):
+    """Get user's quick replies"""
+    replies = await db.collab_quick_replies.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(50)
+    return replies
+
+
+@router.post("/quick-replies")
+async def create_quick_reply(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Create a quick reply template"""
+    reply = QuickReply(
+        user_id=current_user.id,
+        title=data.get("title"),
+        content=data.get("content"),
+        shortcut=data.get("shortcut")
+    )
+    
+    await db.collab_quick_replies.insert_one(reply.model_dump())
+    return reply.model_dump()
+
+
+@router.put("/quick-replies/{reply_id}")
+async def update_quick_reply(
+    reply_id: str,
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Update a quick reply"""
+    await db.collab_quick_replies.update_one(
+        {"id": reply_id, "user_id": current_user.id},
+        {"$set": data}
+    )
+    return await db.collab_quick_replies.find_one({"id": reply_id}, {"_id": 0})
+
+
+@router.delete("/quick-replies/{reply_id}")
+async def delete_quick_reply(reply_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a quick reply"""
+    await db.collab_quick_replies.delete_one({"id": reply_id, "user_id": current_user.id})
+    return {"message": "Quick reply deleted"}
+
+
+# ============= READ RECEIPTS =============
+
+@router.post("/channels/{channel_id}/read")
+async def mark_channel_read(channel_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a channel as read"""
+    # Get last message
+    last_message = await db.collab_messages.find_one(
+        {"channel_id": channel_id, "is_deleted": False},
+        {"_id": 0},
+        sort=[("created_at", -1)]
+    )
+    
+    receipt = {
+        "user_id": current_user.id,
+        "channel_id": channel_id,
+        "last_read_at": datetime.now(timezone.utc).isoformat(),
+        "last_read_message_id": last_message["id"] if last_message else None
+    }
+    
+    await db.collab_read_receipts.update_one(
+        {"user_id": current_user.id, "channel_id": channel_id},
+        {"$set": receipt},
+        upsert=True
+    )
+    
+    return receipt
+
+
+@router.get("/unread")
+async def get_unread_counts(current_user: User = Depends(get_current_user)):
+    """Get unread message counts per channel"""
+    # Get user's read receipts
+    receipts = await db.collab_read_receipts.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    receipt_map = {r["channel_id"]: r for r in receipts}
+    
+    # Get accessible channels
+    channels = await db.collab_channels.find({
+        "$or": [
+            {"type": "public"},
+            {"members": current_user.id},
+            {"created_by": current_user.id}
+        ],
+        "is_archived": False
+    }, {"_id": 0, "id": 1}).to_list(100)
+    
+    unread = {}
+    for channel in channels:
+        channel_id = channel["id"]
+        receipt = receipt_map.get(channel_id)
+        
+        if receipt:
+            # Count messages after last read
+            count = await db.collab_messages.count_documents({
+                "channel_id": channel_id,
+                "created_at": {"$gt": receipt["last_read_at"]},
+                "is_deleted": False,
+                "sender_id": {"$ne": current_user.id}
+            })
+        else:
+            # All messages are unread
+            count = await db.collab_messages.count_documents({
+                "channel_id": channel_id,
+                "is_deleted": False,
+                "sender_id": {"$ne": current_user.id}
+            })
+        
+        if count > 0:
+            unread[channel_id] = count
+    
+    return unread
+
+
+# ============= NOTIFICATION PREFERENCES =============
+
+@router.get("/notifications/preferences")
+async def get_notification_preferences(current_user: User = Depends(get_current_user)):
+    """Get user's notification preferences"""
+    prefs = await db.collab_notification_prefs.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(100)
+    return {p["channel_id"]: p for p in prefs}
+
+
+@router.put("/channels/{channel_id}/notifications")
+async def update_channel_notifications(
+    channel_id: str,
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Update notification preferences for a channel"""
+    pref = {
+        "user_id": current_user.id,
+        "channel_id": channel_id,
+        "muted": data.get("muted", False),
+        "mute_until": data.get("mute_until"),
+        "notify_all": data.get("notify_all", True),
+        "notify_mentions": data.get("notify_mentions", True),
+        "notify_replies": data.get("notify_replies", True)
+    }
+    
+    await db.collab_notification_prefs.update_one(
+        {"user_id": current_user.id, "channel_id": channel_id},
+        {"$set": pref},
+        upsert=True
+    )
+    
+    return pref
+
+
+# ============= ENHANCED SEARCH =============
+
+@router.get("/search/advanced")
+async def advanced_search(
+    q: str,
+    type: Optional[str] = None,
+    channel_id: Optional[str] = None,
+    sender_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    has_attachments: Optional[bool] = None,
+    is_pinned: Optional[bool] = None,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Advanced search with filters"""
+    results = {"messages": [], "files": [], "polls": []}
+    
+    # Build message query
+    msg_query = {"content": {"$regex": q, "$options": "i"}, "is_deleted": False}
+    
+    if channel_id:
+        msg_query["channel_id"] = channel_id
+    if sender_id:
+        msg_query["sender_id"] = sender_id
+    if date_from:
+        msg_query["created_at"] = {"$gte": date_from}
+    if date_to:
+        if "created_at" in msg_query:
+            msg_query["created_at"]["$lte"] = date_to
+        else:
+            msg_query["created_at"] = {"$lte": date_to}
+    if has_attachments:
+        msg_query["attachments.0"] = {"$exists": True}
+    if is_pinned is not None:
+        msg_query["is_pinned"] = is_pinned
+    
+    if not type or type == "messages":
+        results["messages"] = await db.collab_messages.find(
+            msg_query, {"_id": 0}
+        ).sort("created_at", -1).to_list(limit)
+    
+    if not type or type == "files":
+        file_query = {"original_name": {"$regex": q, "$options": "i"}, "is_deleted": False}
+        if channel_id:
+            file_query["channel_id"] = channel_id
+        
+        results["files"] = await db.collab_files.find(
+            file_query, {"_id": 0}
+        ).sort("created_at", -1).to_list(limit)
+    
+    if not type or type == "polls":
+        poll_query = {"question": {"$regex": q, "$options": "i"}}
+        if channel_id:
+            poll_query["channel_id"] = channel_id
+        
+        results["polls"] = await db.collab_polls.find(
+            poll_query, {"_id": 0}
+        ).sort("created_at", -1).to_list(limit)
+    
+    return results
+
+
+# ============= MENTIONS =============
+
+@router.get("/mentions")
+async def get_my_mentions(
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Get messages where current user is mentioned"""
+    messages = await db.collab_messages.find(
+        {"mentions": current_user.id, "is_deleted": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    
+    return messages
+
+
+# ============= CHANNEL MEMBERS =============
+
+@router.get("/channels/{channel_id}/members")
+async def get_channel_members(channel_id: str, current_user: User = Depends(get_current_user)):
+    """Get members of a channel"""
+    channel = await db.collab_channels.find_one({"id": channel_id}, {"_id": 0})
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    member_ids = channel.get("members", [])
+    
+    # Get user info for each member
+    members = []
+    for user_id in member_ids:
+        user_info = await get_user_info(user_id)
+        # Get status
+        status = await db.collab_user_status.find_one({"user_id": user_id}, {"_id": 0})
+        user_info["status"] = status.get("status", "offline") if status else "offline"
+        user_info["status_text"] = status.get("status_text") if status else None
+        members.append(user_info)
+    
+    return members
+
+
+# ============= EXPORT CHAT =============
+
+@router.get("/channels/{channel_id}/export")
+async def export_channel_chat(
+    channel_id: str,
+    format: str = "json",
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export channel chat history"""
+    query = {"channel_id": channel_id, "is_deleted": False}
+    
+    if date_from:
+        query["created_at"] = {"$gte": date_from}
+    if date_to:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = date_to
+        else:
+            query["created_at"] = {"$lte": date_to}
+    
+    messages = await db.collab_messages.find(query, {"_id": 0}).sort("created_at", 1).to_list(10000)
+    
+    channel = await db.collab_channels.find_one({"id": channel_id}, {"_id": 0})
+    
+    export_data = {
+        "channel": channel,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_by": current_user.full_name,
+        "message_count": len(messages),
+        "messages": messages
+    }
+    
+    return export_data
+
