@@ -785,6 +785,28 @@ class PerformanceReview(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+class SmtpSettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    enabled: bool = False
+    host: str = ""
+    port: int = 587
+    username: str = ""
+    password: str = ""
+    from_email: str = ""
+    from_name: str = ""
+    encryption: str = "tls"  # none, tls, ssl
+    verified: bool = False
+
+class SmsSettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    enabled: bool = False
+    provider: str = "twilio"  # twilio, nexmo, messagebird, plivo, sns, africas_talking, infobip, clicksend
+    api_key: str = ""
+    api_secret: str = ""
+    sender_id: str = ""
+    account_sid: str = ""  # For Twilio
+    verified: bool = False
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = "global_settings"
@@ -793,6 +815,8 @@ class Settings(BaseModel):
     currency: str = "USD"
     enabled_currencies: List[str] = Field(default_factory=lambda: ["USD"])
     exchange_rates: Dict[str, float] = Field(default_factory=lambda: {"USD": 1.0})
+    smtp: Optional[SmtpSettings] = Field(default_factory=SmtpSettings)
+    sms: Optional[SmsSettings] = Field(default_factory=SmsSettings)
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class Role(BaseModel):
