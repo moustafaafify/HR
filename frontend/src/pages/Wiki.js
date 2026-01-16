@@ -1192,6 +1192,736 @@ const WIKI_MODULES = {
         `
       }
     ]
+  },
+
+  // ==================== DASHBOARD ====================
+  'dashboard': {
+    id: 'dashboard',
+    name: 'Dashboard',
+    icon: LayoutDashboard,
+    category: 'Core',
+    shortDescription: 'Your central hub for HR insights and quick actions',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Dashboard</strong> is your command center for all HR activities. It provides at-a-glance metrics, pending approvals, recent activity, and quick access to common tasks.</p>
+          
+          <div class="grid md:grid-cols-3 gap-4 my-6">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white text-center">
+              <div class="text-2xl font-bold">Real-time</div>
+              <div class="text-sm opacity-90">Live Data Updates</div>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white text-center">
+              <div class="text-2xl font-bold">Role-Based</div>
+              <div class="text-sm opacity-90">Personalized View</div>
+            </div>
+            <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white text-center">
+              <div class="text-2xl font-bold">Actionable</div>
+              <div class="text-sm opacity-90">Quick Actions</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Admin Dashboard Features',
+        content: `
+          <div class="space-y-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-3">Key Metrics</h4>
+              <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <li>• <strong>Total Employees</strong> - Active headcount across all departments</li>
+                <li>• <strong>New Hires</strong> - Recent additions to the team</li>
+                <li>• <strong>Pending Approvals</strong> - Leave requests, expenses awaiting action</li>
+                <li>• <strong>Attendance Rate</strong> - Today's attendance percentage</li>
+                <li>• <strong>Open Positions</strong> - Active job postings</li>
+              </ul>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-3">Quick Actions</h4>
+              <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <li>• Add new employee</li>
+                <li>• Approve pending leaves</li>
+                <li>• Process expense claims</li>
+                <li>• View today's birthdays and anniversaries</li>
+              </ul>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== EMPLOYEES ====================
+  'employees': {
+    id: 'employees',
+    name: 'Employee Management',
+    icon: Users,
+    category: 'People',
+    shortDescription: 'Manage your workforce with comprehensive employee profiles',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Employee Management</strong> module is the backbone of your HR system. It stores all employee information, from basic details to employment history, documents, and more.</p>
+          
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">What You Can Do</h4>
+            <ul class="space-y-2 text-blue-700 dark:text-blue-400">
+              <li>• View and edit employee profiles</li>
+              <li>• Track employment history and status changes</li>
+              <li>• Manage documents and certifications</li>
+              <li>• Search and filter the employee directory</li>
+              <li>• Export employee data</li>
+            </ul>
+          </div>
+        `
+      },
+      {
+        title: 'Adding a New Employee',
+        type: 'steps',
+        steps: [
+          { number: 1, title: 'Navigate to Employees', description: 'Click "Employees" in the sidebar under People section.', tip: 'Use the search bar to quickly find existing employees' },
+          { number: 2, title: 'Click Add Employee', description: 'Click the "Add Employee" button in the top right corner.', tip: 'Ensure you have all required information ready' },
+          { number: 3, title: 'Enter Personal Details', description: 'Fill in first name, last name, email, phone, and date of birth.', tip: 'Email must be unique across all employees' },
+          { number: 4, title: 'Enter Employment Details', description: 'Select department, branch, job title, employment type, and start date.', tip: 'You can assign a manager from the dropdown' },
+          { number: 5, title: 'Save Employee', description: 'Click "Create Employee" to save. The employee will receive a welcome email with login credentials.', tip: 'You can upload a profile photo after creation' }
+        ]
+      },
+      {
+        title: 'Employee Profile Sections',
+        content: `
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Personal Info</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Name, contact details, emergency contacts, address</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Employment</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Job title, department, manager, employment type, dates</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Compensation</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Salary, benefits, bank details, tax information</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Documents</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Contracts, ID copies, certifications, letters</p>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== LEAVES ====================
+  'leaves': {
+    id: 'leaves',
+    name: 'Leave Management',
+    icon: Calendar,
+    category: 'Work',
+    shortDescription: 'Request, approve, and track employee time-off',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Leave Management</strong> module handles all aspects of employee time-off, from requesting leave to tracking balances and managing approvals.</p>
+          
+          <div class="grid md:grid-cols-4 gap-4 my-6">
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Annual</div>
+              <div class="text-sm opacity-90">Vacation Leave</div>
+            </div>
+            <div class="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Sick</div>
+              <div class="text-sm opacity-90">Medical Leave</div>
+            </div>
+            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Personal</div>
+              <div class="text-sm opacity-90">Emergency Leave</div>
+            </div>
+            <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Other</div>
+              <div class="text-sm opacity-90">Special Leave</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Requesting Leave (Employee)',
+        type: 'steps',
+        steps: [
+          { number: 1, title: 'Go to Leaves', description: 'Navigate to the Leaves module from the Work section in the sidebar.', tip: 'Check your balance before requesting' },
+          { number: 2, title: 'Click Request Leave', description: 'Click the "Request Leave" button to open the request form.', tip: 'You can also request from the calendar view' },
+          { number: 3, title: 'Select Leave Type', description: 'Choose the type of leave (Annual, Sick, Personal, etc.).', tip: 'Different types have different approval workflows' },
+          { number: 4, title: 'Choose Dates', description: 'Select start and end dates. For partial days, specify half-day if applicable.', tip: 'Weekend days are automatically excluded' },
+          { number: 5, title: 'Add Reason', description: 'Provide a brief reason for your leave request.', tip: 'Attach supporting documents for sick leave' },
+          { number: 6, title: 'Submit', description: 'Click Submit to send for approval. You will be notified when approved/rejected.', tip: 'Check status in "My Requests" tab' }
+        ]
+      },
+      {
+        title: 'Approving Leaves (Admin)',
+        content: `
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h4 class="font-semibold text-slate-800 dark:text-white mb-4">Approval Workflow</h4>
+            <ol class="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+              <li class="flex items-start gap-3">
+                <span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                <span>View pending requests in the "Pending Approvals" tab</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                <span>Review request details, dates, and reason</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                <span>Check team calendar for conflicts</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                <span>Approve or reject with optional comments</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+                <span>Employee is notified automatically</span>
+              </li>
+            </ol>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== ATTENDANCE ====================
+  'attendance': {
+    id: 'attendance',
+    name: 'Attendance',
+    icon: Clock,
+    category: 'Work',
+    shortDescription: 'Track clock-in/out times and attendance records',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Attendance</strong> module tracks employee working hours, including clock-in/out times, breaks, overtime, and attendance history.</p>
+          
+          <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Features</h4>
+            <ul class="space-y-2 text-emerald-700 dark:text-emerald-400">
+              <li>• One-click clock in/out</li>
+              <li>• Break time tracking</li>
+              <li>• GPS location capture (optional)</li>
+              <li>• Photo verification (optional)</li>
+              <li>• Overtime calculation</li>
+              <li>• Attendance reports and analytics</li>
+            </ul>
+          </div>
+        `
+      },
+      {
+        title: 'Clocking In/Out',
+        type: 'steps',
+        steps: [
+          { number: 1, title: 'Access Attendance', description: 'Go to Attendance from the sidebar or click the clock icon on the dashboard.', tip: 'You can also use the mobile app' },
+          { number: 2, title: 'Click Clock In', description: 'Press the large "Clock In" button. Your current time is recorded.', tip: 'Location may be captured if enabled' },
+          { number: 3, title: 'Take Breaks', description: 'Use the Break Start/End buttons to log break times accurately.', tip: 'Breaks are deducted from working hours' },
+          { number: 4, title: 'Clock Out', description: 'At the end of your shift, click "Clock Out" to record your departure.', tip: 'Forgot to clock out? Admin can edit entries' }
+        ]
+      }
+    ]
+  },
+
+  // ==================== PAYROLL ====================
+  'payroll': {
+    id: 'payroll',
+    name: 'Payroll',
+    icon: Wallet,
+    category: 'Finance',
+    shortDescription: 'Process salaries, generate payslips, and manage compensation',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Payroll</strong> module handles salary processing, tax calculations, deductions, and payslip generation for your entire workforce.</p>
+          
+          <div class="grid md:grid-cols-3 gap-4 my-6">
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Automated</div>
+              <div class="text-sm opacity-90">Salary Calculation</div>
+            </div>
+            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Compliant</div>
+              <div class="text-sm opacity-90">Tax Handling</div>
+            </div>
+            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Digital</div>
+              <div class="text-sm opacity-90">Payslips</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Payroll Processing (Admin)',
+        type: 'steps',
+        steps: [
+          { number: 1, title: 'Navigate to Payroll', description: 'Go to Finance → Payroll from the sidebar.', tip: 'Only finance admins can process payroll' },
+          { number: 2, title: 'Select Period', description: 'Choose the pay period (monthly/bi-weekly) and date range.', tip: 'Ensure attendance data is up to date' },
+          { number: 3, title: 'Review Calculations', description: 'System calculates gross pay, deductions, taxes automatically.', tip: 'Check overtime and bonus entries' },
+          { number: 4, title: 'Process Payroll', description: 'Click "Process Payroll" to finalize and generate payslips.', tip: 'Payslips are available in employee self-service' },
+          { number: 5, title: 'Export for Bank', description: 'Export payment file for bank transfer processing.', tip: 'Support for multiple file formats' }
+        ]
+      },
+      {
+        title: 'Viewing Payslips (Employee)',
+        content: `
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h4 class="font-semibold text-slate-800 dark:text-white mb-4">How to Access Your Payslips</h4>
+            <ol class="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+              <li>1. Go to Finance → My Payslips</li>
+              <li>2. Select the month/year from the dropdown</li>
+              <li>3. Click on a payslip to view details</li>
+              <li>4. Download as PDF for your records</li>
+            </ol>
+            <p class="mt-4 text-sm text-slate-500">Your payslip shows gross salary, deductions, taxes, and net pay.</p>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== EXPENSES ====================
+  'expenses': {
+    id: 'expenses',
+    name: 'Expenses',
+    icon: Receipt,
+    category: 'Finance',
+    shortDescription: 'Submit, track, and reimburse employee expenses',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Expenses</strong> module streamlines the expense reimbursement process. Employees submit claims with receipts, managers approve, and finance processes payments.</p>
+          
+          <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-amber-800 dark:text-amber-300 mb-2">Expense Categories</h4>
+            <ul class="space-y-2 text-amber-700 dark:text-amber-400">
+              <li>• Travel (flights, hotels, transport)</li>
+              <li>• Meals & Entertainment</li>
+              <li>• Office Supplies</li>
+              <li>• Equipment & Software</li>
+              <li>• Training & Conferences</li>
+              <li>• Miscellaneous</li>
+            </ul>
+          </div>
+        `
+      },
+      {
+        title: 'Submitting an Expense',
+        type: 'steps',
+        steps: [
+          { number: 1, title: 'Go to Expenses', description: 'Navigate to Finance → Expenses (or My Expenses).', tip: 'Keep your receipts organized' },
+          { number: 2, title: 'Click New Expense', description: 'Click "Submit Expense" to create a new claim.', tip: 'You can submit multiple items at once' },
+          { number: 3, title: 'Enter Details', description: 'Select category, enter amount, date, and description.', tip: 'Use the correct currency' },
+          { number: 4, title: 'Upload Receipt', description: 'Attach a photo or scan of your receipt.', tip: 'Clear, readable images speed up approval' },
+          { number: 5, title: 'Submit for Approval', description: 'Review and submit. Track status in "My Expenses".', tip: 'Approver will be notified automatically' }
+        ]
+      }
+    ]
+  },
+
+  // ==================== PERFORMANCE ====================
+  'performance': {
+    id: 'performance',
+    name: 'Performance',
+    icon: BarChart3,
+    category: 'Growth',
+    shortDescription: 'Set goals, track progress, and conduct performance reviews',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Performance</strong> module helps you manage employee goals, track progress, and conduct periodic performance reviews aligned with company objectives.</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 my-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Goal Setting</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Create SMART goals aligned with department and company objectives</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Continuous Feedback</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Give and receive feedback throughout the year, not just at review time</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Review Cycles</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Quarterly, semi-annual, or annual performance review workflows</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Analytics</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Track performance trends across teams and individuals</p>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== TRAINING ====================
+  'training': {
+    id: 'training',
+    name: 'Training',
+    icon: GraduationCap,
+    category: 'Growth',
+    shortDescription: 'Manage learning programs, courses, and certifications',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Training</strong> module manages employee learning and development, from mandatory compliance training to optional skill development courses.</p>
+          
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-2">Training Types</h4>
+            <ul class="space-y-2 text-indigo-700 dark:text-indigo-400">
+              <li>• <strong>Mandatory</strong> - Required compliance and safety training</li>
+              <li>• <strong>Role-based</strong> - Job-specific skill development</li>
+              <li>• <strong>Optional</strong> - Professional growth opportunities</li>
+              <li>• <strong>Certifications</strong> - Industry certifications with renewal tracking</li>
+            </ul>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== DOCUMENTS ====================
+  'documents': {
+    id: 'documents',
+    name: 'Documents',
+    icon: FileCheck,
+    category: 'Core',
+    shortDescription: 'Central repository for all HR documents and templates',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Documents</strong> module provides a centralized, organized repository for all company documents, HR templates, policies, and employee files.</p>
+          
+          <div class="grid md:grid-cols-3 gap-4 my-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Company Policies</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">HR policies, handbooks, procedures</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Templates</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Letter templates, forms, contracts</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Employee Files</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Personal documents, IDs, certificates</p>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== ONBOARDING ====================
+  'onboarding': {
+    id: 'onboarding',
+    name: 'Onboarding',
+    icon: ClipboardCheck,
+    category: 'People',
+    shortDescription: 'Streamline new hire orientation and documentation',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Onboarding</strong> module ensures new employees have a smooth start with checklists, document collection, training assignments, and orientation scheduling.</p>
+          
+          <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-green-800 dark:text-green-300 mb-2">Onboarding Checklist</h4>
+            <ul class="space-y-2 text-green-700 dark:text-green-400">
+              <li>✓ Welcome email sent</li>
+              <li>✓ Documents collected</li>
+              <li>✓ Equipment assigned</li>
+              <li>✓ System access granted</li>
+              <li>✓ Training scheduled</li>
+              <li>✓ Team introduction meeting</li>
+            </ul>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== OFFBOARDING ====================
+  'offboarding': {
+    id: 'offboarding',
+    name: 'Offboarding',
+    icon: UserMinus,
+    category: 'People',
+    shortDescription: 'Manage employee departures with structured exit processes',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Offboarding</strong> module handles employee departures professionally, ensuring knowledge transfer, asset return, and proper documentation.</p>
+          
+          <div class="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-rose-800 dark:text-rose-300 mb-2">Offboarding Tasks</h4>
+            <ul class="space-y-2 text-rose-700 dark:text-rose-400">
+              <li>• Exit interview scheduling</li>
+              <li>• Knowledge transfer documentation</li>
+              <li>• Equipment return tracking</li>
+              <li>• System access revocation</li>
+              <li>• Final settlement processing</li>
+              <li>• Experience letter generation</li>
+            </ul>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== VISITOR MANAGEMENT ====================
+  'visitors': {
+    id: 'visitors',
+    name: 'Visitor Management',
+    icon: UserCheck,
+    category: 'Compliance',
+    shortDescription: 'Track and manage office visitors with digital check-in',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Visitor Management</strong> module provides a professional, digital system for pre-registering guests, managing check-ins, printing badges, and maintaining visitor logs.</p>
+          
+          <div class="grid md:grid-cols-4 gap-4 my-6">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Pre-register</div>
+              <div class="text-sm opacity-90">Guests</div>
+            </div>
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Check-in</div>
+              <div class="text-sm opacity-90">Digital</div>
+            </div>
+            <div class="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Print</div>
+              <div class="text-sm opacity-90">Badges</div>
+            </div>
+            <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Track</div>
+              <div class="text-sm opacity-90">History</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        title: 'Pre-registering a Visitor',
+        type: 'steps',
+        steps: [
+          { number: 1, title: 'Navigate to Visitors', description: 'Go to Compliance → Visitor Management.', tip: 'Anyone can pre-register a visitor they are hosting' },
+          { number: 2, title: 'Click Pre-register', description: 'Click "Pre-register Visitor" to open the form.', tip: 'Visitors will receive an email confirmation' },
+          { number: 3, title: 'Enter Visitor Details', description: 'Fill in name, company, email, phone, and purpose of visit.', tip: 'Email is optional but recommended' },
+          { number: 4, title: 'Set Visit Details', description: 'Select date, time, expected duration, and meeting room.', tip: 'Host will be notified on arrival' },
+          { number: 5, title: 'Save', description: 'Click Save. Visitor appears in "Expected Today" on visit date.', tip: 'Check-in will be faster with pre-registration' }
+        ]
+      }
+    ]
+  },
+
+  // ==================== COMPLIANCE ====================
+  'compliance': {
+    id: 'compliance',
+    name: 'Compliance & Legal',
+    icon: Shield,
+    category: 'Compliance',
+    shortDescription: 'Manage policies, incidents, and regulatory compliance',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Compliance & Legal</strong> module helps you maintain regulatory compliance, manage policies, track incidents, and ensure all employees acknowledge important documents.</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 my-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Policies</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Create, publish, and track acknowledgment of company policies</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Compliance Training</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Assign and track mandatory compliance training</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Incidents</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Report and investigate workplace incidents</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Certifications</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Track employee certifications and renewal dates</p>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== WORKFORCE PLANNING ====================
+  'workforce-planning': {
+    id: 'workforce-planning',
+    name: 'Workforce Planning',
+    icon: TrendingUp,
+    category: 'People',
+    shortDescription: 'Strategic headcount planning, skills analysis, and resource allocation',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Workforce Planning</strong> module provides strategic tools for headcount planning, skills gap analysis, resource allocation, and scenario modeling.</p>
+          
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-2">Key Features</h4>
+            <ul class="space-y-2 text-indigo-700 dark:text-indigo-400">
+              <li>• <strong>Headcount Plans</strong> - Plan hiring and departures by department</li>
+              <li>• <strong>Skills Gap Analysis</strong> - Identify missing skills in your workforce</li>
+              <li>• <strong>Resource Allocation</strong> - Assign employees to projects</li>
+              <li>• <strong>Scenario Modeling</strong> - Model growth, reduction, and restructure scenarios</li>
+            </ul>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== ANALYTICS ====================
+  'analytics': {
+    id: 'analytics',
+    name: 'HR Analytics',
+    icon: Activity,
+    category: 'Core',
+    shortDescription: 'Data-driven insights into your workforce metrics',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>HR Analytics</strong> module provides comprehensive dashboards and reports to help you make data-driven decisions about your workforce.</p>
+          
+          <div class="grid md:grid-cols-3 gap-4 my-6">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Headcount</div>
+              <div class="text-sm opacity-90">Trends</div>
+            </div>
+            <div class="bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Turnover</div>
+              <div class="text-sm opacity-90">Analysis</div>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white text-center">
+              <div class="text-xl font-bold">Diversity</div>
+              <div class="text-sm opacity-90">Metrics</div>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== ORG CHART ====================
+  'org-chart': {
+    id: 'org-chart',
+    name: 'Org Chart',
+    icon: Network,
+    category: 'People',
+    shortDescription: 'Visual representation of your organizational structure',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Org Chart</strong> provides an interactive, visual representation of your company's hierarchical structure, reporting lines, and team organization.</p>
+          
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
+            <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Features</h4>
+            <ul class="space-y-2 text-blue-700 dark:text-blue-400">
+              <li>• Interactive zoom and pan navigation</li>
+              <li>• Click on nodes to view employee details</li>
+              <li>• Filter by department, location, or role</li>
+              <li>• Export to PDF or image format</li>
+              <li>• See vacant positions in the structure</li>
+            </ul>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== NOTIFICATIONS ====================
+  'notifications': {
+    id: 'notifications',
+    name: 'Notifications',
+    icon: Bell,
+    category: 'Core',
+    shortDescription: 'Stay informed about important HR updates and actions',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Notifications</strong> center keeps you informed about pending approvals, announcements, system updates, and actions that require your attention.</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 my-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">In-App Notifications</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Bell icon shows unread count, click to view recent notifications</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Email Notifications</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Important updates sent to your email (configurable)</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Push Notifications</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Instant alerts on mobile via PWA (if enabled)</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Notification Settings</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Control which notifications you receive and how</p>
+            </div>
+          </div>
+        `
+      }
+    ]
+  },
+
+  // ==================== SETTINGS ====================
+  'settings': {
+    id: 'settings',
+    name: 'Settings',
+    icon: Settings,
+    category: 'Support',
+    shortDescription: 'Configure system settings, branding, and integrations',
+    sections: [
+      {
+        title: 'Overview',
+        content: `
+          <p class="text-lg mb-4">The <strong>Settings</strong> area allows administrators to configure the HR platform, customize branding, manage integrations, and control system-wide options.</p>
+          
+          <div class="grid md:grid-cols-2 gap-4 my-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">General</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Company info, timezone, date format, language</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Branding</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Logo, colors, custom themes</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Security</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Password policies, 2FA, session timeout</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+              <h4 class="font-semibold text-slate-800 dark:text-white mb-2">Integrations</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">SMTP, SMS, calendar sync, payroll exports</p>
+            </div>
+          </div>
+        `
+      }
+    ]
   }
 };
 
