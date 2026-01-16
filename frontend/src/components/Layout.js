@@ -230,6 +230,7 @@ const Layout = () => {
         { path: '/onboarding', icon: ClipboardCheck, label: isAdmin ? 'Onboarding' : 'My Onboarding' },
         { path: '/offboarding', icon: UserMinus, label: isAdmin ? 'Offboarding' : 'My Offboarding' },
         ...(isAdmin ? [{ path: '/succession', icon: Target, label: 'Succession' }] : []),
+        { path: '/workforce-planning', icon: TrendingUp, label: isAdmin ? 'Workforce Planning' : 'My Workforce' },
         { path: '/org-chart', icon: Network, label: 'Org Chart' },
       ]
     },
