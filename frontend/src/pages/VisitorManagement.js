@@ -1263,6 +1263,227 @@ const VisitorManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* View Visitor Details Dialog */}
+      <Dialog open={viewDialog} onOpenChange={setViewDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Visitor Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedVisitor && (
+            <div className="mt-4 space-y-6">
+              {/* Visitor Info Header */}
+              <div className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                <div className="w-16 h-16 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                  <User className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                    {selectedVisitor.first_name} {selectedVisitor.last_name}
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400">{selectedVisitor.company || 'No company'}</p>
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedVisitor.status)}`}>
+                    {selectedVisitor.status?.replace('_', ' ')}
+                  </span>
+                </div>
+                {selectedVisitor.badge_number && (
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Badge</p>
+                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{selectedVisitor.badge_number}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Contact Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-slate-400" /> Contact Information
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Email:</span> {selectedVisitor.email || 'N/A'}
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Phone:</span> {selectedVisitor.phone || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-slate-400" /> Host Information
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Host:</span> {selectedVisitor.host_name || 'N/A'}
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Department:</span> {selectedVisitor.host_department || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Visit Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-slate-400" /> Visit Schedule
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Date:</span> {formatDate(selectedVisitor.expected_date)}
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Expected Time:</span> {formatTime(selectedVisitor.expected_time)}
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Duration:</span> {selectedVisitor.expected_duration_minutes || 60} min
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-slate-400" /> Visit Purpose
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Type:</span> {selectedVisitor.visit_type}
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <span className="text-slate-500">Purpose:</span> {selectedVisitor.purpose || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Location */}
+              {(selectedVisitor.building || selectedVisitor.meeting_room) && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-slate-400" /> Location
+                  </h4>
+                  <div className="flex gap-4 text-sm">
+                    {selectedVisitor.building && (
+                      <p className="text-slate-600 dark:text-slate-400">
+                        <span className="text-slate-500">Building:</span> {selectedVisitor.building}
+                      </p>
+                    )}
+                    {selectedVisitor.meeting_room && (
+                      <p className="text-slate-600 dark:text-slate-400">
+                        <span className="text-slate-500">Meeting Room:</span> {selectedVisitor.meeting_room}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Check-in/out Times */}
+              {(selectedVisitor.check_in_time || selectedVisitor.check_out_time) && (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <h4 className="font-medium text-emerald-800 dark:text-emerald-200 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4" /> Visit Timeline
+                  </h4>
+                  <div className="flex gap-8 text-sm">
+                    {selectedVisitor.check_in_time && (
+                      <div>
+                        <p className="text-emerald-600 dark:text-emerald-400 font-medium">Checked In</p>
+                        <p className="text-emerald-700 dark:text-emerald-300">{formatTime(selectedVisitor.check_in_time)}</p>
+                      </div>
+                    )}
+                    {selectedVisitor.check_out_time && (
+                      <div>
+                        <p className="text-emerald-600 dark:text-emerald-400 font-medium">Checked Out</p>
+                        <p className="text-emerald-700 dark:text-emerald-300">{formatTime(selectedVisitor.check_out_time)}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Items & Security */}
+              {(selectedVisitor.has_laptop || selectedVisitor.has_camera || selectedVisitor.other_items || selectedVisitor.nda_signed) && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <Package className="w-4 h-4 text-slate-400" /> Items & Security
+                  </h4>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedVisitor.has_laptop && (
+                      <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Laptop className="w-4 h-4" /> Laptop
+                      </span>
+                    )}
+                    {selectedVisitor.has_camera && (
+                      <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Camera className="w-4 h-4" /> Camera
+                      </span>
+                    )}
+                    {selectedVisitor.nda_signed && (
+                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                        <FileSignature className="w-4 h-4" /> NDA Signed
+                      </span>
+                    )}
+                    {selectedVisitor.other_items && (
+                      <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm text-slate-700 dark:text-slate-300">
+                        {selectedVisitor.other_items}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Notes */}
+              {(selectedVisitor.notes || selectedVisitor.special_instructions) && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-slate-400" /> Notes & Instructions
+                  </h4>
+                  {selectedVisitor.notes && (
+                    <p className="text-sm text-slate-600 dark:text-slate-400 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                      {selectedVisitor.notes}
+                    </p>
+                  )}
+                  {selectedVisitor.special_instructions && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <strong>Special Instructions:</strong> {selectedVisitor.special_instructions}
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <Button variant="outline" onClick={() => setViewDialog(false)} className="dark:border-slate-600 dark:text-slate-200">
+                  Close
+                </Button>
+                {selectedVisitor.status === 'pre_registered' && (
+                  <>
+                    <Button variant="outline" onClick={() => { setViewDialog(false); openEditVisitor(selectedVisitor); }}>
+                      <Edit2 className="w-4 h-4 mr-2" /> Edit
+                    </Button>
+                    <Button onClick={() => { setViewDialog(false); openCheckIn(selectedVisitor); }}>
+                      <LogIn className="w-4 h-4 mr-2" /> Check In
+                    </Button>
+                  </>
+                )}
+                {selectedVisitor.status === 'checked_in' && (
+                  <>
+                    <Button variant="outline" onClick={() => handlePrintBadge(selectedVisitor.id)}>
+                      <Printer className="w-4 h-4 mr-2" /> Print Badge
+                    </Button>
+                    <Button onClick={() => { setViewDialog(false); handleCheckOut(selectedVisitor.id); }}>
+                      <LogOut className="w-4 h-4 mr-2" /> Check Out
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
