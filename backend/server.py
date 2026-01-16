@@ -791,6 +791,7 @@ class Settings(BaseModel):
     language_1: str = "en"
     language_2: Optional[str] = None
     currency: str = "USD"
+    enabled_currencies: List[str] = Field(default_factory=lambda: ["USD"])
     exchange_rates: Dict[str, float] = Field(default_factory=lambda: {"USD": 1.0})
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
