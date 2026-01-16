@@ -12404,6 +12404,25 @@ async def create_ticket(data: Dict[str, Any], current_user: User = Depends(get_c
     else:
         due_date = (datetime.now(timezone.utc) + timedelta(hours=72)).isoformat()
     
+    # Check for auto-assignment rules
+    category = data.get("category", "other")
+    assigned_to = None
+    assigned_to_name = None
+    
+    # Find matching rule
+    rule = await db.assignment_rules.find_one({
+        "category": category,
+        "is_active": True,
+        "$or": [
+            {"priority_filter": None},
+            {"priority_filter": priority}
+        ]
+    }, {"_id": 0})
+    
+    if rule:
+        assigned_to = rule.get("assignee_id")
+        assigned_to_name = rule.get("assignee_name")
+    
     ticket_data = {
         **data,
         "ticket_number": ticket_number,
@@ -12411,7 +12430,9 @@ async def create_ticket(data: Dict[str, Any], current_user: User = Depends(get_c
         "requester_name": requester_name,
         "requester_email": requester_email,
         "requester_department": requester_department,
-        "status": "open",
+        "status": "in_progress" if assigned_to else "open",
+        "assigned_to": assigned_to,
+        "assigned_to_name": assigned_to_name,
         "due_date": due_date
     }
     
