@@ -766,20 +766,33 @@ const Settings = () => {
     }
   };
 
-  // Filtered translations based on search
+  // Filtered translations based on search - includes both built-in and custom translations
   const filteredTranslations = useMemo(() => {
     const baseLanguage = 'en'; // Always show English as the base
     const targetLang = selectedTranslationLang || settings.language_2 || 'es';
     const baseTranslations = allTranslations[baseLanguage] || {};
     const targetTranslations = allTranslations[targetLang] || {};
     
-    const translationKeys = Object.keys(baseTranslations);
+    // Merge built-in translations with custom translations
+    const customEnglish = {};
+    const customTarget = {};
+    
+    Object.entries(customTranslations).forEach(([key, langs]) => {
+      if (langs.en) customEnglish[key] = langs.en;
+      if (langs[targetLang]) customTarget[key] = langs[targetLang];
+    });
+    
+    const mergedBase = { ...baseTranslations, ...customEnglish };
+    const mergedTarget = { ...targetTranslations, ...customTarget };
+    
+    const translationKeys = [...new Set([...Object.keys(mergedBase), ...Object.keys(customTranslations)])];
     
     if (!translationSearch.trim()) {
       return translationKeys.map(key => ({
         key,
-        english: baseTranslations[key] || key,
-        translated: editedTranslations[`${targetLang}.${key}`] ?? targetTranslations[key] ?? ''
+        english: mergedBase[key] || key,
+        translated: editedTranslations[`${targetLang}.${key}`] ?? mergedTarget[key] ?? '',
+        isCustom: !!customTranslations[key]
       }));
     }
     
@@ -787,15 +800,16 @@ const Settings = () => {
     return translationKeys
       .filter(key => 
         key.toLowerCase().includes(searchLower) ||
-        (baseTranslations[key] || '').toLowerCase().includes(searchLower) ||
-        (targetTranslations[key] || '').toLowerCase().includes(searchLower)
+        (mergedBase[key] || '').toLowerCase().includes(searchLower) ||
+        (mergedTarget[key] || '').toLowerCase().includes(searchLower)
       )
       .map(key => ({
         key,
-        english: baseTranslations[key] || key,
-        translated: editedTranslations[`${targetLang}.${key}`] ?? targetTranslations[key] ?? ''
+        english: mergedBase[key] || key,
+        translated: editedTranslations[`${targetLang}.${key}`] ?? mergedTarget[key] ?? '',
+        isCustom: !!customTranslations[key]
       }));
-  }, [translationSearch, selectedTranslationLang, settings.language_2, editedTranslations]);
+  }, [translationSearch, selectedTranslationLang, settings.language_2, editedTranslations, customTranslations]);
 
   // Get language name from code
   const getLanguageName = (code) => {
@@ -803,10 +817,8 @@ const Settings = () => {
     return lang ? lang.name : code;
   };
 
-  // Available languages with translations
-  const availableTranslationLanguages = ['es', 'fr', 'ar', 'de', 'zh'].filter(code => 
-    allTranslations[code]
-  );
+  // All languages available for translation (excluding English which is base)
+  const availableTranslationLanguages = languages.filter(lang => lang.code !== 'en');
 
   const handleSave = async () => {
     setLoading(true);
