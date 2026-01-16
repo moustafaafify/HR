@@ -1247,7 +1247,7 @@ const Recruitment = () => {
                 <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-xl">
                   <DollarSign className="text-emerald-600" size={20} />
                   <span className="font-bold text-emerald-700">
-                    {selectedJob.salary_min.toLocaleString()}{selectedJob.salary_max ? ` - ${selectedJob.salary_max.toLocaleString()}` : '+'} {selectedJob.salary_currency}
+                    {formatCurrency(selectedJob.salary_min)}{selectedJob.salary_max ? ` - ${formatCurrency(selectedJob.salary_max)}` : '+'}
                   </span>
                 </div>
               )}
