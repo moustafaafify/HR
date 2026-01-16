@@ -671,6 +671,7 @@ const VisitorManagement = () => {
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="all">All Visitors</TabsTrigger>
             {isAdmin && <TabsTrigger value="on-site">On Site</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="history">History</TabsTrigger>}
           </TabsList>
           
           <div className="flex items-center gap-2">
