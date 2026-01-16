@@ -14599,9 +14599,8 @@ async def upload_branding_file(
     with open(file_path, "wb") as f:
         f.write(content)
     
-    # Generate URL
-    backend_url = os.environ.get('BACKEND_URL', '')
-    file_url = f"{backend_url}/api/uploads/branding/{filename}"
+    # Generate relative URL (frontend will construct full URL as needed)
+    file_url = f"/api/uploads/branding/{filename}"
     
     return {"url": file_url, "filename": filename}
 
