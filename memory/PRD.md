@@ -88,6 +88,37 @@ A comprehensive workforce planning module for Admin and Employee views:
 - All dialogs properly styled for light and dark modes
 - Form labels, inputs, and buttons with proper contrast
 
+#### 6. Compliance & Legal Module ✅ **NEW**
+A comprehensive compliance and legal management module:
+
+**Admin Features:**
+- **Dashboard Overview**: Key metrics (policies, trainings, incidents, documents, certifications)
+- **Policies Tab**: Create/edit/delete company policies
+  - Version control, categories (general, HR, safety, data privacy, security, financial, ethics)
+  - Acknowledgement tracking (once, annual, quarterly)
+- **Trainings Tab**: Create compliance training courses
+  - Assign to employees, track completion progress
+  - Set passing scores and certification validity
+- **Documents Tab**: Manage legal documents (contracts, NDAs, agreements)
+  - Track employee and company signatures
+  - Set effective/expiry dates
+- **Incidents Tab**: View and manage compliance incidents
+  - Severity levels (low, medium, high, critical)
+  - Status tracking (reported, under investigation, resolved, closed)
+- **Certifications Tab**: Track employee certifications
+  - Expiry tracking and renewal reminders
+
+**Employee Features:**
+- **My Compliance Dashboard**: View pending policies, trainings, signatures
+- **Policy Acknowledgement**: View and acknowledge company policies
+- **My Trainings**: Track assigned trainings with progress
+- **Document Signing**: Sign pending legal documents
+- **My Certifications**: View active certifications
+- **Report Incident**: Submit compliance incidents (confidential option)
+
+**Dark Mode Support:**
+- All dialogs and forms properly styled for light and dark modes
+
 ---
 
 ## Key API Endpoints
