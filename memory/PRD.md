@@ -13,7 +13,33 @@ Build a full-stack HR platform with:
 
 ## Latest Updates (Jan 16, 2026)
 
-### Ticket Management Module (NEW)
+### Notifications Module (NEW)
+**Problem:** Users had no way to receive real-time updates about ticket assignments, status changes, benefit approvals, and company announcements.
+
+**Features Implemented:**
+- **Notification Bell:** Shows unread count in header (both mobile and desktop)
+- **Notification Dropdown:** Quick view of recent notifications with mark-as-read
+- **Full Notifications Page:** `/notifications` with filtering, search, and statistics
+- **Stats Dashboard:** Total, Unread, Read, Announcements counts
+- **Filter Tabs:** All, Unread, Read
+- **Type Filter:** Filter by ticket, leave, benefit, announcement, etc.
+- **Admin Announcements:** Send announcements to All Users, Admins Only, or Employees Only
+- **Notification Actions:** Mark as read, archive, delete, clear all
+
+**Notification Types:** ticket, leave, benefit, document, training, expense, performance, announcement, task, system
+**Priority Levels:** low, normal, high, urgent
+
+### Ticket Auto-Assignment Fix (IMPROVED)
+**Problem:** Auto-assignment rules were not properly capturing assignee name and role.
+
+**Fixes:**
+- Assignment rules now store `assignee_name` and `assignee_role` 
+- Validation error if assignee employee not found
+- Auto-assigned tickets display role in parentheses (e.g., "Sarah Johnson (Senior Software Engineer)")
+- Notifications sent to assignees when auto-assigned
+- Notifications sent to requesters when ticket status changes
+
+### Ticket Management Module
 **Problem:** Employees need a centralized way to submit support requests to IT, HR, Payroll, and other departments.
 
 **Employee Features:**
