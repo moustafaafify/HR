@@ -174,6 +174,7 @@ const Layout = () => {
       label: 'Support',
       icon: HelpCircle,
       items: [
+        { path: '/tickets', icon: Ticket, label: isAdmin ? 'Tickets' : 'My Tickets' },
         { path: '/complaints', icon: AlertOctagon, label: 'Complaints' },
         ...(isAdmin ? [
           { path: '/settings/workflows', icon: Workflow, label: 'Workflows' },
