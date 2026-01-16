@@ -62,42 +62,28 @@ export const BrandingProvider = ({ children }) => {
 
   const updateManifest = async (brandingData) => {
     try {
-      // Create a dynamic manifest
-      const manifest = {
-        name: brandingData.app_name,
-        short_name: brandingData.app_name,
-        description: `${brandingData.app_name} - Your complete HR management solution`,
-        start_url: "/?source=pwa",
-        id: "hr-portal-pwa",
-        display: "standalone",
-        background_color: "#2D4F38",
-        theme_color: "#2D4F38",
-        orientation: "portrait-primary",
-        scope: "/",
-        lang: "en",
-        dir: "ltr",
-        icons: brandingData.logo_url ? [
-          {
-            src: brandingData.logo_url,
-            sizes: "72x72",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "96x96",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "128x128",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: brandingData.logo_url,
-            sizes: "144x144",
+      // Point manifest to dynamic API endpoint
+      let manifestLink = document.querySelector('link[rel="manifest"]');
+      if (manifestLink) {
+        // Use API endpoint for dynamic manifest
+        manifestLink.href = `${API}/manifest.json?t=${Date.now()}`;
+      }
+
+      // Update meta tags
+      const appNameMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appNameMeta) appNameMeta.content = brandingData.app_name;
+
+      const applicationNameMeta = document.querySelector('meta[name="application-name"]');
+      if (applicationNameMeta) applicationNameMeta.content = brandingData.app_name;
+      
+      // Update description
+      const descriptionMeta = document.querySelector('meta[name="description"]');
+      if (descriptionMeta) descriptionMeta.content = `${brandingData.app_name} - Your complete HR management solution`;
+
+    } catch (error) {
+      console.error('Failed to update manifest:', error);
+    }
+  };
             type: "image/png",
             purpose: "any"
           },
