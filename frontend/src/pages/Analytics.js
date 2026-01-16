@@ -142,7 +142,7 @@ const Analytics = () => {
           <p className="text-slate-500 mt-1">Insights into your workforce metrics and trends</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={fetchAnalytics}>
+          <Button variant="outline" size="sm" onClick={fetchData}>
             <Activity size={16} className="mr-2" />
             Refresh
           </Button>
@@ -242,7 +242,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Area 
                     type="monotone" 
                     dataKey="headcount" 
@@ -289,7 +289,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => `${v/1000}k`} />
                   <YAxis type="category" dataKey="department" tick={{ fontSize: 12 }} stroke="#94a3b8" width={100} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Bar dataKey="average" fill={CHART_COLORS.primary} name="Average Salary" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -310,7 +310,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Bar dataKey="terminations" fill={CHART_COLORS.danger} name="Terminations" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -350,7 +350,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="department" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Bar dataKey="count" fill={CHART_COLORS.warning} name="Terminations" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -407,7 +407,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="stage" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Bar dataKey="count" name="Candidates" radius={[4, 4, 0, 0]}>
                     {[0, 1, 2, 3, 4].map((index) => (
                       <Cell key={index} fill={COLORS[index]} />
@@ -425,7 +425,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Line 
                     type="monotone" 
                     dataKey="hires" 
@@ -513,7 +513,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="range" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Bar dataKey="count" fill={CHART_COLORS.primary} name="Employees" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -527,7 +527,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => `${v/1000}k`} />
                   <YAxis type="category" dataKey="department" tick={{ fontSize: 12 }} stroke="#94a3b8" width={100} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={renderTooltip} />
                   <Bar dataKey="average" fill={CHART_COLORS.secondary} name="Avg Salary" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -602,7 +602,7 @@ const Analytics = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                 <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={renderTooltip} />
                 <Legend />
                 <Line 
                   type="monotone" 
