@@ -1035,7 +1035,8 @@ const Tickets = () => {
                       <div>
                         <p className="font-medium text-stone-900">{rule.name}</p>
                         <p className="text-sm text-stone-500">
-                          {CATEGORY_CONFIG[rule.category]?.label} → {rule.assignee_name}
+                          {CATEGORY_CONFIG[rule.category]?.label} → {rule.assignee_name || <span className="text-rose-500">No assignee found</span>}
+                          {rule.assignee_role && <span className="text-stone-400 ml-1">({rule.assignee_role})</span>}
                           {rule.priority_filter && ` (${PRIORITY_CONFIG[rule.priority_filter]?.label} only)`}
                         </p>
                       </div>
