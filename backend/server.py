@@ -1384,6 +1384,164 @@ async def reset_employee_password(emp_id: str, data: Dict[str, Any], current_use
     
     return {"message": "Password reset successfully"}
 
+
+@api_router.post("/employees/bulk-import")
+async def bulk_import_employees(data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Bulk import employees from CSV data"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can bulk import employees")
+    
+    employees_data = data.get("employees", [])
+    if not employees_data:
+        raise HTTPException(status_code=400, detail="No employee data provided")
+    
+    results = {
+        "success": 0,
+        "failed": 0,
+        "errors": [],
+        "created_employees": []
+    }
+    
+    for idx, emp_data in enumerate(employees_data):
+        try:
+            # Validate required fields
+            required_fields = ["email", "full_name"]
+            missing_fields = [f for f in required_fields if not emp_data.get(f)]
+            if missing_fields:
+                results["errors"].append({
+                    "row": idx + 1,
+                    "email": emp_data.get("email", "N/A"),
+                    "error": f"Missing required fields: {', '.join(missing_fields)}"
+                })
+                results["failed"] += 1
+                continue
+            
+            email = emp_data["email"].strip().lower()
+            
+            # Check if email already exists
+            existing_user = await db.users.find_one({"email": email})
+            if existing_user:
+                results["errors"].append({
+                    "row": idx + 1,
+                    "email": email,
+                    "error": "Email already exists"
+                })
+                results["failed"] += 1
+                continue
+            
+            # Generate a temporary password
+            temp_password = f"Temp{str(uuid.uuid4())[:8]}!"
+            
+            # Create user
+            user_id = str(uuid.uuid4())
+            user = User(
+                id=user_id,
+                email=email,
+                password_hash=hash_password(temp_password),
+                full_name=emp_data["full_name"].strip(),
+                role=UserRole.EMPLOYEE,
+                is_active=True
+            )
+            await db.users.insert_one(user.model_dump())
+            
+            # Create employee record
+            emp_id = str(uuid.uuid4())
+            employee = Employee(
+                id=emp_id,
+                user_id=user_id,
+                employee_code=emp_data.get("employee_code") or f"EMP{str(uuid.uuid4())[:6].upper()}",
+                full_name=emp_data["full_name"].strip(),
+                email=email,
+                phone=emp_data.get("phone", ""),
+                date_of_birth=emp_data.get("date_of_birth"),
+                gender=emp_data.get("gender", ""),
+                nationality=emp_data.get("nationality", ""),
+                address=emp_data.get("address", ""),
+                city=emp_data.get("city", ""),
+                country=emp_data.get("country", ""),
+                job_title=emp_data.get("job_title", ""),
+                department_id=emp_data.get("department_id", ""),
+                division_id=emp_data.get("division_id", ""),
+                branch_id=emp_data.get("branch_id", ""),
+                corporation_id=emp_data.get("corporation_id", ""),
+                manager_id=emp_data.get("manager_id", ""),
+                employment_status=emp_data.get("employment_status", "active"),
+                employment_type=emp_data.get("employment_type", "full_time"),
+                hire_date=emp_data.get("hire_date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+                work_location=emp_data.get("work_location", "office"),
+                password_reset_required=True,
+                portal_access_enabled=True
+            )
+            await db.employees.insert_one(employee.model_dump())
+            
+            results["success"] += 1
+            results["created_employees"].append({
+                "id": emp_id,
+                "email": email,
+                "full_name": emp_data["full_name"],
+                "temp_password": temp_password
+            })
+            
+            # Create welcome notification for the new employee
+            await create_notification_for_user(
+                user_id=user_id,
+                notification_type=NotificationType.SYSTEM,
+                title="Welcome to the Team!",
+                message=f"Your account has been created. Please change your password on first login.",
+                priority="high"
+            )
+            
+        except Exception as e:
+            results["errors"].append({
+                "row": idx + 1,
+                "email": emp_data.get("email", "N/A"),
+                "error": str(e)
+            })
+            results["failed"] += 1
+    
+    return results
+
+
+@api_router.get("/employees/import-template")
+async def get_import_template(current_user: User = Depends(get_current_user)):
+    """Get CSV import template with field definitions"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
+        raise HTTPException(status_code=403, detail="Only admins can access import template")
+    
+    return {
+        "required_fields": ["email", "full_name"],
+        "optional_fields": [
+            "employee_code", "phone", "date_of_birth", "gender", "nationality",
+            "address", "city", "country", "job_title", "department_id", 
+            "division_id", "branch_id", "corporation_id", "manager_id",
+            "employment_status", "employment_type", "hire_date", "work_location"
+        ],
+        "field_descriptions": {
+            "email": "Employee email address (required, must be unique)",
+            "full_name": "Full name of the employee (required)",
+            "employee_code": "Custom employee code (auto-generated if empty)",
+            "phone": "Phone number",
+            "date_of_birth": "Date of birth (YYYY-MM-DD format)",
+            "gender": "male, female, or other",
+            "nationality": "Country of nationality",
+            "address": "Street address",
+            "city": "City",
+            "country": "Country",
+            "job_title": "Job title/position",
+            "department_id": "Department ID (get from departments list)",
+            "division_id": "Division ID (get from divisions list)",
+            "branch_id": "Branch ID (get from branches list)",
+            "corporation_id": "Corporation ID",
+            "manager_id": "Manager's employee ID",
+            "employment_status": "active, probation, notice, terminated",
+            "employment_type": "full_time, part_time, contract, intern",
+            "hire_date": "Date of hire (YYYY-MM-DD format)",
+            "work_location": "office, remote, hybrid"
+        },
+        "sample_csv": "email,full_name,job_title,department_id,hire_date\njohn.doe@company.com,John Doe,Software Engineer,dept-123,2024-01-15\njane.smith@company.com,Jane Smith,Product Manager,dept-456,2024-02-01"
+    }
+
+
 @api_router.put("/employees/{emp_id}/portal-access")
 async def toggle_portal_access(emp_id: str, data: Dict[str, Any], current_user: User = Depends(get_current_user)):
     if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.CORP_ADMIN]:
